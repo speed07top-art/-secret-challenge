@@ -2,7 +2,9 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Secret Challenge</title>
 <!-- Firebase SDK (compat - no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -20,8 +22,10 @@
   --surface:#f0f5ff;--ink:#0a1428;
   --sh:0 2px 20px rgba(10,20,60,.08);
 }
-body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink);height:100vh;overflow:hidden}
-.app{display:flex;flex-direction:column;height:100vh;max-width:430px;margin:0 auto;background:var(--surface)}
+body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink);height:100vh;height:100dvh;overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:430px;margin:0 auto;background:var(--surface)}
+/* iOS Safe Area */
+.auth-wrap{padding-top:max(20px, env(safe-area-inset-top));padding-bottom:max(20px, env(safe-area-inset-bottom))}
 h1,h2,h3,h4{font-family:'Playfair Display',serif;line-height:1.2}
 .page{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:14px 14px 20px}
 .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(160deg,#070d1f,#0e1933,#070d1f)}
@@ -48,11 +52,11 @@ textarea{resize:vertical;min-height:70px}
 .btn-sm{padding:8px 14px;font-size:.8rem;border-radius:9px}
 .err{color:var(--red);font-size:.8rem;margin-top:5px}
 .note-box{background:#eef4ff;border:1px solid #c0d4f8;border-radius:10px;padding:11px 14px;font-size:.8rem;color:var(--b4);margin-bottom:14px}
-.topbar{display:flex;align-items:center;padding:12px 16px;background:white;border-bottom:1px solid #e0eaf8;gap:10px;flex-shrink:0}
+.topbar{display:flex;align-items:center;padding:12px 16px;padding-top:max(12px, env(safe-area-inset-top));background:white;border-bottom:1px solid #e0eaf8;gap:10px;flex-shrink:0}
 .topbar-name{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--b3);flex:1}
 .pts-badge{display:flex;align-items:center;gap:5px;background:var(--b10);border:1px solid var(--b9);border-radius:20px;padding:5px 12px;font-size:.82rem;font-weight:700;color:var(--b4)}
 .icon-btn{background:none;border:none;cursor:pointer;padding:5px;color:var(--muted);line-height:0;border-radius:8px}
-.bnav{display:grid;grid-template-columns:repeat(4,1fr);background:white;border-top:1px solid #e0eaf8;flex-shrink:0}
+.bnav{display:grid;grid-template-columns:repeat(4,1fr);background:white;border-top:1px solid #e0eaf8;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom)}
 .ni{display:flex;flex-direction:column;align-items:center;padding:9px 4px 8px;gap:3px;border:none;background:none;cursor:pointer;font-size:.6rem;font-weight:600;color:var(--muted);letter-spacing:.04em;font-family:'DM Sans',sans-serif;position:relative}
 .ni.on{color:var(--b5)}
 .ni svg{width:20px;height:20px}
@@ -227,6 +231,11 @@ function handleAction(action, el, e) {
     case 'del-r':          delR(arg); break;
     case 'adj-pts':        adjPts(arg, +arg2); break;
     case 'do-reset':       doReset(); break;
+    case 'copy-topic':
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(arg).then(function(){ showToast('Topic copiato! ✅'); }).catch(function(){ showToast('Copia: ' + arg); });
+      } else { showToast('Topic: ' + arg); }
+      break;
   }
 }
 
@@ -286,26 +295,6 @@ function objToArr(obj) {
   return Object.values(obj);
 }
 
-/* ── LISTEN FOR REMOTE CHANGES ── */
-db.ref(DB_REF).on('value', function(snapshot) {
-  var data = snapshot.val();
-  if (data) {
-    S = {
-      users: data.users || clone(BLANK).users,
-      questions: objToArr(data.questions),
-      rewards: objToArr(data.rewards),
-      requests: objToArr(data.requests)
-    };
-  }
-  if (!fbReady) {
-    fbReady = true;
-    render(); // first load
-    return;
-  }
-  // Remote update from other device — re-render if not mid-interaction
-  if (!overlay) render();
-});
-
 /* ── PRESENCE (online users) ── */
 function announcePresence() {
   if (!session || session === 'admin') return;
@@ -313,25 +302,72 @@ function announcePresence() {
   presRef.set({online: true, t: Date.now()});
   presRef.onDisconnect().remove();
 }
-db.ref('sc_presence').on('value', function(snap) {
-  onlineUsers = {};
-  var data = snap.val() || {};
-  Object.keys(data).forEach(function(u) {
-    if (data[u] && data[u].online) onlineUsers[u] = data[u].t;
-  });
-  if (session && session !== 'admin') render();
-});
-
-setInterval(function() {
-  announcePresence();
-  checkTick();
-}, 10000);
 
 /* ── HELPERS ── */
 function todayKey() { var d = new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
 function daysAgo(iso) { if (!iso) return 0; return Math.round((Date.now() - new Date(iso)) / 86400000); }
 function fmtDt(s) { if (!s) return ''; try { return new Date(s).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); } catch(e) { return s; } }
 function fmtTime(s) { if (!s) return ''; try { return new Date(s).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}); } catch(e) { return s; } }
+
+/* ── NTFY NOTIFICATIONS ── */
+var APP_URL = window.location.href.split('?')[0];
+var NTFY_BASE = 'https://ntfy.sh/';
+
+function genTopic(user) {
+  var rand = Math.random().toString(36).slice(2,10);
+  return 'secretchallenge-' + user + '-' + rand;
+}
+
+function ensureTopic(user) {
+  if (!S.users[user].ntfyTopic) {
+    S.users[user].ntfyTopic = genTopic(user);
+    save(S);
+  }
+  return S.users[user].ntfyTopic;
+}
+
+function ntfySend(topic, title, message, tags) {
+  if (!topic) return;
+  var payload = { topic: topic, title: title, message: message, click: APP_URL };
+  if (tags) payload.tags = tags;
+  fetch(NTFY_BASE + topic, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).catch(function(e) { console.warn('ntfy error:', e); });
+}
+
+function notifyPartnerNewReward(rewardName, deadline) {
+  var pt = session === 'giulia' ? 'stefano' : 'giulia';
+  var topic = S.users[pt] && S.users[pt].ntfyTopic;
+  if (!topic) return;
+  var myName = session === 'giulia' ? '🌸 Giulia' : '⚡ Stefano';
+  var msg = myName + ' ha richiesto: ' + rewardName;
+  if (deadline) msg += '\nEntro: ' + fmtDt(deadline);
+  ntfySend(topic, '🎁 Nuovo premio da eseguire!', msg, ['gift']);
+}
+
+function notifyRewardDone(req) {
+  var topic = S.users[req.by] && S.users[req.by].ntfyTopic;
+  if (!topic) return;
+  var executor = req.by === 'giulia' ? '⚡ Stefano' : '🌸 Giulia';
+  ntfySend(topic, '✅ Premio eseguito — conferma!', executor + ' ha eseguito: ' + req.name + '\nConfermi?', ['white_check_mark']);
+}
+
+function checkPenaltyWarning() {
+  if (!session || session === 'admin') return;
+  var u = S.users[session];
+  if (!u || !u.lastRewardClaim) return;
+  var days = daysAgo(u.lastRewardClaim);
+  var warnKey = 'pw_warned_' + todayKey();
+  if (days >= 2 && days < 3 && !sessionStorage.getItem(warnKey)) {
+    sessionStorage.setItem(warnKey, '1');
+    var topic = u.ntfyTopic;
+    if (topic) {
+      ntfySend(topic, '⚠️ Penalità in arrivo!', 'Sono ' + days + ' giorni senza richiedere un premio. Entro domani perdi 500 pt!', ['warning']);
+    }
+  }
+}
 function pname(u) { return u === 'giulia' ? 'Giulia' : 'Stefano'; }
 function partner() { return session === 'giulia' ? 'stefano' : 'giulia'; }
 function myPts() { return S.users[session] ? (S.users[session].pts || 0) : 0; }
@@ -383,9 +419,11 @@ function doLogin() {
     if (pw !== pw2) { if (err) err.textContent = 'Le password non corrispondono'; return; }
     S.users[u].pwd = pw; S.users[u].pwdSet = true;
     S.users[u].pts = 1000; S.users[u].lastRewardClaim = new Date().toISOString();
-    save(S); session = u; tab = 'home'; selU = null; showOB = true; obStep = 0; checkTick(); announcePresence(); render();
+    save(S); session = u; tab = 'home'; selU = null; showOB = true; obStep = 0;
+    ensureTopic(u);
+    checkTick(); announcePresence(); render();
   } else {
-    if (pw === S.users[u].pwd) { session = u; tab = 'home'; selU = null; checkTick(); announcePresence(); render(); }
+    if (pw === S.users[u].pwd) { session = u; tab = 'home'; selU = null; ensureTopic(u); checkTick(); checkPenaltyWarning(); announcePresence(); render(); }
     else { if (err) err.textContent = 'Password errata'; }
   }
 }
@@ -441,6 +479,7 @@ function submitClaim() {
     mode: claimMode, deadline: dl, note: note, status: 'pending'
   });
   save(S); overlay = null;
+  notifyPartnerNewReward(r.name, dl);
   showToast('Premio richiesto! Il partner lo vedrà subito.');
 }
 
@@ -449,7 +488,9 @@ function markDone(rrId) {
   if (i < 0) return;
   S.requests[i].status = 'done_confirm';
   S.requests[i].doneAt = new Date().toISOString();
-  save(S); showToast('Segnato! In attesa di conferma da ' + pname(S.requests[i].by) + '…', 4000);
+  save(S);
+  notifyRewardDone(S.requests[i]);
+  showToast('Segnato! In attesa di conferma da ' + pname(S.requests[i].by) + '…', 4000);
   render();
 }
 
@@ -921,6 +962,30 @@ function renderAdmin() {
     body += '</div></div>';
     body += '<div class="acard"><h3 style="color:#d08080">⚠️ Zona pericolosa</h3><p style="color:#4a6080;font-size:.8rem;margin-bottom:9px">Reset completo. Irreversibile.</p>';
     body += '<button class="reset-btn" data-action="do-reset">Reset completo</button></div>';
+
+    // ntfy topics
+    body += '<div class="acard"><h3>📲 Topic ntfy (notifiche push)</h3>';
+    body += '<p style="color:#4a6080;font-size:.78rem;margin-bottom:14px">Ogni utente deve iscriversi al proprio topic nell\'app <strong>ntfy</strong> (iOS/Android). Tocca per copiare.</p>';
+    ['giulia','stefano'].forEach(function(p) {
+      var topic = S.users[p] && S.users[p].ntfyTopic;
+      var icon = p === 'giulia' ? '🌸' : '⚡';
+      if (topic) {
+        body += '<div style="margin-bottom:10px">';
+        body += '<div style="font-size:.72rem;color:#5a7090;font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em">'+icon+' '+pname(p)+'</div>';
+        body += '<div style="display:flex;gap:8px;align-items:center">';
+        body += '<code style="background:#070d1f;border:1px solid #162448;color:#7aa0e8;border-radius:7px;padding:8px 11px;font-size:.75rem;flex:1;word-break:break-all">'+esc(topic)+'</code>';
+        body += '<button class="abtn" style="padding:8px 12px;flex-shrink:0" data-action="copy-topic" data-arg="'+esc(topic)+'">📋 Copia</button>';
+        body += '</div>';
+        body += '<div style="margin-top:5px;font-size:.72rem;color:#3a6080">ntfy.sh/'+esc(topic)+'</div>';
+        body += '</div>';
+      } else {
+        body += '<div style="color:#4a6080;font-size:.78rem;margin-bottom:8px">'+icon+' '+pname(p)+': topic non ancora generato (utente deve fare il primo accesso)</div>';
+      }
+    });
+    body += '<div style="margin-top:12px;padding:10px 12px;background:#070d1f;border-radius:8px;border:1px solid #162448">';
+    body += '<div style="font-size:.72rem;color:#5a7090;font-weight:600;margin-bottom:6px">📅 Reminder quiz (cron-job.org)</div>';
+    body += '<p style="font-size:.72rem;color:#4a6080;line-height:1.5">Crea 2 job su <strong style="color:#7aa0e8">cron-job.org</strong> con questi parametri:<br>• Method: POST &nbsp;·&nbsp; Schedule: ogni giorno ore 10:00<br>• URL: <code style="color:#7aa0e8">https://ntfy.sh/[topic-utente]</code><br>• Header <code style="color:#7aa0e8">Title</code>: 🧠 Quiz del giorno!<br>• Body: Hai il quiz da completare oggi!</p>';
+    body += '</div></div>';
   }
 
   var h = '<div class="adm-wrap">';
@@ -953,9 +1018,44 @@ function svgSettings(){ return '<svg width="16" height="16" viewBox="0 0 24 24" 
 if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
   try { Notification.requestPermission(); } catch(e) {}
 }
+
 // Show loading screen until Firebase responds
 document.getElementById('R').innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#070d1f,#0e1933);flex-direction:column;gap:16px"><div style="font-size:3rem">🔷</div><div style="color:#b0c8f8;font-family:sans-serif;font-size:.9rem">Connessione in corso...</div></div>';
-// render() will be called by the Firebase 'value' listener on first load
+
+/* ── FIREBASE LISTENERS (after all functions defined) ── */
+db.ref(DB_REF).on('value', function(snapshot) {
+  var data = snapshot.val();
+  if (data) {
+    S = {
+      users: data.users || clone(BLANK).users,
+      questions: objToArr(data.questions),
+      rewards: objToArr(data.rewards),
+      requests: objToArr(data.requests)
+    };
+  }
+  if (!fbReady) {
+    fbReady = true;
+    render(); // first load
+    return;
+  }
+  // Remote update from other device — re-render if not mid-interaction
+  if (!overlay) render();
+});
+
+db.ref('sc_presence').on('value', function(snap) {
+  onlineUsers = {};
+  var data = snap.val() || {};
+  Object.keys(data).forEach(function(u) {
+    if (data[u] && data[u].online) onlineUsers[u] = data[u].t;
+  });
+  if (session && session !== 'admin') render();
+});
+
+setInterval(function() {
+  announcePresence();
+  checkTick();
+  checkPenaltyWarning();
+}, 10000);
 
 })();
 </script>
