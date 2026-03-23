@@ -206,7 +206,7 @@ function handleAction(action, el, e) {
     case 'go-admin':       session = 'admin'; render(); break;
     case 'do-login':       doLogin(); break;
     case 'do-adm-login':   doAdmLogin(); break;
-    case 'logout':         if(session && session!=='admin') db.ref('sc_presence/'+session).remove(); session = null; quizSess = null; render(); break;
+    case 'logout':         if(session && session!=='admin') db.ref('sc_presence/'+session).remove(); clearSession(); session = null; quizSess = null; render(); break;
     case 'adm-logout':     session = null; adminAuthed = false; sessionStorage.removeItem('adm_ok'); render(); break;
     case 'set-tab':        tab = arg; render(); break;
     case 'set-adm-tab':    adminTab = arg; render(); break;
@@ -256,6 +256,49 @@ var DB_REF = 'sc_app';
 /* ── DATA ── */
 function freshUser() { return {pwd:'',pwdSet:false,pts:1000,quizToday:null,lastRewardClaim:null,penaltyChecked:null}; }
 var BLANK = {users:{giulia:freshUser(),stefano:freshUser()},questions:[],rewards:[],requests:[]};
+
+/* ── EMBEDDED QUESTION BANK (from CSV) ── */
+var QUESTION_BANK = [{"id": "1", "text": "Qual è la capitale d'Italia?", "opts": ["Roma", "Milano", "Napoli", "Torino"], "correct": 0, "diff": 1, "ambito": "Geografia"}, {"id": "2", "text": "Qual è la capitale della Francia?", "opts": ["Parigi", "Lione", "Marsiglia", "Nizza"], "correct": 0, "diff": 1, "ambito": "Geografia"}, {"id": "3", "text": "Qual è il pianeta più vicino al Sole?", "opts": ["Venere", "Mercurio", "Marte", "Giove"], "correct": 1, "diff": 1, "ambito": "Scienza"}, {"id": "4", "text": "Chi ha scritto \"Romeo e Giulietta\"?", "opts": ["Dante", "Shakespeare", "Boccaccio", "Manzoni"], "correct": 1, "diff": 2, "ambito": "Letteratura"}, {"id": "5", "text": "Quanto fa 2+2?", "opts": ["3", "4", "5", "6"], "correct": 1, "diff": 1, "ambito": "Matematica"}, {"id": "6", "text": "Qual è il colore del cielo sereno?", "opts": ["Blu", "Verde", "Rosso", "Giallo"], "correct": 0, "diff": 1, "ambito": "Scienza"}, {"id": "7", "text": "Chi era il primo presidente USA?", "opts": ["Lincoln", "Washington", "Jefferson", "Adams"], "correct": 1, "diff": 2, "ambito": "Storia"}, {"id": "8", "text": "Qual è l’oceano più grande?", "opts": ["Atlantico", "Indiano", "Pacifico", "Artico"], "correct": 2, "diff": 2, "ambito": "Geografia"}, {"id": "9", "text": "Quanti giorni ha una settimana?", "opts": ["5", "6", "7", "8"], "correct": 2, "diff": 1, "ambito": "Varie"}, {"id": "10", "text": "Simbolo chimico dell’acqua?", "opts": ["H2O", "O2", "CO2", "NaCl"], "correct": 0, "diff": 1, "ambito": "Scienza"}, {"id": "11", "text": "Chi ha dipinto la Gioconda?", "opts": ["Van Gogh", "Leonardo", "Picasso", "Raffaello"], "correct": 1, "diff": 2, "ambito": "Arte"}, {"id": "12", "text": "Quanto fa 10x10?", "opts": ["50", "100", "10", "20"], "correct": 1, "diff": 1, "ambito": "Matematica"}, {"id": "13", "text": "Chi ha scoperto l’America?", "opts": ["Colombo", "Magellano", "Cook", "Vespucci"], "correct": 0, "diff": 2, "ambito": "Storia"}, {"id": "14", "text": "Continente più grande?", "opts": ["Africa", "Asia", "Europa", "America"], "correct": 1, "diff": 2, "ambito": "Geografia"}, {"id": "15", "text": "Numero lati triangolo?", "opts": ["2", "3", "4", "5"], "correct": 1, "diff": 1, "ambito": "Matematica"}, {"id": "16", "text": "Chi ha teorizzato la relatività?", "opts": ["Newton", "Einstein", "Galileo", "Bohr"], "correct": 1, "diff": 4, "ambito": "Scienza"}, {"id": "17", "text": "Capitale Germania?", "opts": ["Berlino", "Monaco", "Amburgo", "Colonia"], "correct": 0, "diff": 2, "ambito": "Geografia"}, {"id": "18", "text": "Pianeta più grande?", "opts": ["Saturno", "Terra", "Giove", "Urano"], "correct": 2, "diff": 2, "ambito": "Scienza"}, {"id": "19", "text": "Radice quadrata di 16?", "opts": ["2", "4", "6", "8"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "20", "text": "Gas principale atmosfera?", "opts": ["Ossigeno", "Azoto", "CO2", "Idrogeno"], "correct": 1, "diff": 3, "ambito": "Scienza"}, {"id": "21", "text": "Capitale Spagna?", "opts": ["Madrid", "Barcellona", "Valencia", "Siviglia"], "correct": 0, "diff": 2, "ambito": "Geografia"}, {"id": "22", "text": "Simbolo oro?", "opts": ["Ag", "Au", "Fe", "O"], "correct": 1, "diff": 3, "ambito": "Scienza"}, {"id": "23", "text": "Autore \"I Promessi Sposi\"?", "opts": ["Manzoni", "Dante", "Pirandello", "Leopardi"], "correct": 0, "diff": 2, "ambito": "Letteratura"}, {"id": "24", "text": "5x6=?", "opts": ["11", "30", "25", "20"], "correct": 1, "diff": 1, "ambito": "Matematica"}, {"id": "25", "text": "Paese più popoloso?", "opts": ["India", "Cina", "USA", "Indonesia"], "correct": 1, "diff": 3, "ambito": "Geografia"}, {"id": "26", "text": "Chi era Galileo?", "opts": ["Artista", "Scienziato", "Re", "Poeta"], "correct": 1, "diff": 3, "ambito": "Scienza"}, {"id": "27", "text": "Capitale Cina?", "opts": ["Pechino", "Shanghai", "Hong Kong", "Nanchino"], "correct": 0, "diff": 2, "ambito": "Geografia"}, {"id": "28", "text": "Pianeta con anelli?", "opts": ["Marte", "Giove", "Saturno", "Venere"], "correct": 2, "diff": 2, "ambito": "Scienza"}, {"id": "29", "text": "12/3=?", "opts": ["2", "3", "4", "5"], "correct": 2, "diff": 1, "ambito": "Matematica"}, {"id": "30", "text": "Vulcano famoso Italia?", "opts": ["Etna", "Vesuvio", "Stromboli", "Fuji"], "correct": 1, "diff": 2, "ambito": "Geografia"}, {"id": "31", "text": "Teoria evoluzione?", "opts": ["Darwin", "Newton", "Einstein", "Curie"], "correct": 0, "diff": 4, "ambito": "Scienza"}, {"id": "32", "text": "Capitale Russia?", "opts": ["Mosca", "San Pietroburgo", "Kiev", "Minsk"], "correct": 0, "diff": 2, "ambito": "Geografia"}, {"id": "33", "text": "Numero pianeti sistema solare?", "opts": ["7", "8", "9", "10"], "correct": 1, "diff": 3, "ambito": "Scienza"}, {"id": "34", "text": "7x8=?", "opts": ["54", "56", "58", "60"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "35", "text": "Capitale India?", "opts": ["Delhi", "Mumbai", "Kolkata", "Chennai"], "correct": 0, "diff": 3, "ambito": "Geografia"}, {"id": "36", "text": "Gas che respiriamo?", "opts": ["Ossigeno", "Azoto", "CO2", "Elio"], "correct": 0, "diff": 1, "ambito": "Scienza"}, {"id": "37", "text": "100-45=?", "opts": ["45", "55", "65", "35"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "38", "text": "Capitale Messico?", "opts": ["Monterrey", "Cancun", "Città del Messico", "Guadalajara"], "correct": 2, "diff": 3, "ambito": "Geografia"}, {"id": "39", "text": "Simbolo sodio?", "opts": ["So", "Na", "Sn", "Sd"], "correct": 1, "diff": 4, "ambito": "Scienza"}, {"id": "40", "text": "6^2=?", "opts": ["12", "18", "36", "24"], "correct": 2, "diff": 3, "ambito": "Matematica"}, {"id": "41", "text": "Capitale Egitto?", "opts": ["Il Cairo", "Alessandria", "Giza", "Luxor"], "correct": 0, "diff": 3, "ambito": "Geografia"}, {"id": "42", "text": "Nome galassia?", "opts": ["Andromeda", "Via Lattea", "Orione", "Centauro"], "correct": 1, "diff": 3, "ambito": "Scienza"}, {"id": "43", "text": "50/5=?", "opts": ["5", "10", "15", "20"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "44", "text": "Capitale Grecia?", "opts": ["Atene", "Sparta", "Salonicco", "Creta"], "correct": 0, "diff": 3, "ambito": "Geografia"}, {"id": "45", "text": "Scoperta gravità?", "opts": ["Newton", "Einstein", "Galileo", "Tesla"], "correct": 0, "diff": 3, "ambito": "Scienza"}, {"id": "46", "text": "3x9=?", "opts": ["18", "21", "27", "24"], "correct": 2, "diff": 1, "ambito": "Matematica"}, {"id": "47", "text": "144/12=?", "opts": ["10", "11", "12", "13"], "correct": 2, "diff": 2, "ambito": "Matematica"}, {"id": "48", "text": "11x11=?", "opts": ["111", "121", "131", "141"], "correct": 1, "diff": 3, "ambito": "Matematica"}, {"id": "49", "text": "81/9=?", "opts": ["7", "8", "9", "10"], "correct": 2, "diff": 2, "ambito": "Matematica"}, {"id": "50", "text": "8^2=?", "opts": ["16", "32", "64", "48"], "correct": 2, "diff": 3, "ambito": "Matematica"}, {"id": "51", "text": "20x5=?", "opts": ["50", "75", "100", "120"], "correct": 2, "diff": 2, "ambito": "Matematica"}, {"id": "52", "text": "18+27=?", "opts": ["35", "45", "55", "40"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "53", "text": "100/4=?", "opts": ["20", "25", "30", "35"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "54", "text": "14x3=?", "opts": ["42", "36", "48", "40"], "correct": 0, "diff": 2, "ambito": "Matematica"}, {"id": "55", "text": "60/3=?", "opts": ["15", "20", "25", "30"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "56", "text": "13+19=?", "opts": ["30", "31", "32", "33"], "correct": 2, "diff": 2, "ambito": "Matematica"}, {"id": "57", "text": "25x4=?", "opts": ["80", "90", "100", "110"], "correct": 2, "diff": 2, "ambito": "Matematica"}, {"id": "58", "text": "90/10=?", "opts": ["8", "9", "10", "11"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "59", "text": "7^3=?", "opts": ["343", "49", "21", "512"], "correct": 0, "diff": 4, "ambito": "Matematica"}, {"id": "60", "text": "121/11=?", "opts": ["9", "10", "11", "12"], "correct": 2, "diff": 3, "ambito": "Matematica"}, {"id": "61", "text": "19+23=?", "opts": ["40", "41", "42", "43"], "correct": 2, "diff": 2, "ambito": "Matematica"}, {"id": "62", "text": "200/5=?", "opts": ["20", "30", "40", "50"], "correct": 2, "diff": 3, "ambito": "Matematica"}, {"id": "63", "text": "15x7=?", "opts": ["95", "100", "105", "110"], "correct": 2, "diff": 3, "ambito": "Matematica"}, {"id": "64", "text": "256/16=?", "opts": ["14", "15", "16", "18"], "correct": 2, "diff": 3, "ambito": "Matematica"}, {"id": "65", "text": "3^4=?", "opts": ["27", "64", "81", "12"], "correct": 2, "diff": 4, "ambito": "Matematica"}, {"id": "66", "text": "Chi ha scritto \"1984\"?", "opts": ["Orwell", "Huxley", "Tolkien", "Rowling"], "correct": 0, "diff": 3, "ambito": "Letteratura"}, {"id": "67", "text": "Autore \"Divina Commedia\"?", "opts": ["Dante", "Petrarca", "Boccaccio", "Leopardi"], "correct": 0, "diff": 2, "ambito": "Letteratura"}, {"id": "68", "text": "Autore \"Odissea\"?", "opts": ["Omero", "Virgilio", "Ovidio", "Platone"], "correct": 0, "diff": 3, "ambito": "Letteratura"}, {"id": "69", "text": "Autore \"Don Chisciotte\"?", "opts": ["Cervantes", "Borges", "Neruda", "Allende"], "correct": 0, "diff": 4, "ambito": "Letteratura"}, {"id": "70", "text": "Autore \"Guerra e Pace\"?", "opts": ["Tolstoj", "Dostoevskij", "Pushkin", "Gogol"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "71", "text": "Autore \"Moby Dick\"?", "opts": ["Melville", "Twain", "Hemingway", "Fitzgerald"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "72", "text": "Autore \"Dracula\"?", "opts": ["Stoker", "Shelley", "Poe", "Wilde"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "73", "text": "Autore \"Frankenstein\"?", "opts": ["Shelley", "Austen", "Brontë", "Stoker"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "74", "text": "Autore \"Ulisse\"?", "opts": ["Joyce", "Beckett", "Eliot", "Yeats"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "75", "text": "Autore \"Il Processo\"?", "opts": ["Kafka", "Goethe", "Mann", "Hesse"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "76", "text": "Autore \"Lolita\"?", "opts": ["Nabokov", "Bulgakov", "Pasternak", "Solzenicyn"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "77", "text": "Autore \"Il Gattopardo\"?", "opts": ["Tomasi di Lampedusa", "Calvino", "Eco", "Pavese"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "78", "text": "Autore \"Se questo è un uomo\"?", "opts": ["Levi", "Sciascia", "Fenoglio", "Moravia"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "79", "text": "Autore \"La coscienza di Zeno\"?", "opts": ["Svevo", "Pirandello", "Verga", "Deledda"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "80", "text": "Autore \"Madame Bovary\"?", "opts": ["Flaubert", "Balzac", "Zola", "Hugo"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "81", "text": "Autore \"Dorian Gray\"?", "opts": ["Wilde", "Shaw", "Dickens", "Austen"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "82", "text": "Autore \"Il deserto dei Tartari\"?", "opts": ["Buzzati", "Calvino", "Primo Levi", "Saba"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "83", "text": "Autore \"La nausea\"?", "opts": ["Sartre", "Camus", "Beauvoir", "Merleau-Ponty"], "correct": 0, "diff": 7, "ambito": "Letteratura"}, {"id": "84", "text": "Autore \"Cent’anni di solitudine\"?", "opts": ["Marquez", "Borges", "Cortazar", "Neruda"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "85", "text": "Autore \"Orgoglio e pregiudizio\"?", "opts": ["Austen", "Brontë", "Eliot", "Alcott"], "correct": 0, "diff": 5, "ambito": "Letteratura"}];
+
+/* Select 10 questions balanced by difficulty.
+   Strategy: divide bank into LOW (1-3), MED (4-6), HIGH (7-10),
+   pick ~4 LOW + 4 MED + 2 HIGH (adjusting if a bucket is small),
+   then shuffle the final 10. */
+function selectDailyQuestions() {
+  var low  = QUESTION_BANK.filter(function(q){ return q.diff <= 3; });
+  var med  = QUESTION_BANK.filter(function(q){ return q.diff >= 4 && q.diff <= 6; });
+  var high = QUESTION_BANK.filter(function(q){ return q.diff >= 7; });
+
+  function pick(arr, n) {
+    var shuffled = arr.slice().sort(function(){ return Math.random() - 0.5; });
+    return shuffled.slice(0, Math.min(n, shuffled.length));
+  }
+
+  // Targets: 4 low, 4 med, 2 high — fill gaps from other buckets
+  var targets = [4, 4, 2];
+  var buckets = [low, med, high];
+  var chosen = [];
+  var remaining = 10;
+
+  for (var i = 0; i < 3; i++) {
+    var got = pick(buckets[i], targets[i]);
+    chosen = chosen.concat(got);
+    remaining -= got.length;
+  }
+
+  // If we still need more (e.g. high bucket small), fill from any remaining
+  if (remaining > 0) {
+    var usedIds = {};
+    chosen.forEach(function(q){ usedIds[q.id] = true; });
+    var leftover = QUESTION_BANK.filter(function(q){ return !usedIds[q.id]; });
+    leftover.sort(function(){ return Math.random() - 0.5; });
+    chosen = chosen.concat(leftover.slice(0, remaining));
+  }
+
+  // Final shuffle
+  chosen.sort(function(){ return Math.random() - 0.5; });
+  return chosen.slice(0, 10);
+}
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
 /* ── STATE ── */
@@ -311,6 +354,28 @@ function fmtTime(s) { if (!s) return ''; try { return new Date(s).toLocaleTimeSt
 
 /* ── NTFY NOTIFICATIONS ── */
 var APP_URL = window.location.href.split('?')[0];
+var SESSION_KEY = 'sc_session_v1'; // {user, expires}
+var SESSION_HOURS = 48;
+
+function saveSession(user) {
+  var expires = Date.now() + SESSION_HOURS * 3600 * 1000;
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify({user: user, expires: expires})); } catch(e) {}
+}
+
+function loadSession() {
+  try {
+    var raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    var s = JSON.parse(raw);
+    if (!s || !s.user || !s.expires) return null;
+    if (Date.now() > s.expires) { localStorage.removeItem(SESSION_KEY); return null; }
+    return s.user;
+  } catch(e) { return null; }
+}
+
+function clearSession() {
+  try { localStorage.removeItem(SESSION_KEY); } catch(e) {}
+}
 var NTFY_BASE = 'https://ntfy.sh/';
 
 function genTopic(user) {
@@ -419,19 +484,19 @@ function doLogin() {
     if (pw !== pw2) { if (err) err.textContent = 'Le password non corrispondono'; return; }
     S.users[u].pwd = pw; S.users[u].pwdSet = true;
     S.users[u].pts = 1000; S.users[u].lastRewardClaim = new Date().toISOString();
-    save(S); session = u; tab = 'home'; selU = null; showOB = true; obStep = 0;
+    save(S); session = u; saveSession(u); tab = 'home'; selU = null; showOB = true; obStep = 0;
     ensureTopic(u);
     checkTick(); announcePresence(); render();
   } else {
-    if (pw === S.users[u].pwd) { session = u; tab = 'home'; selU = null; ensureTopic(u); checkTick(); checkPenaltyWarning(); announcePresence(); render(); }
+    if (pw === S.users[u].pwd) { session = u; saveSession(u); tab = 'home'; selU = null; ensureTopic(u); checkTick(); checkPenaltyWarning(); announcePresence(); render(); }
     else { if (err) err.textContent = 'Password errata'; }
   }
 }
 
 function startQuiz() {
-  if (!S.questions.length) { showToast('Nessuna domanda caricata!'); return; }
-  var shuffled = S.questions.slice().sort(function() { return Math.random() - .5; }).slice(0, 10);
-  quizSess = {qs: shuffled, cur: 0, answers: [], score: 0, done: false};
+  var daily = selectDailyQuestions();
+  if (!daily.length) { showToast('Nessuna domanda disponibile!'); return; }
+  quizSess = {qs: daily, cur: 0, answers: [], score: 0, done: false};
   tab = 'quiz'; render();
 }
 
@@ -1018,6 +1083,10 @@ function svgSettings(){ return '<svg width="16" height="16" viewBox="0 0 24 24" 
 if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
   try { Notification.requestPermission(); } catch(e) {}
 }
+
+// Restore 48h session from localStorage
+var _savedSession = loadSession();
+if (_savedSession) { session = _savedSession; }
 
 // Show loading screen until Firebase responds
 document.getElementById('R').innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#070d1f,#0e1933);flex-direction:column;gap:16px"><div style="font-size:3rem">🔷</div><div style="color:#b0c8f8;font-family:sans-serif;font-size:.9rem">Connessione in corso...</div></div>';
