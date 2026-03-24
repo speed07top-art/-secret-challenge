@@ -287,13 +287,15 @@ function handleAction(action, el, e) {
     case 'adm-logout':     session = null; adminAuthed = false; sessionStorage.removeItem('adm_ok'); render(); break;
     case 'set-tab':        tab = arg; render(); break;
     case 'set-adm-tab':    adminTab = arg; render(); break;
-    case 'toggle-history':  showHistory = !showHistory; render(); break;
+    case 'toggle-history': showHistory = !showHistory; render(); break;
 
-    case 'open-claim':     openClaim(arg); break;
+    case 'open-claim':     openClaim(arg, arg2); break;
     case 'set-mode':       claimMode = arg; render(); break;
     case 'close-overlay':  if (e.target === el) { overlay = null; render(); } break;
     case 'cancel-overlay': overlay = null; render(); break;
-    case 'submit-claim':   submitClaim(); break;
+    case 'prepare-claim':  prepareClaim(); break;
+    case 'finalize-claim': finalizeClaim(); break;
+    case 'close-success':  overlay = null; render(); break;
     case 'mark-done':      markDone(arg); break;
     case 'confirm-done':   confirmDone(arg, arg2 === 'yes'); break;
     case 'declare-unfulfilled': declareUnfulfilled(arg); break;
@@ -726,10 +728,10 @@ function checkFlashQuestion() {
   if (!isActivityHour()) { flashQ = null; miniGame = null; return; }
 
   var slotKey = flashSlotKey();
-  var doneKey = 'fq_done_' + slotKey;
+  var doneKey = 'fq_done_' + session + '_' + slotKey;
 
   // Already answered or dismissed this hour slot
-  if (sessionStorage.getItem(doneKey)) return;
+  if (localStorage.getItem(doneKey)) return;
   // Already active
   if (flashQ && flashQ.slotKey === slotKey) return;
   if (miniGame && miniGame.slotKey === slotKey) return;
@@ -755,7 +757,7 @@ function checkFlashQuestion() {
       flashQ.timerLeft--;
       if (flashQ.timerLeft <= 0) {
         clearInterval(flashTimer);
-        sessionStorage.setItem('fq_done_' + flashQ.slotKey, 'skip');
+        localStorage.setItem('fq_done_' + session + '_' + flashQ.slotKey, 'skip');
         flashQ = null;
         render();
       } else {
@@ -807,7 +809,7 @@ function answerFlashQ(optIdx) {
   save(S);
 
   // Mark slot as done
-  sessionStorage.setItem('fq_done_' + flashQ.slotKey, 'answered');
+  localStorage.setItem('fq_done_' + session + '_' + flashQ.slotKey, 'answered');
   markFlashQuestionSeen(flashQ.q.id);
   if (flashTimer) clearInterval(flashTimer);
 
@@ -820,7 +822,7 @@ function answerFlashQ(optIdx) {
 function dismissFlashQ() {
   if (!flashQ) return;
   if (!flashQ.answered) {
-    sessionStorage.setItem('fq_done_' + flashQ.slotKey, 'skip');
+    localStorage.setItem('fq_done_' + session + '_' + flashQ.slotKey, 'skip');
   }
   if (flashTimer) clearInterval(flashTimer);
   flashQ = null;
@@ -888,7 +890,7 @@ function finishMiniGame(prize) {
   miniGame.prize = prize;
   S.users[session].pts = Math.max(0, (S.users[session].pts || 0) + prize);
   save(S);
-  sessionStorage.setItem('fq_done_' + miniGame.slotKey, 'answered');
+  localStorage.setItem('fq_done_' + session + '_' + miniGame.slotKey, 'answered');
   render();
   showShopNudgeAfterDelay();
 }
@@ -896,7 +898,7 @@ function finishMiniGame(prize) {
 function dismissMiniGame() {
   if (!miniGame) return;
   if (!miniGame.played) {
-    sessionStorage.setItem('fq_done_' + miniGame.slotKey, 'skip');
+    localStorage.setItem('fq_done_' + session + '_' + miniGame.slotKey, 'skip');
   }
   miniGame = null;
   render();
@@ -1174,63 +1176,52 @@ function doLogin() {
   }
 }
 
-
-
-function openClaim(rid) {
+function openClaim(rid, overrideCost) {
   var r = S.rewards.filter(function(x) { return x.id === rid; })[0];
   if (!r) return;
+  var claimR = Object.assign({}, r);
+  if (overrideCost) claimR.cost = parseInt(overrideCost, 10);
   claimMode = 'deadline';
-  overlay = {type: 'claim', reward: r};
+  overlay = {type: 'claim', reward: claimR};
   render();
   setTimeout(window.updateClaimTotal, 10);
 }
 
-function submitClaim() {
+function prepareClaim() {
   if (!overlay || !overlay.reward) return;
   var r = overlay.reward;
-  var claimDLEl = document.getElementById('claimDL');
-  var dlMode = claimDLEl ? claimDLEl.value : '';
-  if (!dlMode) {
-    showToast('Devi selezionare un\'ora di consegna!');
-    return;
-  }
+  var sel = document.getElementById('claimDL');
+  var dlMode = sel ? sel.value : '0';
+  if (r.cost >= 50 && !dlMode) { showToast('Seleziona le tempistiche di consegna'); return; }
   
   var extraCost = 0;
-  var premiumText = [];
-  if (dlMode === 'subito') {
-    extraCost += 100;
-    premiumText.push("Ordine Prioritario (Subito)");
-  } else if (dlMode === '1') {
-    extraCost += 50;
-    premiumText.push("Ordine Prioritario (Entro 1h)");
-  } else if (dlMode !== '0') {
-    premiumText.push("Consegna entro "+dlMode+"h");
-  }
+  var premiumArr = [];
+  if (dlMode === 'subito') { extraCost+=100; premiumArr.push('Consegna Subito (Priorità Massima)'); }
+  else if (dlMode === '1') { extraCost+=50; premiumArr.push('Consegna Entro 1 ora (Priorità Alta)'); }
   
-  var cbx = document.querySelectorAll('#premiumOptions input[type="checkbox"]:checked');
-  for (var i=0; i<cbx.length; i++) {
-    extraCost += parseInt(cbx[i].value, 10);
-    var optText = cbx[i].getAttribute('data-opt');
-    if (cbx[i].id === 'cbBenda') {
-      var rBenda = document.querySelector('input[name="optBenda"]:checked');
-      if (rBenda) optText += " (" + rBenda.value + ")";
-    } else if (cbx[i].id === 'cbManette') {
-      var rManette = document.querySelector('input[name="optManette"]:checked');
-      if (rManette) optText += " (" + rManette.value + ")";
-    } else if (cbx[i].id === 'cbVieni') {
-      var txtVieni = document.getElementById('txtVieni');
-      if (txtVieni && txtVieni.value.trim() !== '') optText += " (" + txtVieni.value.trim() + ")";
+  var cbs = document.querySelectorAll('#premiumOptions input[type="checkbox"]');
+  cbs.forEach(function(cb) {
+    if (cb.checked) {
+      extraCost += parseInt(cb.value, 10);
+      var pText = cb.getAttribute('data-opt');
+      var name = cb.getAttribute('name') || cb.id;
+      if (name === 'cbBenda') {
+        var who = document.querySelector('input[name="optBenda"]:checked');
+        if (who) pText += ' (' + who.value + ')';
+      } else if (name === 'cbManette') {
+        var whoM = document.querySelector('input[name="optManette"]:checked');
+        if (whoM) pText += ' (' + whoM.value + ')';
+      } else if (name === 'cbVieni') {
+        var txt = document.getElementById('txtVieni').value.trim();
+        pText += ' (' + (txt || 'Dove voglio io') + ')';
+      }
+      premiumArr.push(pText);
     }
-    premiumText.push(optText);
-  }
+  });
   
   var totalCost = r.cost + extraCost;
   var pts = myPts();
   if (pts < totalCost) { showToast('Punti insufficienti! Te ne servono ' + totalCost); return; }
-  
-  if (!confirm('Dettaglio Ordine:\nProdotto: '+r.name+'\nCosto Finale: '+totalCost+' pt\n\nConfermi l\'acquisto di questo ordine?')) {
-    return;
-  }
   
   var actualDl = '';
   if (dlMode !== '0') {
@@ -1240,17 +1231,34 @@ function submitClaim() {
     actualDl = d.toISOString();
   }
   
-  S.users[session].pts = pts - totalCost;
+  overlay = {
+    type: 'claim_confirm',
+    reward: r,
+    totalCost: totalCost,
+    actualDl: actualDl,
+    premiumArr: premiumArr
+  };
+  render();
+}
+
+function finalizeClaim() {
+  var o = overlay;
+  if (o.type !== 'claim_confirm') return;
+  var pts = myPts();
+  if (pts < o.totalCost) { showToast('Punti insufficienti!'); return; }
+  
+  S.users[session].pts = pts - o.totalCost;
   S.users[session].lastRewardClaim = new Date().toISOString();
   S.requests.push({
     id: Date.now()+'', by: session,
-    name: r.name, emoji: r.emoji || '🎁',
+    name: o.reward.name, emoji: o.reward.emoji || '🎁',
     requestedAt: new Date().toISOString(),
-    mode: 'deadline', deadline: actualDl, premium: premiumText, note: '', status: 'pending', cost: totalCost
+    mode: 'deadline', deadline: o.actualDl, premium: o.premiumArr, note: '', status: 'pending', cost: o.totalCost
   });
-  save(S); overlay = null;
-  notifyPartnerNewReward(r.name, actualDl);
-  showToast('Ordine acquistato! Il corriere lo evaderà presto.');
+  save(S);
+  notifyPartnerNewReward(o.reward.name, o.actualDl);
+  overlay = { type: 'claim_success', reward: o.reward };
+  render();
 }
 
 function markDone(rrId) {
@@ -1551,39 +1559,55 @@ function renderHero(pts, ptPts, ptName, ptOnline, flashAnsweredToday, u, dAgo) {
   var danger = dAgo >= 3;
   var warning = dAgo === 2;
   var safe = dAgo === 0 || dAgo === 1;
-  var actCount = getActivityCountToday();
   
-  var h = '<div class="balance-hero" style="background:linear-gradient(135deg,#0e1933,#162448);border-radius:24px;padding:26px 20px 20px;position:relative;overflow:hidden;box-shadow:0 12px 24px rgba(14,25,51,0.15)">';
+  var h = '<div class="balance-hero" style="background:linear-gradient(135deg,#5e83ca,#4268b3);border-radius:24px;padding:26px 20px 20px;position:relative;overflow:hidden;box-shadow:0 12px 24px rgba(66,104,179,0.2)">';
   
-  h += '<div style="position:absolute;top:-40px;right:-20px;width:140px;height:140px;background:radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 70%);border-radius:50%"></div>';
-
-  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;position:relative;z-index:2">';
-  h += '<div>';
-  h += '<div style="font-size:.7rem;opacity:.7;text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:4px;color:#b0c8f8">Il tuo saldo punti</div>';
-  h += '<div style="font-family:\'Playfair Display\',serif;font-size:3.2rem;font-weight:900;color:#fff;line-height:1;margin-bottom:10px">🔷 '+pts+'</div>';
-  h += '<div style="font-size:.78rem;color:#b0c8f8;font-weight:500;display:flex;align-items:center;gap:6px">';
-  h += '<span>'+esc(ptName)+': <strong>'+ptPts+' pt</strong></span>';
-  h += '<span style="opacity:.5">|</span>';
-  h += '<span style="display:flex;align-items:center;gap:4px">'+(ptOnline?'<span style="width:8px;height:8px;background:var(--green);border-radius:50%;display:inline-block;box-shadow:0 0 6px var(--green)"></span>':'<span style="width:8px;height:8px;background:rgba(255,255,255,0.3);border-radius:50%;display:inline-block"></span>')+(ptOnline?'<span style="color:#fff">Online</span>':'Offline')+'</span>';
-  h += '</div></div></div>';
+  h += '<div style="position:absolute;top:-40px;right:-20px;width:140px;height:140px;background:radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%);border-radius:50%"></div>';
 
   var dangerBg = danger ? 'rgba(231,76,60,0.2)' : (warning ? 'rgba(243,156,18,0.2)' : 'rgba(255,255,255,0.08)');
   var dangerBorder = danger ? 'rgba(231,76,60,0.4)' : (warning ? 'rgba(243,156,18,0.4)' : 'rgba(255,255,255,0.1)');
   var dangerColor = danger ? '#ffaaaa' : (warning ? '#ffd580' : '#fff');
   
-  var dAgoVal = !u.lastRewardClaim ? '<span style="font-size:1.4rem">✨</span>' : dAgo+'<span style="font-size:1rem;opacity:0.7">g</span>';
+  // Flash Sale Slider (Changes every 5 hours)
+  var epoch = Math.floor(Date.now() / (5 * 3600 * 1000));
+  var myRewards = S.rewards.filter(function(r) { return r.partner === session || r.partner === 'both'; });
+  var fSales = [];
+  if (myRewards.length > 0) {
+    // Deterministic shuffle
+    var a = myRewards.slice();
+    var seed = epoch;
+    for (var i = a.length - 1; i > 0; i--) {
+      var x = Math.sin(seed++) * 10000;
+      var rNum = x - Math.floor(x);
+      var j = Math.floor(rNum * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    fSales = a.slice(0, 3);
+  }
 
-  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;position:relative;z-index:2">';
-  h += '<div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:14px 12px;text-align:center">';
-  h += '<div style="font-size:1.6rem;font-weight:800;color:#fff;margin-bottom:2px;font-family:\'DM Sans\',sans-serif">'+actCount+'<span style="font-size:1rem;opacity:.6">/7</span></div>';
-  h += '<div style="font-size:.65rem;color:#b0c8f8;text-transform:uppercase;letter-spacing:.04em;font-weight:700">Attività Oggi</div>';
+  h += '<div style="position:relative;z-index:2">';
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px">';
+  h += '<div style="font-size:.85rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.05em">⚡ Flash Sale</div>';
+  var hrsLeft = 5 - (Math.floor(Date.now() / 3600000) % 5);
+  h += '<div style="font-size:.7rem;color:#e6effc;font-weight:600">Scade tra '+hrsLeft+'h</div>';
   h += '</div>';
-
-  h += '<div style="background:'+dangerBg+';border:1px solid '+dangerBorder+';border-radius:14px;padding:14px 12px;text-align:center;box-shadow:'+(danger?'0 0 16px rgba(231,76,60,0.3)':'none')+'">';
-  h += '<div style="font-size:1.6rem;font-weight:800;color:'+dangerColor+';margin-bottom:2px;font-family:\'DM Sans\',sans-serif">'+(danger?'⚠️':dAgoVal)+'</div>';
-  h += '<div style="font-size:.65rem;color:'+dangerColor+';text-transform:uppercase;letter-spacing:.04em;font-weight:700">'+(danger?'A RISCHIO!':(!u.lastRewardClaim?'Nuovo Utente':'Senza acquisti'))+'</div>';
-  h += '</div>';
-  h += '</div>';
+  
+  h += '<div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;margin:0 -20px;padding-left:20px;padding-right:20px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch">';
+  var fSeed = epoch;
+  fSales.forEach(function(fs) {
+    var fx = Math.sin(fSeed++) * 10000;
+    var dscPct = (fx - Math.floor(fx)) > 0.5 ? 0.10 : 0.05; // 10% or 5%
+    var dscCost = Math.floor(fs.cost * (1 - dscPct));
+    h += '<div style="flex:0 0 140px;scroll-snap-align:start;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:16px;padding:14px;position:relative;cursor:pointer" data-action="open-claim" data-arg="'+fs.id+'" data-arg2="'+dscCost+'">';
+    h += '<div style="position:absolute;top:-8px;right:-8px;background:var(--red);color:#fff;font-size:.65rem;font-weight:800;padding:4px 8px;border-radius:10px;box-shadow:0 4px 10px rgba(231,76,60,0.4)">-'+(dscPct*100)+'%</div>';
+    h += '<div style="font-size:2rem;margin-bottom:8px">'+(fs.emoji||'🎁')+'</div>';
+    h += '<div style="font-size:.78rem;font-weight:700;color:#fff;margin-bottom:12px;line-height:1.2;height:28px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">'+esc(fs.name)+'</div>';
+    h += '<div style="display:flex;align-items:end;gap:6px">';
+    h += '<div style="font-size:1.15rem;font-weight:800;color:#fff;font-family:\'Playfair Display\',serif">🔷 '+dscCost+'</div>';
+    h += '<div style="font-size:.7rem;color:rgba(255,255,255,0.4);text-decoration:line-through;margin-bottom:2px">'+fs.cost+'</div>';
+    h += '</div></div>';
+  });
+  h += '</div></div>';
 
   if (!u.lastRewardClaim) {
     h += '<div style="margin-top:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:12px;position:relative;z-index:2;cursor:pointer;transition:all 0.2s" onclick="document.querySelector(\'.ni[data-arg=shop]\').click()">';
@@ -1609,7 +1633,7 @@ function getActivityCountToday() {
   var count = 0;
   ALL_ACTIVITY_HOURS.forEach(function(h) {
     var slotKey = new Date().getFullYear()+'-'+new Date().getMonth()+'-'+new Date().getDate()+'-'+h;
-    if (sessionStorage.getItem('fq_done_' + slotKey) === 'answered') count++;
+    if (localStorage.getItem('fq_done_' + session + '_' + slotKey) === 'answered') count++;
   });
   return count;
 }
@@ -2120,6 +2144,8 @@ window.updateClaimTotal = function() {
 function renderOverlay() {
   if (!overlay) return '';
   if (overlay.type === 'reward_nudge') return renderRewardNudgeOverlay();
+  if (overlay.type === 'claim_confirm') return renderClaimConfirmOverlay();
+  if (overlay.type === 'claim_success') return renderClaimSuccessOverlay();
   if (overlay.type === 'order_detail') return renderOrderDetailOverlay();
   if (overlay.type === 'activity') {
     if (flashQ) return '<div class="overlay center"><div class="sheet rounded" style="overflow:hidden;padding:0">' + renderFlashQuestion() + '</div></div>';
@@ -2180,7 +2206,7 @@ function renderOverlay() {
   h += '</div>';
   h += '<div class="sheet-actions">';
   h += '<button class="btn btn-o btn-sm" data-action="cancel-overlay">Indietro</button>';
-  h += '<button class="btn btn-gold" data-action="submit-claim">Conferma Ordine 🛒</button>';
+  h += '<button class="btn btn-gold" data-action="prepare-claim">Conferma Ordine 🛒</button>';
   h += '</div></div></div>';
   return h;
 }
@@ -2328,6 +2354,43 @@ function renderRewardNudgeOverlay() {
   h += '<button class="btn btn-o btn-sm" data-action="fq-skip-claim" style="color:rgba(255,255,255,.4);border-color:rgba(255,255,255,.15)">Non ora</button>';
   h += '<button class="btn btn-gold" data-action="fq-claim">Vai ai premi 🎁</button>';
   h += '</div></div></div>';
+  return h;
+}
+
+function renderClaimConfirmOverlay() {
+  var o = overlay;
+  var h = '<div class="overlay center" style="padding:20px" data-action="close-overlay">';
+  h += '<div class="sheet rounded" style="padding:24px 20px;text-align:center;width:100%;max-width:380px">';
+  h += '<div style="font-size:3rem;margin-bottom:12px">🛍️</div>';
+  h += '<h2 style="color:var(--b2);font-family:\'Playfair Display\',serif;font-size:1.4rem;margin-bottom:8px">Riepilogo Ordine</h2>';
+  h += '<p style="font-size:.9rem;color:var(--muted);margin-bottom:20px">Stai per acquistare <strong style="color:var(--b3)">'+esc(o.reward.name)+'</strong></p>';
+  
+  h += '<div style="background:#f8faff;border-radius:12px;padding:16px;text-align:left;border:1px solid #e8f0fc;margin-bottom:20px">';
+  h += '<div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:.85rem"><span style="color:var(--muted)">Costo Base</span><span style="font-weight:700">🔷 '+o.reward.cost+' pt</span></div>';
+  if (o.premiumArr && o.premiumArr.length > 0) {
+    h += '<div style="margin-bottom:6px;font-size:.75rem;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:.05em">Opzioni aggiunte:</div>';
+    h += '<ul style="margin:0 0 10px 18px;padding:0;font-size:.8rem;color:var(--b3);font-weight:600">';
+    o.premiumArr.forEach(function(p){ h += '<li>'+esc(p)+'</li>'; });
+    h += '</ul>';
+  }
+  h += '<div style="display:flex;justify-content:space-between;border-top:1.5px dashed #d0daf0;padding-top:12px;margin-top:6px"><span style="font-size:.95rem;font-weight:800;color:var(--purple)">Totale Finale</span><span style="font-size:1.3rem;font-weight:800;color:var(--purple)">🔷 '+o.totalCost+' pt</span></div>';
+  h += '</div>';
+
+  h += '<div style="display:flex;gap:12px">';
+  h += '<button class="btn btn-o btn-full" data-action="cancel-overlay">Annulla</button>';
+  h += '<button class="btn btn-gold btn-full" data-action="finalize-claim">Acquista Ora 🚀</button>';
+  h += '</div></div></div>';
+  return h;
+}
+
+function renderClaimSuccessOverlay() {
+  var h = '<div class="overlay center" style="padding:20px;background:rgba(14,25,51,0.85);backdrop-filter:blur(8px)">';
+  h += '<div class="sheet rounded" style="padding:40px 24px 30px;text-align:center;width:100%;max-width:340px;box-shadow:0 20px 40px rgba(0,0,0,0.2)">';
+  h += '<div style="font-size:4rem;margin-bottom:16px">✅</div>';
+  h += '<h2 style="color:var(--b2);font-family:\'Playfair Display\',serif;font-size:1.6rem;margin-bottom:12px">Ordine Acquisito!</h2>';
+  h += '<p style="font-size:.9rem;color:var(--muted);margin-bottom:28px;line-height:1.5">Il tuo ordine per <strong style="color:var(--b3)">'+esc(overlay.reward.name)+'</strong> è andato a buon fine. Il partner riceverà la notifica!</p>';
+  h += '<button class="btn btn-gold btn-full" data-action="close-success" style="padding:14px;font-size:1rem;font-weight:800">Chiudi questa finestra</button>';
+  h += '</div></div>';
   return h;
 }
 
