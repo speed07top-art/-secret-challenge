@@ -1399,7 +1399,6 @@ function renderApp() {
     if (flashQ) page += renderFlashQuestion();
     else if (miniGame) page += renderMiniGame();
     page += renderHero(pts, ptPts, pname(pt), ptOnline, false, u, dAgo);
-    if (dAgo >= 3) page += renderMandatoryAlert();
     if (toConf.length > 0) {
       page += '<div class="sec-label">🔔 Conferma richiesta ('+toConf.length+')</div>';
       toConf.forEach(function(rr) { page += renderMyReqCard(rr); });
@@ -1412,7 +1411,8 @@ function renderApp() {
     var recent = myReqs.filter(function(r){return r.status!=='done_confirm';}).slice().reverse().slice(0,3);
     if (!recent.length) page += '<div class="empty"><span class="empty-ico">🔷</span><p>Nessuna attività ancora.<br>Vai allo Shop per iniziare!</p></div>';
     else recent.forEach(function(rr) { page += renderMyReqCard(rr); });
-    page += renderPointsCard();
+    page += '<div style="margin:14px 0"><button class="btn btn-p btn-full" style="padding:12px;border-radius:12px;font-size:.9rem;font-weight:700;display:flex;justify-content:center;align-items:center;gap:8px;box-shadow:0 6px 16px rgba(42,68,128,0.15);background:linear-gradient(135deg,var(--b6),var(--b4))" data-action="set-tab" data-arg="shop"><span style="font-size:1.1rem">🛍️</span> Acquista ora</button></div>';
+    page += renderWellnessWidget(me);
   }
 
 
@@ -1469,15 +1469,59 @@ function renderApp() {
 /* ── COMPONENTS ── */
 function renderHero(pts, ptPts, ptName, ptOnline, flashAnsweredToday, u, dAgo) {
   var danger = dAgo >= 3;
+  var warning = dAgo === 2;
+  var safe = dAgo === 0 || dAgo === 1;
   var actCount = getActivityCountToday();
-  var h = '<div class="balance-hero">';
-  h += '<div class="bal-label">Il tuo saldo</div>';
-  h += '<div class="bal-amount">🔷 '+pts+'</div>';
-  h += '<div class="bal-sub">'+esc(ptName)+': '+ptPts+' pt &nbsp;·&nbsp; '+(ptOnline?'🟢 online':'⬤ offline')+'</div>';
-  h += '<div class="bal-grid">';
-  h += '<div class="bal-stat"><div class="bal-stat-val">'+actCount+'/7</div><div class="bal-stat-lbl">Attività oggi</div></div>';
-  h += '<div class="bal-stat'+(danger?' danger':'')+'"><div class="bal-stat-val">'+(danger?'⚠️':dAgo+'g')+'</div><div class="bal-stat-lbl">'+(danger?'Penalità oggi!':'Senza premi')+'</div></div>';
-  h += '</div></div>';
+  
+  var h = '<div class="balance-hero" style="background:linear-gradient(135deg,#0e1933,#162448);border-radius:24px;padding:26px 20px 20px;position:relative;overflow:hidden;box-shadow:0 12px 24px rgba(14,25,51,0.15)">';
+  
+  h += '<div style="position:absolute;top:-40px;right:-20px;width:140px;height:140px;background:radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 70%);border-radius:50%"></div>';
+
+  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;position:relative;z-index:2">';
+  h += '<div>';
+  h += '<div style="font-size:.7rem;opacity:.7;text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:4px;color:#b0c8f8">Il tuo saldo punti</div>';
+  h += '<div style="font-family:\'Playfair Display\',serif;font-size:3.2rem;font-weight:900;color:#fff;line-height:1;margin-bottom:10px">🔷 '+pts+'</div>';
+  h += '<div style="font-size:.78rem;color:#b0c8f8;font-weight:500;display:flex;align-items:center;gap:6px">';
+  h += '<span>'+esc(ptName)+': <strong>'+ptPts+' pt</strong></span>';
+  h += '<span style="opacity:.5">|</span>';
+  h += '<span style="display:flex;align-items:center;gap:4px">'+(ptOnline?'<span style="width:8px;height:8px;background:var(--green);border-radius:50%;display:inline-block;box-shadow:0 0 6px var(--green)"></span>':'<span style="width:8px;height:8px;background:rgba(255,255,255,0.3);border-radius:50%;display:inline-block"></span>')+(ptOnline?'<span style="color:#fff">Online</span>':'Offline')+'</span>';
+  h += '</div></div></div>';
+
+  var dangerBg = danger ? 'rgba(231,76,60,0.2)' : (warning ? 'rgba(243,156,18,0.2)' : 'rgba(255,255,255,0.08)');
+  var dangerBorder = danger ? 'rgba(231,76,60,0.4)' : (warning ? 'rgba(243,156,18,0.4)' : 'rgba(255,255,255,0.1)');
+  var dangerColor = danger ? '#ffaaaa' : (warning ? '#ffd580' : '#fff');
+  
+  var dAgoVal = !u.lastRewardClaim ? '<span style="font-size:1.4rem">✨</span>' : dAgo+'<span style="font-size:1rem;opacity:0.7">g</span>';
+
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;position:relative;z-index:2">';
+  h += '<div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:14px 12px;text-align:center">';
+  h += '<div style="font-size:1.6rem;font-weight:800;color:#fff;margin-bottom:2px;font-family:\'DM Sans\',sans-serif">'+actCount+'<span style="font-size:1rem;opacity:.6">/7</span></div>';
+  h += '<div style="font-size:.65rem;color:#b0c8f8;text-transform:uppercase;letter-spacing:.04em;font-weight:700">Attività Oggi</div>';
+  h += '</div>';
+
+  h += '<div style="background:'+dangerBg+';border:1px solid '+dangerBorder+';border-radius:14px;padding:14px 12px;text-align:center;box-shadow:'+(danger?'0 0 16px rgba(231,76,60,0.3)':'none')+'">';
+  h += '<div style="font-size:1.6rem;font-weight:800;color:'+dangerColor+';margin-bottom:2px;font-family:\'DM Sans\',sans-serif">'+(danger?'⚠️':dAgoVal)+'</div>';
+  h += '<div style="font-size:.65rem;color:'+dangerColor+';text-transform:uppercase;letter-spacing:.04em;font-weight:700">'+(danger?'A RISCHIO!':(!u.lastRewardClaim?'Nuovo Utente':'Senza acquisti'))+'</div>';
+  h += '</div>';
+  h += '</div>';
+
+  if (!u.lastRewardClaim) {
+    h += '<div style="margin-top:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:12px;position:relative;z-index:2;cursor:pointer;transition:all 0.2s" onclick="document.querySelector(\'.ni[data-arg=shop]\').click()">';
+    h += '<div style="font-size:1.6rem;line-height:1">🛍️</div>';
+    h += '<div><div style="font-size:.8rem;font-weight:700;color:#fff;margin-bottom:3px">Benvenuto nello Shop!</div><div style="font-size:.7rem;color:rgba(176,200,248,0.9);line-height:1.4">Fai il tuo <strong>primo acquisto</strong> per sbloccare l\'analisi clinica di coppia. <strong>Tocca qui!</strong></div></div>';
+    h += '</div>';
+  } else if (danger) {
+    h += '<div style="margin-top:14px;background:rgba(231,76,60,0.15);border:1px dashed rgba(231,76,60,0.5);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;position:relative;z-index:2;cursor:pointer;transition:all 0.2s" onclick="document.querySelector(\'.ni[data-arg=shop]\').click()">';
+    h += '<div style="font-size:1.8rem;line-height:1">🚨</div>';
+    h += '<div><div style="font-size:.8rem;font-weight:700;color:#ffaaaa;margin-bottom:3px">Penalità Imminente!</div><div style="font-size:.7rem;color:rgba(255,170,170,0.85);line-height:1.4">Non fare pause così lunghe, sfoglia lo <strong>Shop</strong> e acquista qualcosa per disinnescare la penalità! <strong>Tocca qui</strong>.</div></div>';
+    h += '</div>';
+  } else if (warning) {
+    h += '<div style="margin-top:14px;background:rgba(243,156,18,0.15);border:1px dashed rgba(243,156,18,0.5);border-radius:12px;padding:10px;text-align:center;position:relative;z-index:2;cursor:pointer;font-size:.75rem;color:#ffd580;font-weight:600" onclick="document.querySelector(\'.ni[data-arg=shop]\').click()">';
+    h += '⏳ Attenzione: Sei a quota 2 giorni senza acquisti.<br>Rimedia subito prima della penalità!';
+    h += '</div>';
+  }
+
+  h += '</div>';
   return h;
 }
 
@@ -1513,107 +1557,184 @@ function getWeeklyIntimacyStats(me) {
   return stats;
 }
 
+function getExtendedBenessereStats(me) {
+  var now = new Date();
+  var reqs = S.requests.filter(function(r){ return r.status === 'done' || r.status === 'done_confirm'; });
+  
+  var wCount=0, mCount=0, prevMCount=0;
+  var myCount=0, ptCount=0;
+  var items = {};
+  var weeksMap = {}; 
+  
+  reqs.forEach(function(r) {
+    var dStr = r.confirmedAt || r.doneAt || r.ts;
+    if (!dStr) return;
+    var d = new Date(dStr);
+    var diffDays = (now - d) / (1000 * 60 * 60 * 24);
+    
+    if (diffDays <= 7) {
+      wCount++;
+      if (r.by === me) myCount++; else ptCount++;
+    }
+    if (diffDays <= 30) mCount++;
+    else if (diffDays <= 60) prevMCount++;
+    
+    var wIdx = Math.floor(diffDays / 7);
+    weeksMap[wIdx] = (weeksMap[wIdx] || 0) + 1;
+    
+    items[r.rewardName || 'Varie'] = true;
+  });
+
+  var streak = 0;
+  if (!weeksMap[0] && weeksMap[1]) {
+    for(var j=1; j<52; j++) {
+      if(weeksMap[j]>0) streak++; else break;
+    }
+  } else if (weeksMap[0]) {
+    for (var i=0; i<52; i++) {
+      if (weeksMap[i] > 0) streak++;
+      else break;
+    }
+  }
+  
+  var trend = mCount - prevMCount;
+  var variety = Object.keys(items).length;
+  
+  return {
+    w: wCount, m: mCount, prevM: prevMCount,
+    my: myCount, pt: ptCount,
+    streak: streak,
+    trend: trend,
+    variety: variety,
+    total: reqs.length
+  };
+}
+
 function renderBenessereTab(me, pt) {
-  var wStats = getWeeklyIntimacyStats(me);
-  var wCount = wStats.total;
-  var myCount = wStats.me;
-  var ptCount = wStats.pt;
-  var totalCount = getLifetimeIntimacyCount();
-
-  var evalTitle = ''; var evalText = ''; var evalAction = ''; var evalColor = '';
+  var xStats = getExtendedBenessereStats(me);
+  var wCount = xStats.w;
+  var mCount = xStats.m;
+  var totalCount = xStats.total;
   
-  if (wCount === 0) {
-    evalColor = '#ff8888';
-    evalTitle = '❄️ Clima Freddo (0 ordini)';
-    evalText = 'Questa settimana non avete ancora goduto dei benefici dell\'intimità. Rischio di calo fisiologico di ossitocina. La routine sta prendendo il sopravvento?';
-    evalAction = '👉 Agisci ora: Vai allo Shop e acquista un ordine per voi due!';
-  } else if (wCount === 1) {
-    evalColor = '#ffcc66';
-    evalTitle = '✨ Buon Inizio (1 ordine)';
-    evalText = 'Siete sulla strada giusta, ma c\'è un enorme potenziale inespresso. La scienza suggerisce che la costanza è la chiave per ridurre lo stress lavorativo e personale.';
-    evalAction = '👉 Consiglio: Provate a raddoppiare questa settimana per massimizzare le endorfine!';
-  } else if (wCount >= 2 && wCount <= 3) {
+  var evalColor, evalTitle, phaseDesc;
+  var trendStr = '';
+  
+  if (xStats.trend > 0) trendStr = '📈 In crescita vs mese scorso';
+  else if (xStats.trend < 0) trendStr = '📉 In calo vs mese scorso';
+  else trendStr = '⚖️ Frequenza stabile';
+  
+  if (wCount === 0 && xStats.streak === 0) {
+    evalColor = '#ffb6c1';
+    evalTitle = 'Fase: Riscoperta 🌱';
+    phaseDesc = 'Ogni periodo di pausa è un\'opportunità straordinaria per sorprendersi a vicenda da zero e creare un impatto emotivo ancora più forte.';
+  } else if (wCount >= 2 && xStats.streak >= 2) {
     evalColor = '#88ffb0';
-    evalTitle = '❤️ Ritmo Ideale ('+wCount+' ordini)';
-    evalText = 'Ottimo lavoro! 2-3 volte a settimana è considerata la frequenza d\'oro per rafforzare le difese immunitarie e mantenere altissima l\'affinità emotiva.';
-    evalAction = '👉 Continuate così: Il vostro legame si sta arricchendo a ogni nuovo ordine!';
+    evalTitle = 'Fase: Luna di Miele Attiva 🍯';
+    phaseDesc = 'Siete in perfetta sintonia ritmica! Continuate a mixare i regali nello Shop per mantenere questa incredibile energia e passione ad altissimi livelli.';
   } else {
-    evalColor = '#ff88e0';
-    evalTitle = '🔥 Fuoco e Fiamme ('+wCount+' ordini)';
-    evalText = 'Siete in uno stato di grazia assoluta! Livelli record di dopamina, stress totalmente azzerato e una connessione empatica letteralmente fuori scala.';
-    evalAction = '👉 Perfetto: State vivendo al massimo delle potenzialità fisiche e mentali.';
+    evalColor = '#ffcc66';
+    evalTitle = 'Fase: Consolidamento 🤝';
+    phaseDesc = 'State costruendo fondamenta chimiche molto stabili. Usate l\'app per variare la routine, basta una piccolissima sorpresa per svoltare la serata!';
   }
 
-  var h = '<div class="head" style="margin-bottom:15px"><h2>Benessere Sensoriale</h2><p>La salute passa anche dalla felicità di coppia</p></div>';
+  var h = '<div class="head" style="margin-bottom:15px"><h2>Benessere di Coppia</h2><p>Dati e insight scientifici sulle vostre affinità</p></div>';
 
-  h += '<div style="margin-bottom:20px;background:linear-gradient(135deg,#8a2846,#4a152e);border-radius:22px;padding:26px 20px;color:white;position:relative;overflow:hidden;flex-shrink:0;box-shadow:0 8px 16px rgba(138,40,70,0.15)">';
-  h += '<div style="font-size:.7rem;opacity:.7;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:4px">Contatore Amore Assoluto</div>';
-  h += '<div style="font-family:\'Playfair Display\',serif;font-size:2.8rem;font-weight:700;color:#ffb6c1;line-height:1.1;margin-bottom:8px">'+totalCount+' <span style="font-size:1.2rem;font-weight:400;color:white;font-family:\'DM Sans\',sans-serif">ordini totali</span></div>';
-  h += '<div style="font-size:.75rem;opacity:.8;margin-top:5px;line-height:1.4">Ogni ordine completato è un investimento reale nella vostra salute fisica e mentale. Continuate a collezionare momenti!</div>';
-  h += '</div>';
-
-  var compTitle = '⚖️ Sfida di Coppia (Ultimi 7 Giorni)';
-  var compSubtitle = '';
-  if (myCount > ptCount) compSubtitle = '🏆 Stai guidando tu questa settimana! Stai portando enormi benefici alla coppia.';
-  else if (ptCount > myCount) compSubtitle = '🔥 '+esc(pname(pt))+' è in vantaggio! Corri ad acquistare un ordine per recuperare.';
-  else if (myCount > 0 && myCount === ptCount) compSubtitle = '🤝 Siete in perfetto pareggio! Che sintonia spettacolare.';
-  else compSubtitle = '😴 Nessuno dei due ha ancora ordinato nulla. Chi farà il primo passo?';
-
-  var maxBar = Math.max(myCount, ptCount, 1);
-  var myPct = Math.round((myCount / maxBar) * 100);
-  var ptPct = Math.round((ptCount / maxBar) * 100);
-
-  h += '<div class="sec-label" style="margin-top:5px">'+compTitle+'</div>';
-  h += '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.02);border:1px solid #e0eaf8">';
-  h += '<div style="font-size:.75rem;color:var(--muted);margin-bottom:15px;text-align:center;line-height:1.4"><em>"'+compSubtitle+'"</em></div>';
+  h += '<div class="sec-label">📊 Metriche di Costanza</div>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">';
   
-  h += '<div style="margin-bottom:12px">';
-  h += '<div style="display:flex;justify-content:space-between;font-size:.8rem;color:var(--b3);font-weight:700;margin-bottom:4px"><span>Tu ('+esc(pname(me))+')</span><span>'+myCount+' ordini</span></div>';
-  h += '<div style="background:var(--b10);height:10px;border-radius:5px;overflow:hidden"><div style="background:var(--purple);height:100%;width:'+myPct+'%;border-radius:5px;transition:width 0.5s"></div></div>';
+  h += '<div style="background:var(--surface);border-radius:16px;padding:16px;border:1px solid #e0eaf8;text-align:center">';
+  h += '<div style="font-size:2.2rem;font-weight:800;color:var(--b3);line-height:1;margin-bottom:4px;font-family:\'Playfair Display\',serif">'+mCount+'</div>';
+  h += '<div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase">Ordini 30 Giorni</div>';
+  h += '<div style="font-size:.65rem;color:'+(xStats.trend<0?'var(--muted)':'var(--green)')+';margin-top:6px">'+trendStr+'</div>';
   h += '</div>';
 
-  h += '<div>';
-  h += '<div style="display:flex;justify-content:space-between;font-size:.8rem;color:var(--b3);font-weight:700;margin-bottom:4px"><span>Partner ('+esc(pname(pt))+')</span><span>'+ptCount+' ordini</span></div>';
-  h += '<div style="background:var(--b10);height:10px;border-radius:5px;overflow:hidden"><div style="background:#ff99bb;height:100%;width:'+ptPct+'%;border-radius:5px;transition:width 0.5s"></div></div>';
+  h += '<div style="background:var(--surface);border-radius:16px;padding:16px;border:1px solid #e0eaf8;text-align:center">';
+  h += '<div style="font-size:2.2rem;font-weight:800;color:var(--b3);line-height:1;margin-bottom:4px;font-family:\'Playfair Display\',serif">'+xStats.streak+'<span style="font-size:1rem;color:var(--muted);font-family:\'DM Sans\',sans-serif"> sett.</span></div>';
+  h += '<div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase">Streak Consecutivi</div>';
+  var aboveAvg = xStats.streak > 2;
+  h += '<div style="font-size:.65rem;color:'+(aboveAvg?'var(--green)':'var(--b4)')+';margin-top:6px">'+(aboveAvg?'Sopra la media (+2 sett)':'Media coppie simili: 2 sett.')+'</div>';
   h += '</div>';
   h += '</div>';
 
-  h += '<div class="sec-label">📊 Valutazione Settimanale Congiunta</div>';
-  h += '<div style="padding:16px;border-radius:12px;margin-bottom:20px;background:rgba(30,15,25,0.6);border:1px solid '+evalColor+'33;">';
-  h += '<h3 style="color:'+evalColor+';font-size:1.05rem;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px">'+evalTitle+'</h3>';
-  h += '<p style="font-size:.8rem;line-height:1.4;margin-bottom:10px;color:#d0b0c0;text-align:center">'+evalText+'</p>';
-  h += '<p style="font-size:.75rem;font-weight:600;color:'+evalColor+';text-align:center">'+evalAction+'</p>';
+  h += '<div style="margin-bottom:24px;background:linear-gradient(135deg,#8a2846,#4a152e);border-radius:24px;padding:24px;color:white;position:relative;overflow:hidden;box-shadow:0 12px 24px rgba(138,40,70,0.15)">';
+  h += '<div style="font-size:.7rem;opacity:.8;text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:6px">Analisi Emotiva</div>';
+  h += '<div style="font-family:\'Playfair Display\',serif;font-size:1.7rem;font-weight:800;color:'+evalColor+';line-height:1.2;margin-bottom:10px">'+evalTitle+'</div>';
+  h += '<div style="font-size:.85rem;opacity:.95;line-height:1.45;margin-bottom:18px">'+phaseDesc+'</div>';
+  h += '<div style="background:rgba(255,150,180,0.15);padding:12px 14px;border-radius:14px;font-size:.75rem;display:flex;align-items:center;gap:12px">';
+  h += '<span style="font-size:1.6rem">🎯</span> <span style="line-height:1.4"><strong>Sfida di questa settimana:</strong><br/>'+(xStats.variety < 3 ? 'La routine ha preso piede. Osate acquistando un premio completamente esotico che non avete mai provato!' : 'Avete un\'ottima varietà! Provate a piazzare un ordine nel momento più imprevedibile della giornata.')+'</span>';
+  h += '</div>';
   h += '</div>';
 
-  var insightTitle = '';
-  var i1, i2, i3;
-  if (myCount >= 1) {
-    insightTitle = 'Vantaggi per la Tua Salute (Stai andando alla grande!)';
-    i1 = { t: '🛡️ Scudo Immunitario Attivo', d: 'Acquistando regolarmente, stai innalzando i tuoi livelli corporei di immunoglobina A (IgA) fino al +30%. Le tue barriere contro i virus stagionali sono fortissime grazie alla tua costanza.' };
-    i2 = { t: '🧠 Stress Sotto Controllo', d: 'Stai letteralmente inondando il tuo cervello di ossitocina e prolattina. Il tuo cortisolo si sta abbassando in modo fisiologico, garantendoti maggiore lucidità sul lavoro e un sonno profondamente ristoratore.' };
-    i3 = { t: '💍 Connessione Emotiva Assicurata', d: 'Con questo numero di ordini, stai forgiando chimicamente il legame di coppia. Recenti studi clinici confermano che stai riducendo a zero il rischio di allentamenti emotivi!' };
-  } else {
-    insightTitle = 'Occasioni Mancate (Cosa stai perdendo)';
-    i1 = { t: '📉 Difese Immunitarie Inespresse', d: 'Stai rinunciando a un boost immunitario gratuito. Senza ordini regolari, perdi la possibilità di innalzare l\'immunoglobina A (IgA), lasciando il tuo corpo fisicamente più esposto ai malanni stagionali.' };
-    i2 = { t: '🤯 Accumulo Silente di Cortisolo', d: 'Le tensioni quotidiane non vengono scaricate adeguatamente: il cortisolo si sta accumulando. Se non agisci, potresti avvertire cali di umore, nervosismo ingiustificato e riscontrare un sonno di bassa qualità e meno riposante.' };
-    i3 = { t: '⚠️ Rischio Freddezza Affettiva', d: 'La scienza lo conferma inesorabilmente: non fare ordini intimi e rallentare i contatti allenta gradualmente la comunicazione empatica. Usa lo Shop oggi per rompere la routine ed evitare che la coppia si raffreddi!' };
+  var mood = (xStats.streak >= 2) ? 'Radioso ✨' : ((wCount >= 1) ? 'In Miglioramento 🍃' : 'In cerca di stimoli 💭');
+  var sleep = (wCount >= 2) ? 'Profondo (stima 85%) 💤' : 'Variabile (stima 70%) 🛌';
+  var stress = (mCount >= 4) ? 'Basso, in rilascio 🧘' : 'In moderato accumulo 🔋';
+
+  h += '<div class="sec-label">🧠 Impatto Fisiologico e Sonno (AI est.)</div>';
+  h += '<div style="background:#fff;border-radius:16px;padding:16px 20px;margin-bottom:24px;border:1px solid #e0eaf8">';
+  
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f4f8;padding-bottom:14px;margin-bottom:14px">';
+  h += '<div style="font-size:.85rem;font-weight:600;color:var(--b3)"><span style="margin-right:8px;font-size:1.1rem">🎭</span>Umore di Coppia</div>';
+  h += '<div style="font-size:.8rem;color:var(--b5);font-weight:700">'+mood+'</div>';
+  h += '</div>';
+
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f4f8;padding-bottom:14px;margin-bottom:14px">';
+  h += '<div style="font-size:.85rem;font-weight:600;color:var(--b3)"><span style="margin-right:8px;font-size:1.1rem">⌚</span>Qualità Sonno REM</div>';
+  h += '<div style="font-size:.8rem;color:var(--b5);font-weight:700">'+sleep+'</div>';
+  h += '</div>';
+
+  h += '<div style="display:flex;justify-content:space-between;align-items:center">';
+  h += '<div style="font-size:.85rem;font-weight:600;color:var(--b3)"><span style="margin-right:8px;font-size:1.1rem">📉</span>Livello Cortisolo</div>';
+  h += '<div style="font-size:.8rem;color:var(--b5);font-weight:700">'+stress+'</div>';
+  h += '</div>';
+  h += '</div>';
+
+  var alignPct = 0;
+  var minPart = 0, maxPart = 1;
+  if(totalCount > 0) {
+    minPart = Math.min(xStats.my, xStats.pt);
+    maxPart = Math.max(xStats.my, xStats.pt, 1);
+    alignPct = Math.round((minPart / maxPart) * 100);
   }
+  
+  var alignText = '';
+  if (totalCount === 0) alignText = 'Siete all\'inizio della vostra avventura. Scoprite la gioia di sorprendervi.';
+  else if (alignPct >= 80) alignText = 'Sincronizzazione perfetta! Ognuno dà esattamente ciò che riceve dall\'altro.';
+  else if (alignPct >= 40) alignText = 'Ottima dinamica, ma sembra che uno dei due giochi più in attacco! Chi riequilibrerà i ruoli?';
+  else alignText = 'Dinamica sbilanciata. L\'amore è reciprocità: sorprendi il tuo partner per ringraziarlo!';
 
-  h += '<div class="sec-label">🔍 '+insightTitle+'</div>';
-
-  h += '<div style="background:rgba(255,150,180,0.05);border:1px solid rgba(255,150,180,0.15);border-radius:12px;padding:15px;margin-bottom:12px">';
-  h += '<div style="color:#ff99bb;font-size:.85rem;font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:6px">'+i1.t+'</div>';
-  h += '<div style="font-size:.78rem;color:#c8d8f8;line-height:1.5">'+i1.d+'</div>';
+  h += '<div class="sec-label">💞 Bilancio Relazionale ("Iniziative")</div>';
+  h += '<div style="background:#fff;border-radius:18px;padding:20px;margin-bottom:24px;border:1px solid #e0eaf8">';
+  
+  h += '<div style="display:flex;align-items:center;gap:18px;margin-bottom:18px">';
+  h += '<div style="width:68px;height:68px;flex-shrink:0;border-radius:50%;background:conic-gradient(var(--b4) '+alignPct+'%, var(--surface) 0);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.05)">';
+  h += '<div style="width:54px;height:54px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;color:var(--b3)">'+alignPct+'%</div>';
+  h += '</div>';
+  h += '<div style="flex:1">';
+  h += '<div style="font-size:.9rem;font-weight:800;color:var(--b3);margin-bottom:4px">Indice Allineamento</div>';
+  h += '<div style="font-size:.72rem;color:var(--muted);line-height:1.45">'+alignText+'</div>';
+  h += '</div>';
   h += '</div>';
 
-  h += '<div style="background:rgba(255,150,180,0.05);border:1px solid rgba(255,150,180,0.15);border-radius:12px;padding:15px;margin-bottom:12px">';
-  h += '<div style="color:#ff99bb;font-size:.85rem;font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:6px">'+i2.t+'</div>';
-  h += '<div style="font-size:.78rem;color:#c8d8f8;line-height:1.5">'+i2.d+'</div>';
+  h += '<div style="background:linear-gradient(to right, rgba(235,240,255,0.8), rgba(240,230,250,0.8));border-radius:14px;padding:14px;display:flex;justify-content:space-between;align-items:center;border:1px solid #e2dcf4">';
+  h += '<div style="font-size:.75rem;color:var(--b3);font-weight:700">Traguardo in corso</div>';
+  var nextTarget = (Math.floor(xStats.total / 10) + 1) * 10;
+  var left = nextTarget - xStats.total;
+  if (xStats.total === 0) h += '<div style="font-size:.75rem;color:var(--purple);font-weight:800">1° ordine insieme! 🔥</div>';
+  else h += '<div style="font-size:.75rem;color:var(--purple);font-weight:800">Mancano '+left+' ai '+nextTarget+' ordini!</div>';
   h += '</div>';
 
-  h += '<div style="background:rgba(255,150,180,0.05);border:1px solid rgba(255,150,180,0.15);border-radius:12px;padding:15px;margin-bottom:20px">';
-  h += '<div style="color:#ff99bb;font-size:.85rem;font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:6px">'+i3.t+'</div>';
-  h += '<div style="font-size:.78rem;color:#c8d8f8;line-height:1.5">'+i3.d+'</div>';
+  h += '</div>';
+
+  var month = new Date().getMonth();
+  var seasonText = '';
+  if (month >= 2 && month <= 4) seasonText = '🌸 <strong>Primavera Rivelata:</strong> Le energie si risvegliano naturalmente, ottimo momento per alzare i battiti ed esplorare nuove sfaccettature della coppia.';
+  else if (month >= 5 && month <= 7) seasonText = '☀️ <strong>Calore Estivo:</strong> Le alte temperature serali possono indurre inerzia fisiologica. Sfruttate le fresche mattinate del weekend!';
+  else if (month >= 8 && month <= 10) seasonText = '🍂 <strong>Autunno Romantico:</strong> Con i primi freddi, la ricerca neurologica di calore umano e coccole si impenna. Assecondate questo istinto formidabile.';
+  else seasonText = '❄️ <strong>Rifugio Invernale:</strong> Il sistema immunitario viene provato. È scientificamente provato che i momenti di vicinanza creano i perfetti anticorpi emotivi e fisici.';
+
+  h += '<div style="text-align:center;padding:10px 20px 30px">';
+  h += '<div style="font-size:.7rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:700;margin-bottom:10px">Insight Stagionale del Mese</div>';
+  h += '<div style="font-size:.78rem;color:var(--b4);line-height:1.5">'+seasonText+'</div>';
   h += '</div>';
 
   return h;
@@ -1622,14 +1743,6 @@ function renderBenessereTab(me, pt) {
 function renderMandatoryAlert() {
   return '<div class="mandatory-alert"><h4>⚠️ Fai un nuovo ordine!</h4><p>Sono passati 3+ giorni dall\'ultimo acquisto. Se non spendi i tuoi punti oggi, perdi 500 punti per inattività commerciale.<br>Vai allo <strong>Shop</strong>.</p></div>';
 }
-
-var POINTS_INFO = [
-  {icon:'⚡', label:'Domanda Flash — risposta corretta', val:'+100 pt', valColor:'var(--green)', body:'Alle 15:00, 18:00 e 20:00 ricevi una domanda di cultura generale. Se rispondi correttamente guadagni 100 punti.', red:false},
-  {icon:'❌', label:'Domanda Flash — risposta sbagliata', val:'-50 pt', valColor:'var(--red)', body:'Se sbagli la domanda flash perdi 50 punti. Nessuna penalità se non rispondi — la domanda scade alla fine dell\u2019ora.', red:false},
-  {icon:'🎲', label:'Mini-Giochi (Ruota, Gratta, Slot, Dado)', val:'0-250 pt', valColor:'var(--purple)', body:'Alle 16:00, 17:00, 19:00 e 21:00 appare un mini-gioco diverso. Puoi vincere da 0 a 250 punti per gioco!', red:false},
-  {icon:'⚠️', label:'Inattività premi (3 giorni)', val:'-500 pt', valColor:'var(--red)', body:'Devi riscattare almeno un premio ogni 3 giorni. Se non lo fai perdi 500 punti automaticamente. I premi si riscattano sempre — non aspettare!', red:true},
-  {icon:'🛍', label:'Acquista un Ordine', val:'- costo', valColor:'var(--b5)', body:'Nello Shop puoi fare compere! Scegli un\'esperienza, pagala coi tuoi punti e indica al partner entro quando o a che ora vuoi che venga "consegnata". Dopo aver guadagnato punti, fai shopping: non tenerli fermi!', red:false}
-];
 
 /* Pure DOM toggle — no render(), no scroll jump */
 function toggleAcc(idx, triggerEl) {
@@ -1646,18 +1759,67 @@ function toggleAcc(idx, triggerEl) {
   });
 }
 
-function renderPointsCard() {
-  var h = '<div class="card"><div class="card-title">📊 Come funzionano i punti</div>';
-  h += '<p style="font-size:.75rem;color:var(--muted);margin-bottom:12px">Tocca una voce per i dettagli.</p>';
-  POINTS_INFO.forEach(function(r, i) {
-    h += '<div class="acc-row">';
-    h += '<div class="acc-header" data-action="toggle-acc" data-arg="'+i+'">';
-    h += '<span style="font-size:.82rem;color:var(--ink)">'+r.icon+' '+esc(r.label)+'</span>';
-    h += '<div class="acc-right"><span class="acc-val" style="color:'+r.valColor+'">'+r.val+'</span><span class="acc-arrow">▾</span></div>';
+function renderWellnessWidget(me) {
+  var wStats = getWeeklyIntimacyStats(me);
+  var wCount = wStats.total;
+  
+  var title, desc, i1, i2, i3;
+  var bgGrad, titleColor, descColor, accBg, accBorder;
+
+  if (wCount >= 2) {
+    title = '📈 Ritmo Ideale Benessere';
+    desc = 'State mantenendo lo scudo immunitario e abbassando il cortisolo.';
+    bgGrad = 'linear-gradient(135deg,rgba(46,204,113,0.12),rgba(46,204,113,0.04))';
+    titleColor = '#1a9e50';
+    descColor = '#2d6a4f';
+    accBg = 'rgba(46,204,113,0.1)';
+    accBorder = 'rgba(46,204,113,0.2)';
+    i1 = { icon:'🛡️', t:'Scudo Immunitario', d:'Livelli di IgA in crescita. Barriere più forti contro lo stress e la fatica.' };
+    i2 = { icon:'🧠', t:'Meno Cortisolo', d:'Ossitocina in circolo: maggiore lucidità e sonno profondamente ristoratore.' };
+    i3 = { icon:'💍', t:'Connessione Assicurata', d:'Stai forgiando chimicamente il legame, azzerando il rischio di distacchi emotivi.' };
+  } else if (wCount === 1) {
+    title = '✨ Buon Inizio Benessere';
+    desc = 'Il corpo inizia a produrre endorfine, ma l\'inerzia fa scendere i livelli in fretta.';
+    bgGrad = 'linear-gradient(135deg,rgba(243,156,18,0.12),rgba(243,156,18,0.04))';
+    titleColor = '#d68910';
+    descColor = '#7e5109';
+    accBg = 'rgba(243,156,18,0.1)';
+    accBorder = 'rgba(243,156,18,0.2)';
+    i1 = { icon:'🛡️', t:'Scudo Immunitario', d:'Livelli base di IgA attivi. Serve più costanza per respingere lo stress.' };
+    i2 = { icon:'🧠', t:'Meno Cortisolo', d:'L\'umore è migliorato, ma i livelli di serotonina torneranno a scendere senza ritmi regolari.' };
+    i3 = { icon:'💍', t:'Legame Positivo', d:'La distanza si assottiglia. Raddoppia il numero per cementificare l\'avvicinamento.' };
+  } else {
+    title = '📉 Allarme Benessere';
+    desc = 'Rischio di calo fisiologico di ossitocina. La scienza sconsiglia le pause ritmiche prolungate.';
+    bgGrad = 'linear-gradient(135deg,#8a2846,#4a152e)';
+    titleColor = '#ffb6c1';
+    descColor = 'rgba(255,255,255,0.85)';
+    accBg = 'rgba(255,150,180,0.15)';
+    accBorder = 'rgba(255,150,180,0.25)';
+    i1 = { icon:'📉', t:'Difese Inespresse', d:'Senza ordini regolari, lasci il tuo corpo più esposto ai picchi di stress.' };
+    i2 = { icon:'🤯', t:'Accumulo di Tensioni', d:'Il cortisolo si sta accumulando. Potresti avvertire nervosismo e sonno instabile.' };
+    i3 = { icon:'⚠️', t:'Rischio Freddezza', d:'Non fare ordini intimi allenta la comunicazione empatica. Usa lo Shop oggi per rimediare!' };
+  }
+
+  var h = '<div class="card" style="background:'+bgGrad+';border-color:'+accBorder+';border-radius:18px">';
+  h += '<div class="card-title" style="color:'+titleColor+';margin-bottom:6px">'+title+'</div>';
+  h += '<p style="font-size:.78rem;color:'+descColor+';margin-bottom:14px;line-height:1.45">'+desc+'</p>';
+  
+  var rows = [i1, i2, i3];
+  rows.forEach(function(r, i) {
+    h += '<div class="acc-row" style="border-bottom:1px solid '+accBorder+'">';
+    h += '<div class="acc-header" style="padding:9px 0" data-action="toggle-acc" data-arg="'+i+'">';
+    h += '<span style="font-size:.82rem;color:'+titleColor+';font-weight:700">'+r.icon+' '+esc(r.t)+'</span>';
+    h += '<div class="acc-right"><span class="acc-arrow" style="color:'+titleColor+'">▾</span></div>';
     h += '</div>';
-    h += '<div class="acc-body '+(r.red?'red':'blue')+'">'+esc(r.body)+'</div>';
+    h += '<div class="acc-body blue" style="font-size:.78rem;color:'+descColor+';background:'+accBg+';border:1px solid '+accBorder+'">'+esc(r.d)+'</div>';
     h += '</div>';
   });
+
+  h += '<div style="margin-top:14px;border-top:1px solid '+accBorder+';padding-top:14px">';
+  h += '<button class="btn btn-sm" data-action="set-tab" data-arg="benessere" style="width:100%;font-weight:700;color:'+titleColor+';background:'+accBg+';border:1px solid '+accBorder+';border-radius:12px;cursor:pointer;font-family:\'DM Sans\',sans-serif">Analisi clinica completa →</button>';
+  h += '</div>';
+  
   h += '</div>';
   return h;
 }
