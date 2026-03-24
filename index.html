@@ -287,6 +287,7 @@ function handleAction(action, el, e) {
     case 'adm-logout':     session = null; adminAuthed = false; sessionStorage.removeItem('adm_ok'); render(); break;
     case 'set-tab':        tab = arg; render(); break;
     case 'set-adm-tab':    adminTab = arg; render(); break;
+    case 'toggle-history':  showHistory = !showHistory; render(); break;
 
     case 'open-claim':     openClaim(arg); break;
     case 'set-mode':       claimMode = arg; render(); break;
@@ -296,6 +297,11 @@ function handleAction(action, el, e) {
     case 'mark-done':      markDone(arg); break;
     case 'confirm-done':   confirmDone(arg, arg2 === 'yes'); break;
     case 'declare-unfulfilled': declareUnfulfilled(arg); break;
+    case 'report-late':    reportLate(arg); break;
+    case 'view-order':     overlay = {type:'order_detail', id:arg, isExec: arg2 === '1'}; render(); break;
+    case 'open-activity':  overlay = {type:'activity'}; render(); break;
+    case 'fq-claim':       overlay = null; tab = 'shop'; render(); break;
+    case 'fq-skip-claim':  overlay = null; render(); break;
     case 'toggle-acc':     toggleAcc(+arg, el); break;
     case 'ob-next':        obStep++; render(); break;
     case 'ob-back':        obStep--; render(); break;
@@ -508,6 +514,7 @@ var quizSess = null; // kept for compatibility, unused
 var claimMode = 'deadline';
 var expandedInfo = {};
 var onlineUsers = {};
+var showHistory = false;
 
 /* ── FLASH QUESTION STATE ── */
 var flashQ = null;
@@ -761,6 +768,8 @@ function checkFlashQuestion() {
         }
       }
     }, 1000);
+    // Auto-open as overlay popup
+    overlay = {type: 'activity'};
     render();
 
   } else if (isGameHour()) {
@@ -777,6 +786,8 @@ function checkFlashQuestion() {
       gameState: initGameState(gt.type)
     };
 
+    // Auto-open as overlay popup
+    overlay = {type: 'activity'};
     render();
   }
 }
@@ -802,8 +813,8 @@ function answerFlashQ(optIdx) {
 
   render();
 
-  // After short delay, show the shop popup
-  showShopNudgeAfterDelay();
+  // After short delay, show the shop popup — only if correct answer earned points
+  if (ok) showShopNudgeAfterDelay();
 }
 
 function dismissFlashQ() {
@@ -1299,6 +1310,29 @@ function declareUnfulfilled(rrId) {
   render();
 }
 
+function reportLate(rrId) {
+  var i = S.requests.findIndex(function(r) { return r.id === rrId; });
+  if (i < 0) return;
+  var req = S.requests[i];
+  if (!confirm('Segnalare il ritardo di consegna?\n\nRiceverai un rimborso del 30% e al partner verrà addebitata una penale del 50% del valore dell\'ordine.')) return;
+  var rCost = req.cost || 100;
+  var executor = req.by === 'giulia' ? 'stefano' : 'giulia';
+  var refund = Math.floor(rCost * 0.3);
+  var penalty = Math.floor(rCost * 0.5);
+  S.users[req.by].pts = (S.users[req.by].pts || 0) + refund;
+  S.users[executor].pts = Math.max(0, (S.users[executor].pts || 0) - penalty);
+  req.status = 'expired';
+  req.latePenaltyApplied = true;
+  req.refundAmt = refund;
+  req.penaltyAmt = penalty;
+  req.cancelledAt = new Date().toISOString();
+  save(S);
+  showToast('Ritardo segnalato. Rimborsati ' + refund + ' pt. Penale ' + penalty + ' pt al partner.', 4000);
+  var topic = S.users[executor] && S.users[executor].ntfyTopic;
+  if (topic) ntfySend(topic, '⚠️ Ritardo segnalato!', 'Il cliente ha segnalato un ritardo sull\'ordine: ' + req.name + '. Penale di -' + penalty + ' pt addebitata.', ['warning']);
+  render();
+}
+
 function doAdmLogin() {
   var u = (document.getElementById('au') || {}).value || '';
   var p = (document.getElementById('ap') || {}).value || '';
@@ -1413,9 +1447,16 @@ function renderApp() {
   var page = '';
 
   if (tab === 'home') {
-    // Flash question or mini-game sits at top if active
-    if (flashQ) page += renderFlashQuestion();
-    else if (miniGame) page += renderMiniGame();
+    // Activity banner: if flashQ or miniGame is active, show a tap-to-reopen banner
+    if (flashQ && !overlay) {
+      page += '<button class="btn btn-full" style="background:linear-gradient(135deg,#1e3060,#2d4b9e);color:white;padding:14px;border-radius:14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 6px 16px rgba(30,48,160,0.25)" data-action="open-activity">';
+      page += '<div style="text-align:left"><div style="font-size:.68rem;opacity:.7;text-transform:uppercase;font-weight:700;margin-bottom:2px">⚡ Domanda Flash in corso</div><div style="font-size:.9rem;font-weight:700">'+esc(flashQ.q.text.substring(0,40))+(flashQ.q.text.length>40?'…':'')+'</div></div>';
+      page += '<div style="font-size:1.4rem;opacity:.8">▶</div></button>';
+    } else if (miniGame && !overlay) {
+      page += '<button class="btn btn-full" style="background:linear-gradient(135deg,#1e3060,#2d4b9e);color:white;padding:14px;border-radius:14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 6px 16px rgba(30,48,160,0.25)" data-action="open-activity">';
+      page += '<div style="text-align:left"><div style="font-size:.68rem;opacity:.7;text-transform:uppercase;font-weight:700;margin-bottom:2px">'+miniGame.icon+' Mini-Gioco disponibile</div><div style="font-size:.9rem;font-weight:700">'+esc(miniGame.name)+'</div></div>';
+      page += '<div style="font-size:1.4rem;opacity:.8">▶</div></button>';
+    }
     page += renderHero(pts, ptPts, pname(pt), ptOnline, false, u, dAgo);
     if (toConf.length > 0) {
       page += '<div class="sec-label">🔔 Conferma richiesta ('+toConf.length+')</div>';
@@ -1425,10 +1466,25 @@ function renderApp() {
       page += '<div class="sec-label">📨 Da eseguire ('+toExec.length+')</div>';
       toExec.forEach(function(rr) { page += renderExecCard(rr, false); });
     }
-    page += '<div class="sec-label">📋 Attività recente</div>';
-    var recent = myReqs.filter(function(r){return r.status!=='done_confirm';}).slice().reverse().slice(0,3);
-    if (!recent.length) page += '<div class="empty"><span class="empty-ico">🔷</span><p>Nessuna attività ancora.<br>Vai allo Shop per iniziare!</p></div>';
-    else recent.forEach(function(rr) { page += renderMyReqCard(rr); });
+    // Pending orders from client still waiting for execution
+    var pendingMine = myReqs.filter(function(r){ return r.status==='pending'; });
+    if (pendingMine.length > 0) {
+      page += '<div class="sec-label">⏳ In attesa di consegna ('+pendingMine.length+')</div>';
+      pendingMine.forEach(function(rr) { page += renderMyReqCard(rr); });
+    }
+    // History CTA
+    var histOrders = myReqs.filter(function(r){ return r.status==='done' || r.status==='expired'; }).slice().reverse();
+    page += '<button class="btn btn-o btn-full" style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;padding:14px 18px" data-action="toggle-history">';
+    page += '<span style="font-weight:700">📜 Storico Ordini</span>';
+    page += '<span style="display:flex;align-items:center;gap:6px"><span class="pts-badge" style="font-size:.72rem">'+(histOrders.length)+' ordini</span><span style="font-size:.9rem;opacity:.6">'+(showHistory?'▲':'▼')+'</span></span>';
+    page += '</button>';
+    if (showHistory) {
+      if (!histOrders.length) {
+        page += '<div class="empty"><span class="empty-ico">🗒️</span><p>Nessun ordine completato o scaduto.</p></div>';
+      } else {
+        histOrders.forEach(function(rr) { page += renderMyReqCard(rr); });
+      }
+    }
     page += '<div style="margin:14px 0"><button class="btn btn-p btn-full" style="padding:12px;border-radius:12px;font-size:.9rem;font-weight:700;display:flex;justify-content:center;align-items:center;gap:8px;box-shadow:0 6px 16px rgba(42,68,128,0.15);background:linear-gradient(135deg,var(--b6),var(--b4))" data-action="set-tab" data-arg="shop"><span style="font-size:1.1rem">🛍️</span> Acquista ora</button></div>';
     page += renderWellnessWidget(me);
   }
@@ -1948,22 +2004,39 @@ function renderMyReqCard(rr) {
     if (rr.mode==='deadline' && rr.deadline) h += '<div class="countdown" style="color:#8b5e00">⏱ Consegna stimata tra '+countdown(rr.deadline)+'</div>';
     else if (rr.mode==='time' && rr.deadline) h += '<div class="countdown" style="color:#8b5e00">🕐 Consegna schedulata alle '+fmtTime(rr.deadline)+'</div>';
     
-    if (rr.deadline && Date.now() > new Date(rr.deadline).getTime() + 2 * 3600 * 1000) {
-      h += '<div style="margin-top:10px">';
-      h += '<button class="btn btn-d btn-sm" style="width:100%" data-action="declare-unfulfilled" data-arg="'+esc(rr.id)+'">🚨 Segnala Non Evaso (Rimborso + Penale)</button>';
-      h += '</div>';
+    if (rr.deadline) {
+      var nowMs = Date.now();
+      var dlMs = new Date(rr.deadline).getTime();
+      var overMs = nowMs - dlMs;
+      if (overMs > 2 * 3600 * 1000) {
+        // > 2h late: full unfulfilled button
+        h += '<div style="margin-top:10px"><button class="btn btn-d btn-sm" style="width:100%" data-action="declare-unfulfilled" data-arg="'+esc(rr.id)+'">🚨 Non Evaso — Rimborso 100% + Penale 150%</button></div>';
+      } else if (overMs > 0) {
+        // overdue but < 2h: late report button
+        h += '<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">';
+        h += '<button class="btn btn-sm" style="width:100%;background:linear-gradient(135deg,#f39c12,#e67e22);color:white;font-weight:700;" data-action="report-late" data-arg="'+esc(rr.id)+'">⏰ Segnala Ritardo — Rimborso 30% + Penale 50%</button>';
+        h += '<button class="btn btn-d btn-sm" style="width:100%" data-action="declare-unfulfilled" data-arg="'+esc(rr.id)+'">🚨 Non Evaso — Rimborso 100% + Penale 150%</button>';
+        h += '</div>';
+      }
+    }
+  } else if (s === 'done_confirm') {
+    if (rr.deadline && rr.doneAt && new Date(rr.doneAt) > new Date(rr.deadline)) {
+      h += '<div style="margin-top:8px;padding:8px 10px;background:rgba(243,156,18,0.1);border:1px solid rgba(243,156,18,0.4);border-radius:8px;font-size:.75rem;color:#8b6200;font-weight:600">⚠️ Consegna avvenuta in ritardo. Confermando, riceverai un rimborso del <strong>30%</strong> e il partner riceverà una penale del <strong>50%</strong>.</div>';
     }
   }
-  if (rr.premium && rr.premium.length > 0) {
+  var premiumList = rr.premium && rr.premium.length > 0 ? rr.premium
+    : (rr.note && rr.note.indexOf('[PREMIUM:') === 0 ? rr.note.replace('[PREMIUM: ','').replace(']','').split(', ') : []);
+  var plainNote = (!premiumList.length && rr.note) ? rr.note : '';
+  if (premiumList.length > 0) {
     h += '<div style="margin-top:10px;padding:10px;background:#fcfaff;border-radius:8px;border:1px dashed #d4c0f8">';
-    h += '<div style="font-size:.7rem;font-weight:800;color:var(--purple);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">✨ Opzioni Extra:</div>';
+    h += '<div style="font-size:.7rem;font-weight:800;color:var(--purple);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">✨ Opzioni Premium:</div>';
     h += '<ul style="margin:0 0 0 18px;padding:0;font-size:.75rem;color:#5b21b6;line-height:1.4">';
-    rr.premium.forEach(function(p) { h += '<li style="margin-bottom:3px">' + esc(p) + '</li>'; });
+    premiumList.forEach(function(p) { h += '<li style="margin-bottom:3px">' + esc(p.trim()) + '</li>'; });
     h += '</ul></div>';
-  } else if (rr.note) {
-    h += '<div style="font-size:.75rem;color:#8b6000;margin-top:5px;font-style:italic">Note spedizione: "'+esc(rr.note)+'"</div>';
   }
+  if (plainNote) h += '<div style="font-size:.75rem;color:#8b6000;margin-top:5px;font-style:italic">Note: "'+esc(plainNote)+'"</div>';
   h += '<div style="font-size:.72rem;color:var(--muted);margin-top:4px">Data acquisto: '+fmtDt(rr.requestedAt)+'</div>';
+  h += '<div style="margin-top:10px;text-align:right"><button style="background:none;border:none;font-size:.75rem;font-weight:700;color:var(--b5);cursor:pointer;font-family:sans-serif;padding:4px 0" data-action="view-order" data-arg="'+esc(rr.id)+'" data-arg2="0">Dettagli ordine →</button></div>';
   if (s === 'done_confirm') {
     h += '<div class="confirm-box" style="margin-top:10px;background:#fff;border-radius:8px;padding:10px;border:1px solid #e2d5f0"><p style="font-weight:600;margin-bottom:8px;font-size:.8rem;color:var(--purple)">Il partner ha segnalato l\'ordine come consegnato. Confermi la ricezione?</p>';
     h += '<div style="display:flex;gap:8px">';
@@ -2001,16 +2074,19 @@ function renderExecCard(rr, showBtn) {
     h += '<div style="font-size:.75rem;color:var(--muted)">Entro 30 minuti</div>';
   }
   h += '</div>';
-  if (rr.premium && rr.premium.length > 0) {
+  var premiumList2 = rr.premium && rr.premium.length > 0 ? rr.premium
+    : (rr.note && rr.note.indexOf('[PREMIUM:') === 0 ? rr.note.replace('[PREMIUM: ','').replace(']','').split(', ') : []);
+  var plainNote2 = (!premiumList2.length && rr.note) ? rr.note : '';
+  if (premiumList2.length > 0) {
     h += '<div style="margin-bottom:12px;padding:12px;background:#fff;border-radius:8px;border:1.5px dashed var(--purple);box-shadow:inset 0 2px 4px rgba(139,92,246,0.05)">';
-    h += '<div style="font-size:.75rem;font-weight:800;color:var(--purple);margin-bottom:6px;display:flex;align-items:center;gap:6px"><span>✨</span>OPZIONI EXTRA PREMIUM:</div>';
+    h += '<div style="font-size:.75rem;font-weight:800;color:var(--purple);margin-bottom:6px;display:flex;align-items:center;gap:6px">✨ OPZIONI PREMIUM:</div>';
     h += '<ul style="margin:0 0 0 22px;padding:0;font-size:.8rem;color:#4c1d95;font-weight:600;line-height:1.4">';
-    rr.premium.forEach(function(p) { h += '<li style="margin-bottom:4px"><strong>' + esc(p) + '</strong></li>'; });
+    premiumList2.forEach(function(p) { h += '<li style="margin-bottom:4px">' + esc(p.trim()) + '</li>'; });
     h += '</ul></div>';
-  } else if (rr.note) {
-    h += '<div style="font-size:.75rem;color:#6040a0;margin-bottom:12px;padding:8px;background:rgba(139,94,0,0.05);border-left:3px solid #d8b4e2;font-style:italic">Note Ordine: "'+esc(rr.note)+'"</div>';
   }
+  if (plainNote2) h += '<div style="font-size:.75rem;color:#6040a0;margin-bottom:12px;padding:8px;background:rgba(139,94,0,0.05);border-left:3px solid #d8b4e2;font-style:italic">Note: "'+esc(plainNote2)+'"</div>';
   if (showBtn) h += '<button class="btn btn-p btn-sm" style="width:100%;font-weight:700;letter-spacing:.05em" data-action="mark-done" data-arg="'+esc(rr.id)+'">📦 Contrassegna come Consegnato</button>';
+  h += '<div style="margin-top:10px;text-align:right"><button style="background:none;border:none;font-size:.75rem;font-weight:700;color:var(--b5);cursor:pointer;font-family:sans-serif;padding:4px 0" data-action="view-order" data-arg="'+esc(rr.id)+'" data-arg2="1">Dettagli ordine →</button></div>';
   h += '</div>';
   return h;
 }
@@ -2044,6 +2120,12 @@ window.updateClaimTotal = function() {
 function renderOverlay() {
   if (!overlay) return '';
   if (overlay.type === 'reward_nudge') return renderRewardNudgeOverlay();
+  if (overlay.type === 'order_detail') return renderOrderDetailOverlay();
+  if (overlay.type === 'activity') {
+    if (flashQ) return '<div class="overlay center"><div class="sheet rounded" style="overflow:hidden;padding:0">' + renderFlashQuestion() + '</div></div>';
+    if (miniGame) return '<div class="overlay center"><div class="sheet rounded" style="overflow:hidden;padding:0">' + renderMiniGame() + '</div></div>';
+    return '';
+  }
   if (overlay.type !== 'claim') return '';
   var r = overlay.reward;
   var h = '<div class="overlay" data-action="close-overlay">';
@@ -2103,7 +2185,136 @@ function renderOverlay() {
   return h;
 }
 
-/* Extra overlay type: reward nudge after flash question */
+/* ── ORDER DETAIL OVERLAY ── */
+function renderOrderDetailOverlay() {
+  var ov = overlay;
+  var rr = S.requests.filter(function(r){ return r.id === ov.id; })[0];
+  if (!rr) return '';
+  var isExec = ov.isExec;
+  var me = session;
+  var costVal = rr.cost || 100;
+
+  // Status badge
+  var sMap = {
+    pending:      {label:'⏳ In Lavorazione', col:'#856404', bg:'#fff3cd'},
+    done_confirm: {label:'🔔 Conferma Ricezione', col:'#5b21b6', bg:'#ede9fe'},
+    done:         {label:'✅ Consegnato', col:'#1a6a30', bg:'#d4edda'},
+    expired:      {label:'⏰ Scaduto / Annullato', col:'#721c24', bg:'#f8d7da'}
+  };
+  var sd = sMap[rr.status] || sMap['expired'];
+
+  // Wellness impact
+  var doneCount = S.requests.filter(function(r){ return r.status==='done'; }).length;
+  var isDone = rr.status === 'done';
+  var basePct = Math.min(15 + Math.floor(doneCount * 1.5), 35);
+  var igaPct  = isDone ? basePct           : Math.max(basePct - 8, 4);
+  var cortPct = isDone ? Math.round(basePct * 0.9) : Math.max(Math.round(basePct * 0.5), 3);
+  var syncPct = isDone ? Math.round(basePct * 0.7) : Math.max(Math.round(basePct * 0.35), 2);
+  var oxPct   = isDone ? Math.round(basePct * 0.8) : Math.max(Math.round(basePct * 0.4), 2);
+
+  // Parse premium list
+  var premiumList = rr.premium && rr.premium.length > 0 ? rr.premium
+    : (rr.note && rr.note.indexOf('[PREMIUM:') === 0 ? rr.note.replace('[PREMIUM: ','').replace(']','').split(', ') : []);
+
+  var h = '<div class="overlay" data-action="close-overlay">';
+  h += '<div class="sheet" style="padding:24px 20px 36px;max-height:92vh;overflow-y:auto">';
+  h += '<div class="sheet-handle"></div>';
+
+  // Header
+  h += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">';
+  h += '<div style="font-size:2.8rem;background:linear-gradient(135deg,#f0f5ff,#e0ecff);width:66px;height:66px;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(30,48,96,0.1)">'+(rr.emoji||'🎁')+'</div>';
+  h += '<div style="flex:1"><h2 style="font-family:\'Playfair Display\',serif;font-size:1.25rem;color:var(--b2);margin-bottom:6px">'+esc(rr.name)+'</h2>';
+  h += '<span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:10px;font-size:.72rem;font-weight:700;background:'+sd.bg+';color:'+sd.col+'">'+sd.label+'</span></div></div>';
+
+  // Order ID + date row
+  h += '<div style="background:#f8faff;border-radius:12px;padding:14px 16px;margin-bottom:16px;border:1px solid #e8f0fc">';
+  h += '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:.75rem;color:var(--muted)">Numero Ordine</span><span style="font-size:.75rem;font-weight:700;color:var(--b3)">#'+rr.id.slice(-8)+'</span></div>';
+  h += '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:.75rem;color:var(--muted)">Acquistato da</span><span style="font-size:.75rem;font-weight:700;color:var(--b3)">'+esc(pname(rr.by))+'</span></div>';
+  h += '<div style="display:flex;justify-content:space-between"><span style="font-size:.75rem;color:var(--muted)">Data Ordine</span><span style="font-size:.75rem;font-weight:700;color:var(--b3)">'+fmtDt(rr.requestedAt)+'</span></div>';
+  h += '</div>';
+
+  // Cost + delivery
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">';
+  h += '<div style="background:linear-gradient(135deg,#f5f0ff,#ede9fe);border-radius:12px;padding:14px;text-align:center;border:1px solid #d4c0f8">';
+  h += '<div style="font-size:1.5rem;font-weight:800;color:var(--purple);font-family:\'Playfair Display\',serif">🔷 '+costVal+'</div>';
+  h += '<div style="font-size:.65rem;color:#6d28d9;font-weight:700;text-transform:uppercase;margin-top:3px">Punti Spesi</div></div>';
+
+  var dlLabel = rr.deadline
+    ? (rr.status === 'done' || rr.status === 'done_confirm' || rr.status === 'expired'
+        ? fmtDt(rr.deadline)
+        : countdown(rr.deadline))
+    : 'Prima possibile';
+  var dlColor = (rr.status === 'pending' && rr.deadline && Date.now() > new Date(rr.deadline).getTime()) ? 'var(--red)' : 'var(--b4)';
+  h += '<div style="background:#f8faff;border-radius:12px;padding:14px;text-align:center;border:1px solid #e0eaf8">';
+  h += '<div style="font-size:.9rem;font-weight:800;color:'+dlColor+';font-family:\'Playfair Display\',serif">'+dlLabel+'</div>';
+  h += '<div style="font-size:.65rem;color:var(--muted);font-weight:700;text-transform:uppercase;margin-top:3px">Consegna Entro</div></div>';
+  h += '</div>';
+
+  // Timeline
+  h += '<div style="margin-bottom:16px">';
+  h += '<div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">📅 Cronologia</div>';
+  var timeline = [];
+  timeline.push({dot:'var(--b5)', label:'Ordine Effettuato', val: fmtDt(rr.requestedAt)});
+  if (rr.doneAt) timeline.push({dot:'var(--green)', label:'Contrassegnato Consegnato', val: fmtDt(rr.doneAt), late: rr.deadline && new Date(rr.doneAt) > new Date(rr.deadline)});
+  if (rr.confirmedAt) timeline.push({dot:'#1a9e50', label:'Ricezione Confermata', val: fmtDt(rr.confirmedAt)});
+  if (rr.cancelledAt) timeline.push({dot:'var(--red)', label:'Annullato / Segnalato', val: fmtDt(rr.cancelledAt)});
+  h += '<div style="position:relative;padding-left:18px">';
+  timeline.forEach(function(t, i) {
+    h += '<div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:'+(i<timeline.length-1?'14px':'0')+'">';
+    h += '<div style="position:absolute;left:0;width:10px;height:10px;border-radius:50%;background:'+t.dot+';margin-top:3px"></div>';
+    h += '<div style="padding-left:8px"><div style="font-size:.78rem;font-weight:600;color:var(--b3)">'+t.label+(t.late?' <span style="color:var(--red);font-size:.68rem">(In Ritardo)</span>':'')+' </div><div style="font-size:.7rem;color:var(--muted)">'+t.val+'</div></div>';
+    h += '</div>';
+  });
+  h += '</div></div>';
+
+  // Premium options
+  if (premiumList.length > 0) {
+    h += '<div style="margin-bottom:16px;padding:14px;background:#fcfaff;border-radius:12px;border:1.5px dashed var(--purple)">';
+    h += '<div style="font-size:.7rem;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">✨ Opzioni Premium</div>';
+    h += '<ul style="margin:0 0 0 18px;padding:0;font-size:.8rem;color:#4c1d95;font-weight:600;line-height:1.5">';
+    premiumList.forEach(function(p){ h += '<li>'+esc(p.trim())+'</li>'; });
+    h += '</ul></div>';
+  }
+
+  // Penalty info (if applied)
+  if (rr.latePenaltyApplied || rr.unfulfilledPenaltyApplied) {
+    var pLabel = rr.latePenaltyApplied ? 'Penale Ritardo' : 'Penale Inadempienza';
+    h += '<div style="margin-bottom:16px;padding:12px;background:#fff0ee;border-radius:12px;border:1px solid #f5c0bc">';
+    h += '<div style="font-size:.7rem;font-weight:800;color:var(--red);text-transform:uppercase;margin-bottom:6px">⚠️ '+pLabel+' Applicata</div>';
+    h += '<div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:4px"><span style="color:var(--muted)">Rimborso Cliente</span><span style="color:var(--green);font-weight:700">+'+rr.refundAmt+' pt</span></div>';
+    h += '<div style="display:flex;justify-content:space-between;font-size:.78rem"><span style="color:var(--muted)">Penale Esecutore</span><span style="color:var(--red);font-weight:700">-'+rr.penaltyAmt+' pt</span></div>';
+    h += '</div>';
+  }
+
+  // Wellness impact
+  h += '<div style="margin-bottom:20px;background:linear-gradient(135deg,#0e1933,#1e3060);border-radius:18px;padding:20px;color:white">';
+  h += '<div style="font-size:.68rem;opacity:.7;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:8px">❤️ Impatto sul Benessere di Coppia</div>';
+  h += '<div style="font-size:.82rem;opacity:.85;margin-bottom:16px;line-height:1.4">'+(isDone ? 'Questo ordine ha contribuito ai tuoi indicatori di benessere nella settimana in corso.' : 'Indicatori stimati attivi da quando hai effettuato l\'ordine.')+'</div>';
+
+  var metrics = [
+    {icon:'🛡️', label:'Scudo Immunitario (IgA)', pct: igaPct, color:'#7effc0', bar:'rgba(46,204,113,0.4)'},
+    {icon:'🧠', label:'Riduzione Cortisolo', pct: cortPct, color:'#c4b5fd', bar:'rgba(139,92,246,0.4)'},
+    {icon:'💞', label:'Sincronizzazione Coppia', pct: syncPct, color:'#ffb3c8', bar:'rgba(255,100,150,0.4)'},
+    {icon:'💊', label:'Rilascio Ossitocina', pct: oxPct, color:'#ffd580', bar:'rgba(232,192,74,0.4)'}
+  ];
+  metrics.forEach(function(m) {
+    h += '<div style="margin-bottom:12px">';
+    h += '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:.73rem;opacity:.85">'+m.icon+' '+m.label+'</span><span style="font-size:.73rem;font-weight:800;color:'+m.color+'">+'+m.pct+'%</span></div>';
+    h += '<div style="height:5px;background:rgba(255,255,255,0.1);border-radius:3px"><div style="height:100%;width:'+m.pct+'%;background:'+m.color+';border-radius:3px;transition:width .4s"></div></div>';
+    h += '</div>';
+  });
+  if (!isDone) {
+    h += '<div style="margin-top:10px;font-size:.68rem;opacity:.5;font-style:italic">* Impatto completo registrato alla conferma ricezione.</div>';
+  }
+  h += '</div>';
+
+  // Close
+  h += '<button class="btn btn-o btn-full" data-action="cancel-overlay">← Chiudi Dettaglio</button>';
+  h += '</div></div>';
+  return h;
+}
+
+
 function renderRewardNudgeOverlay() {
   var o = overlay;
   var h = '<div class="overlay center" data-action="close-overlay">';
