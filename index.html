@@ -243,6 +243,18 @@ textarea{resize:vertical;min-height:70px}
 .reset-btn{background:#1a0e0e;color:#d08080;border:1px solid #4a1a30;border-radius:8px;padding:9px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.79rem;font-weight:600;margin-top:10px}
 .sync-pill{display:flex;align-items:center;gap:5px;margin-left:auto;font-size:.7rem;color:#4a6080}
 .sdot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
+.lvl-wrap{margin-bottom:24px}
+.lvl-card{background:white;border-radius:14px;padding:16px;margin-bottom:12px;border:1px solid #e0eaf8;position:relative;overflow:hidden;box-shadow:var(--sh);}
+.lvl-card.active{border:2px solid var(--b7);box-shadow:0 4px 16px rgba(82,120,204,0.15);}
+.lvl-header{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px;}
+.lvl-icon{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;}
+.lvl-info{flex:1;}
+.lvl-title{font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:700;color:var(--b2);margin-bottom:2px;}
+.lvl-sub{font-size:.8rem;color:var(--muted);margin-bottom:8px;}
+.lvl-badges{display:flex;flex-wrap:wrap;gap:6px;}
+.lvl-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:14px;font-size:.72rem;font-weight:600;border:1px solid transparent;}
+.lvl-prog-track{height:4px;background:#e0eaf8;border-radius:2px;overflow:hidden;width:100%;}
+.lvl-prog-fill{height:100%;border-radius:2px;transition:width 0.3s;}
 @media(max-width:480px){.agrid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -1721,6 +1733,81 @@ function renderBenessereTab(me, pt) {
   var left = nextTarget - xStats.total;
   if (xStats.total === 0) h += '<div style="font-size:.75rem;color:var(--purple);font-weight:800">1° ordine insieme! 🔥</div>';
   else h += '<div style="font-size:.75rem;color:var(--purple);font-weight:800">Mancano '+left+' ai '+nextTarget+' ordini!</div>';
+  h += '</div>';
+
+  h += '</div>';
+
+  var myW = 0, ptW = 0;
+  var now = new Date();
+  S.requests.forEach(function(r) {
+    if (r.status === 'done' || r.status === 'done_confirm') {
+      var dStr = r.confirmedAt || r.doneAt || r.ts;
+      if (dStr) {
+        if ((now - new Date(dStr)) / 86400000 <= 7) {
+          if (r.by === me) myW++; else ptW++;
+        }
+      }
+    }
+  });
+
+  var thresholds = [0, 3, 5, 7, 10, 14];
+  var myLvlId = 0, ptLvlId = 0;
+  for (var i = 5; i >= 0; i--) if (myW >= thresholds[i]) { myLvlId = i; break; }
+  for (var i = 5; i >= 0; i--) if (ptW >= thresholds[i]) { ptLvlId = i; break; }
+
+  var lvls = [
+    { id: 0, name: 'Esplorazione', range: '0-2 ordini/settimana', sub: 'Inizia il viaggio', icon: '☁️', color: '#95a5a6', bg: '#f4f6f7', badges: [{t:'Sblocca Lv 1 con 3 ordini', c:'#f4f6f7', tc:'#7f8c8d', bc:'#d0d0d0'}], prog: 0 },
+    { id: 1, name: 'Germoglio', range: '3-4 ordini/settimana', sub: '≈ 1 ogni 2 giorni', icon: '🌱', color: '#2ecc71', bg: '#edfbf3', badges: [{t:'Soglia minima', c:'#edfbf3', tc:'#1a9e50', bc:'#a9dfbf'},{t:'Streak 1+ settimana', c:'#edfbf3', tc:'#1a9e50', bc:'#a9dfbf'},{t:'Varietà bassa', c:'#f0f4f8', tc:'#4a6080', bc:'#d0daf0'}], prog: 20 },
+    { id: 2, name: 'Scintilla', range: '5-6 ordini/settimana', sub: 'quasi 1 al giorno', icon: '⚡', color: '#8b5cf6', bg: '#f5f0ff', badges: [{t:'Sopra la media', c:'#f5f0ff', tc:'#6d28d9', bc:'#d7bde2'},{t:'Streak 2+ settimane', c:'#f5f0ff', tc:'#6d28d9', bc:'#d7bde2'},{t:'IgA in crescita', c:'#edfbf3', tc:'#1a9e50', bc:'#a9dfbf'}], prog: 40 },
+    { id: 3, name: 'Fiamma', range: '7-9 ordini/settimana', sub: '1 al giorno o più', icon: '🔥', color: '#f39c12', bg: '#fdf3e6', badges: [{t:'Top 20% coppie IT', c:'#fdf3e6', tc:'#b9770e', bc:'#f5cba7'},{t:'Streak 4+ settimane', c:'#fdf3e6', tc:'#b9770e', bc:'#f5cba7'},{t:'Cortisolo ridotto', c:'#f5f0ff', tc:'#6d28d9', bc:'#d7bde2'}], prog: 60 },
+    { id: 4, name: 'Cristallo', range: '10-13 ordini/settimana', sub: 'media 1,5/giorno', icon: '💎', color: '#e74c3c', bg: '#fdedec', badges: [{t:'Top 10% coppie IT', c:'#fdedec', tc:'#c0392b', bc:'#f5b7b1'},{t:'Streak 8+ settimane', c:'#fdedec', tc:'#c0392b', bc:'#f5b7b1'},{t:'Varietà alta', c:'#fdf3e6', tc:'#b9770e', bc:'#f5cba7'}], prog: 80 },
+    { id: 5, name: 'Leggenda', range: '14+ ordini/settimana', sub: '2+ al giorno', icon: '👑', color: '#3a5ca8', bg: '#f0f5ff', badges: [{t:'Top 5% coppie IT', c:'#f0f5ff', tc:'#1e3060', bc:'#a9cce3'},{t:'Ossitocina massima', c:'#edfbf3', tc:'#1a9e50', bc:'#a9dfbf'},{t:'Streak 12+ settimane', c:'#fdf3e6', tc:'#b9770e', bc:'#f5cba7'},{t:'Varietà premium', c:'#fdedec', tc:'#c0392b', bc:'#f5b7b1'}], prog: 100 }
+  ];
+
+  h += '<div class="lvl-wrap">';
+  h += '<div class="sec-label" style="text-transform:uppercase;color:var(--muted)">Il Tuo Livello di Attività</div>';
+  
+  var lMe = lvls[myLvlId];
+  h += '<div class="lvl-card active">';
+  h += '<div class="lvl-header"><div class="lvl-icon" style="color:'+lMe.color+';border:2px solid '+lMe.color+';background:'+lMe.bg+'">'+lMe.icon+'</div>';
+  h += '<div class="lvl-info"><div class="lvl-title">Livello '+(lMe.id>0?lMe.id:'base')+' — '+lMe.name+'</div><div class="lvl-sub">'+lMe.range+' · '+lMe.sub+'</div>';
+  h += '<div class="lvl-badges">';
+  lMe.badges.forEach(function(b){
+    h += '<span class="lvl-badge" style="background:'+b.c+';color:'+b.tc+';border-color:'+b.bc+'">'+b.t+'</span>';
+  });
+  h += '</div></div></div>';
+  
+  if (myLvlId < 5) {
+    var nextL = lvls[myLvlId + 1];
+    var left = thresholds[myLvlId + 1] - myW;
+    var pct = Math.round(((myW - thresholds[myLvlId]) / (thresholds[myLvlId+1] - thresholds[myLvlId])) * 100);
+    if (myLvlId === 0) pct = Math.round((myW / 3) * 100);
+    h += '<div class="lvl-prog-track" style="margin-bottom:8px;height:6px"><div class="lvl-prog-fill" style="width:'+pct+'%;background:'+lMe.color+'"></div></div>';
+    h += '<div style="font-size:.78rem;color:var(--b4);text-align:right">🚀 Fai altri <strong>'+left+' '+(left==1?'ordine':'ordini')+'</strong> per sbloccare <strong>Lv '+(myLvlId+1)+' '+nextL.name+'</strong>!</div>';
+  } else {
+    h += '<div class="lvl-prog-track" style="margin-bottom:8px;height:6px"><div class="lvl-prog-fill" style="width:100%;background:'+lMe.color+'"></div></div>';
+    h += '<div style="font-size:.78rem;color:var(--b4);text-align:right">Hai raggiunto il livello massimo! 👑</div>';
+  }
+  h += '</div>';
+
+  h += '<div class="sec-label" style="text-transform:uppercase;color:var(--muted);margin-top:20px">Livello di '+esc(pname(pt))+'</div>';
+  var lPt = lvls[ptLvlId];
+  h += '<div class="lvl-card" style="opacity:0.95">';
+  h += '<div class="lvl-header" style="margin-bottom:8px"><div class="lvl-icon" style="color:'+lPt.color+';border:2px solid '+lPt.color+';background:'+lPt.bg+'">'+lPt.icon+'</div>';
+  h += '<div class="lvl-info"><div class="lvl-title">Livello '+(lPt.id>0?lPt.id:'base')+' — '+lPt.name+'</div><div class="lvl-sub" style="margin-bottom:4px">'+lPt.range+'</div>';
+  h += '<div class="lvl-badges">';
+  lPt.badges.forEach(function(b){
+    h += '<span class="lvl-badge" style="background:'+b.c+';color:'+b.tc+';border-color:'+b.bc+'">'+b.t+'</span>';
+  });
+  h += '</div></div></div>';
+  
+  if (ptLvlId < 5) {
+    var ptPct = Math.round(((ptW - thresholds[ptLvlId]) / (thresholds[ptLvlId+1] - thresholds[ptLvlId])) * 100);
+    if (ptLvlId === 0) ptPct = Math.round((ptW / 3) * 100);
+    h += '<div class="lvl-prog-track"><div class="lvl-prog-fill" style="width:'+ptPct+'%;background:'+lPt.color+'"></div></div>';
+  } else {
+    h += '<div class="lvl-prog-track"><div class="lvl-prog-fill" style="width:100%;background:'+lPt.color+'"></div></div>';
+  }
   h += '</div>';
 
   h += '</div>';
