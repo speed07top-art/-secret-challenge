@@ -569,7 +569,7 @@ function fmtDt(s) { if (!s) return ''; try { return new Date(s).toLocaleString('
 function fmtTime(s) { if (!s) return ''; try { return new Date(s).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}); } catch(e) { return s; } }
 
 /* ── NTFY NOTIFICATIONS ── */
-var APP_URL = window.location.href.split('?')[0];
+var APP_URL = 'https://speed07top-art.github.io/-secret-challenge/';
 var SESSION_KEY = 'sc_session_v1'; // {user, expires}
 var SESSION_HOURS = 48;
 
@@ -611,7 +611,7 @@ function ntfySend(topic, title, message, tags) {
   if (!topic) return;
   var payload = { topic: topic, title: title, message: message, click: APP_URL };
   if (tags) payload.tags = tags;
-  fetch(NTFY_BASE + topic, {
+  fetch(NTFY_BASE, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
