@@ -295,6 +295,7 @@ function handleAction(action, el, e) {
     case 'submit-claim':   submitClaim(); break;
     case 'mark-done':      markDone(arg); break;
     case 'confirm-done':   confirmDone(arg, arg2 === 'yes'); break;
+    case 'declare-unfulfilled': declareUnfulfilled(arg); break;
     case 'toggle-acc':     toggleAcc(+arg, el); break;
     case 'ob-next':        obStep++; render(); break;
     case 'ob-back':        obStep--; render(); break;
@@ -640,9 +641,9 @@ function notifyPartnerNewReward(rewardName, deadline) {
   var topic = S.users[pt] && S.users[pt].ntfyTopic;
   if (!topic) return;
   var myName = session === 'giulia' ? '🌸 Giulia' : '⚡ Stefano';
-  var msg = myName + ' ha richiesto: ' + rewardName;
-  if (deadline) msg += '\nEntro: ' + fmtDt(deadline);
-  ntfySend(topic, '🎁 Nuovo premio da eseguire!', msg, ['gift']);
+  var msg = myName + ' ha effettuato un nuovo ordine: ' + rewardName;
+  if (deadline) msg += '\nConsegna entro: ' + fmtDt(deadline);
+  ntfySend(topic, '📦 Nuovo ordine ricevuto!', msg, ['package']);
 }
 
 /* ── ACTIVITY ENGINE (Flash Questions + Mini-Games) ── */
@@ -740,9 +741,6 @@ function checkFlashQuestion() {
       timerLeft: secondsUntilNextHour()
     };
 
-    // Send notification
-    sendActivityNotification('⚡ Domanda Flash delle ' + new Date().getHours() + ':00!', 'Una domanda ti aspetta in app. Rispondi subito: +100 pt se corretta!');
-
     // Start countdown timer
     if (flashTimer) clearInterval(flashTimer);
     flashTimer = setInterval(function() {
@@ -779,19 +777,11 @@ function checkFlashQuestion() {
       gameState: initGameState(gt.type)
     };
 
-    // Send notification
-    sendActivityNotification(gt.icon + ' ' + gt.name + ' disponibile!', 'Un mini-gioco ti aspetta: puoi vincere fino a 250 pt!');
-
     render();
   }
 }
 
-function sendActivityNotification(title, message) {
-  if (!session || session === 'admin') return;
-  var topic = S.users[session] && S.users[session].ntfyTopic;
-  if (!topic) return;
-  ntfySend(topic, title, message, ['game_die']);
-}
+
 
 function answerFlashQ(optIdx) {
   if (!flashQ || flashQ.answered) return;
@@ -1079,7 +1069,7 @@ function notifyRewardDone(req) {
   var topic = S.users[req.by] && S.users[req.by].ntfyTopic;
   if (!topic) return;
   var executor = req.by === 'giulia' ? '⚡ Stefano' : '🌸 Giulia';
-  ntfySend(topic, '✅ Premio eseguito — conferma!', executor + ' ha eseguito: ' + req.name + '\nConfermi?', ['white_check_mark']);
+  ntfySend(topic, '✅ Ordine consegnato — conferma!', executor + " ha segnato come consegnato l'ordine: " + req.name + "\nConfermi la ricezione?", ['ballot_box_with_check']);
 }
 
 function checkPenaltyWarning() {
@@ -1095,21 +1085,7 @@ function checkPenaltyWarning() {
       sessionStorage.setItem(warnKey, '1');
       var topic = u.ntfyTopic;
       if (topic) {
-        ntfySend(topic, '⚠️ Penalità in arrivo!', 'Sono ' + days + ' giorni senza richiedere un premio. Entro domani perdi 500 pt!', ['warning']);
-      }
-    }
-  }
-
-  // ── Quiz deadline reminder: warn at 13:00 if not done ──
-  var now = new Date();
-  var today = todayKey();
-  if (now.getHours() >= 13) {
-    var qRemindKey = 'quiz_reminded_' + today;
-    if (!sessionStorage.getItem(qRemindKey)) {
-      sessionStorage.setItem(qRemindKey, '1');
-      var topic = u.ntfyTopic;
-      if (topic) {
-        ntfySend(topic, '🧠 Ricordati del quiz!', 'Sono già le ' + now.getHours() + ':00 e non hai ancora completato il quiz di oggi.', ['brain']);
+        ntfySend(topic, '⚠️ Penalità in arrivo!', 'Sono ' + days + ' giorni senza effettuare nuovi ordini. Entro domani perdi 500 pt!', ['warning']);
       }
     }
   }
@@ -1245,9 +1221,6 @@ function submitClaim() {
     return;
   }
   
-  var finalNote = '';
-  if (premiumText.length > 0) finalNote = "[PREMIUM: " + premiumText.join(', ') + "]";
-
   var actualDl = '';
   if (dlMode !== '0') {
     var d = new Date();
@@ -1262,7 +1235,7 @@ function submitClaim() {
     id: Date.now()+'', by: session,
     name: r.name, emoji: r.emoji || '🎁',
     requestedAt: new Date().toISOString(),
-    mode: 'deadline', deadline: actualDl, note: finalNote, status: 'pending'
+    mode: 'deadline', deadline: actualDl, premium: premiumText, note: '', status: 'pending', cost: totalCost
   });
   save(S); overlay = null;
   notifyPartnerNewReward(r.name, actualDl);
@@ -1283,14 +1256,47 @@ function markDone(rrId) {
 function confirmDone(rrId, yes) {
   var i = S.requests.findIndex(function(r) { return r.id === rrId; });
   if (i < 0) return;
+  var req = S.requests[i];
   if (yes) {
-    S.requests[i].status = 'done'; S.requests[i].confirmedAt = new Date().toISOString();
-    showToast('Premio confermato!');
+    req.status = 'done'; req.confirmedAt = new Date().toISOString();
+    if (req.deadline && req.doneAt && new Date(req.doneAt) > new Date(req.deadline)) {
+      var rCost = req.cost || 100;
+      var cRefund = Math.floor(rCost * 0.3);
+      var ePenalty = Math.floor(rCost * 0.5);
+      var executor = req.by === 'giulia' ? 'stefano' : 'giulia';
+      S.users[req.by].pts = (S.users[req.by].pts || 0) + cRefund;
+      S.users[executor].pts = Math.max(0, (S.users[executor].pts || 0) - ePenalty);
+      req.latePenaltyApplied = true;
+      req.refundAmt = cRefund; req.penaltyAmt = ePenalty;
+      showToast('Ordine completato in ritardo! Rimborsati ' + cRefund + 'pt (Penale partner: -' + ePenalty + 'pt)', 5000);
+    } else {
+      showToast('Ordine completato nei tempi!');
+    }
   } else {
-    S.requests[i].status = 'pending'; delete S.requests[i].doneAt;
+    req.status = 'pending'; delete req.doneAt;
     showToast('Rimandato — il partner dovrà ripetere!', 4000);
   }
   save(S); render();
+}
+
+function declareUnfulfilled(rrId) {
+  var i = S.requests.findIndex(function(r) { return r.id === rrId; });
+  if (i < 0) return;
+  var req = S.requests[i];
+  if (!confirm("Dichiarare l'ordine come non evaso? Riceverai un rimborso del 100% e il partner subirà una multa del 150% del valore.")) return;
+  var rCost = req.cost || 100;
+  var executor = req.by === 'giulia' ? 'stefano' : 'giulia';
+  S.users[req.by].pts = (S.users[req.by].pts || 0) + rCost;
+  var penalty = Math.floor(rCost * 1.5);
+  S.users[executor].pts = Math.max(0, (S.users[executor].pts || 0) - penalty);
+  req.status = 'expired';
+  req.unfulfilledPenaltyApplied = true;
+  req.refundAmt = rCost; req.penaltyAmt = penalty; req.cancelledAt = new Date().toISOString();
+  save(S);
+  showToast('Ordine segnato come non evaso. Rimborsati ' + rCost + ' pt.', 4000);
+  var topic = S.users[executor] && S.users[executor].ntfyTopic;
+  if (topic) ntfySend(topic, '🚨 Ordine NON EVASO annullato!', 'Hai superato il ritardo massimo di 2 ore limite. Multa salata di -'+penalty+' pt pagata.', ['no_entry_sign']);
+  render();
 }
 
 function doAdmLogin() {
@@ -1430,17 +1436,23 @@ function renderApp() {
 
 
   else if (tab === 'shop') {
-    page += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
-    page += '<div class="sec-label" style="margin-bottom:0">🛍 Vetrina Prodotti</div>';
-    page += '<div class="pts-badge" style="font-size:.78rem">🔷 '+pts+' pt</div></div>';
+    var pendingMine = myReqs.filter(function(r){return r.status==='pending';});
+    if (pendingMine.length) {
+      page += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
+      page += '<div class="sec-label" style="margin-bottom:0">⏳ I miei ordini in viaggio</div>';
+      page += '<div class="pts-badge" style="font-size:.78rem">🔷 '+pts+' pt</div></div>';
+      pendingMine.forEach(function(rr) { page += renderMyReqCard(rr); });
+      page += '<div style="height:12px"></div>';
+      page += '<div class="sec-label" style="margin-bottom:4px">🛍 Vetrina Prodotti</div>';
+    } else {
+      page += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
+      page += '<div class="sec-label" style="margin-bottom:0">🛍 Vetrina Prodotti</div>';
+      page += '<div class="pts-badge" style="font-size:.78rem">🔷 '+pts+' pt</div></div>';
+    }
+    
     if (!myRws.length) page += '<div class="empty"><span class="empty-ico">🛍️</span><p>Nessun prodotto in inventario.<br>Il fornitore li aggiungerà presto!</p></div>';
     else myRws.forEach(function(r) { page += renderShopItem(r, pts); });
     if (dAgo >= 3) page += renderMandatoryAlert();
-    var pendingMine = myReqs.filter(function(r){return r.status==='pending';});
-    if (pendingMine.length) {
-      page += '<div class="sec-label" style="margin-top:4px">⏳ I miei ordini in viaggio</div>';
-      pendingMine.forEach(function(rr) { page += renderMyReqCard(rr); });
-    }
   }
 
   else if (tab === 'execute') {
@@ -1935,8 +1947,22 @@ function renderMyReqCard(rr) {
   if (s === 'pending') {
     if (rr.mode==='deadline' && rr.deadline) h += '<div class="countdown" style="color:#8b5e00">⏱ Consegna stimata tra '+countdown(rr.deadline)+'</div>';
     else if (rr.mode==='time' && rr.deadline) h += '<div class="countdown" style="color:#8b5e00">🕐 Consegna schedulata alle '+fmtTime(rr.deadline)+'</div>';
+    
+    if (rr.deadline && Date.now() > new Date(rr.deadline).getTime() + 2 * 3600 * 1000) {
+      h += '<div style="margin-top:10px">';
+      h += '<button class="btn btn-d btn-sm" style="width:100%" data-action="declare-unfulfilled" data-arg="'+esc(rr.id)+'">🚨 Segnala Non Evaso (Rimborso + Penale)</button>';
+      h += '</div>';
+    }
   }
-  if (rr.note) h += '<div style="font-size:.75rem;color:#8b6000;margin-top:5px;font-style:italic">Note spedizione: "'+esc(rr.note)+'"</div>';
+  if (rr.premium && rr.premium.length > 0) {
+    h += '<div style="margin-top:10px;padding:10px;background:#fcfaff;border-radius:8px;border:1px dashed #d4c0f8">';
+    h += '<div style="font-size:.7rem;font-weight:800;color:var(--purple);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">✨ Opzioni Extra:</div>';
+    h += '<ul style="margin:0 0 0 18px;padding:0;font-size:.75rem;color:#5b21b6;line-height:1.4">';
+    rr.premium.forEach(function(p) { h += '<li style="margin-bottom:3px">' + esc(p) + '</li>'; });
+    h += '</ul></div>';
+  } else if (rr.note) {
+    h += '<div style="font-size:.75rem;color:#8b6000;margin-top:5px;font-style:italic">Note spedizione: "'+esc(rr.note)+'"</div>';
+  }
   h += '<div style="font-size:.72rem;color:var(--muted);margin-top:4px">Data acquisto: '+fmtDt(rr.requestedAt)+'</div>';
   if (s === 'done_confirm') {
     h += '<div class="confirm-box" style="margin-top:10px;background:#fff;border-radius:8px;padding:10px;border:1px solid #e2d5f0"><p style="font-weight:600;margin-bottom:8px;font-size:.8rem;color:var(--purple)">Il partner ha segnalato l\'ordine come consegnato. Confermi la ricezione?</p>';
@@ -1965,11 +1991,25 @@ function renderExecCard(rr, showBtn) {
   if (rr.deadline) {
     h += '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:.75rem;color:var(--muted)">'+timeLabel+'</span><strong style="font-size:.75rem;color:var(--purple)">'+timeVal+'</strong></div>';
     h += '<div style="display:flex;justify-content:space-between"><span style="font-size:.75rem;color:var(--muted)">Tempo Rimanente:</span><strong style="font-size:.75rem;color:#d32f2f">⏱ '+countdown(rr.deadline)+'</strong></div>';
+    h += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #f0f0f0">';
+    h += '<div style="font-size:.7rem;color:#d32f2f;font-weight:700;margin-bottom:2px">⚠️ Attenzione alle Penali:</div>';
+    h += '<ul style="margin:0 0 0 16px;padding:0;font-size:.68rem;color:#b74b4b;line-height:1.4">';
+    h += '<li style="margin-bottom:2px"><strong>Ritardo:</strong> Multa del 50% del valore ordine.</li>';
+    h += '<li><strong>Inadempienza (> 2h):</strong> Annullamento e Multa del 150%.</li>';
+    h += '</ul></div>';
   } else {
     h += '<div style="font-size:.75rem;color:var(--muted)">Entro 30 minuti</div>';
   }
   h += '</div>';
-  if (rr.note) h += '<div style="font-size:.75rem;color:#6040a0;margin-bottom:12px;padding:8px;background:rgba(139,94,0,0.05);border-left:3px solid #d8b4e2;font-style:italic">Note Ordine: "'+esc(rr.note)+'"</div>';
+  if (rr.premium && rr.premium.length > 0) {
+    h += '<div style="margin-bottom:12px;padding:12px;background:#fff;border-radius:8px;border:1.5px dashed var(--purple);box-shadow:inset 0 2px 4px rgba(139,92,246,0.05)">';
+    h += '<div style="font-size:.75rem;font-weight:800;color:var(--purple);margin-bottom:6px;display:flex;align-items:center;gap:6px"><span>✨</span>OPZIONI EXTRA PREMIUM:</div>';
+    h += '<ul style="margin:0 0 0 22px;padding:0;font-size:.8rem;color:#4c1d95;font-weight:600;line-height:1.4">';
+    rr.premium.forEach(function(p) { h += '<li style="margin-bottom:4px"><strong>' + esc(p) + '</strong></li>'; });
+    h += '</ul></div>';
+  } else if (rr.note) {
+    h += '<div style="font-size:.75rem;color:#6040a0;margin-bottom:12px;padding:8px;background:rgba(139,94,0,0.05);border-left:3px solid #d8b4e2;font-style:italic">Note Ordine: "'+esc(rr.note)+'"</div>';
+  }
   if (showBtn) h += '<button class="btn btn-p btn-sm" style="width:100%;font-weight:700;letter-spacing:.05em" data-action="mark-done" data-arg="'+esc(rr.id)+'">📦 Contrassegna come Consegnato</button>';
   h += '</div>';
   return h;
