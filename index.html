@@ -1251,7 +1251,7 @@ function finalizeClaim() {
   S.users[session].lastRewardClaim = new Date().toISOString();
   S.requests.push({
     id: Date.now()+'', by: session,
-    name: o.reward.name, emoji: o.reward.emoji || '🎁',
+    name: o.reward.name, emoji: o.reward.emoji || '🎁', desc: o.reward.desc || '',
     requestedAt: new Date().toISOString(),
     mode: 'deadline', deadline: o.actualDl, premium: o.premiumArr, note: '', status: 'pending', cost: o.totalCost
   });
@@ -2095,6 +2095,12 @@ function renderExecCard(rr, showBtn) {
   h += '<div style="font-size:2rem;background:#fff;padding:8px;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,0.05)">'+(rr.emoji||'🛍️')+'</div>';
   h += '<div><div style="font-weight:700;color:var(--b3);font-size:1.05rem">'+esc(rr.name)+'</div><div style="font-size:.7rem;color:var(--muted)">Cliente: '+esc(pname(rr.by))+'</div></div>';
   h += '</div>';
+
+  var rw = S.rewards.find(function(r) { return r.name === rr.name; });
+  var orderDesc = rr.desc || (rw ? rw.desc : '');
+  if (orderDesc) {
+    h += '<div style="margin-bottom:12px;padding:10px;background:rgba(255,255,255,0.6);border-left:3px solid #d8b4e2;border-radius:0 8px 8px 0;font-size:.78rem;color:#5b21b6;line-height:1.4"><strong style="display:block;margin-bottom:2px;font-size:.7rem;text-transform:uppercase;color:#8b5cf6">📝 Descrizione/Note:</strong>'+esc(orderDesc)+'</div>';
+  }
   var timeLabel = rr.mode==='time' ? 'Orario di Consegna:' : 'Consegna Entro il:';
   var timeVal = rr.mode==='time' ? fmtTime(rr.deadline) : fmtDt(rr.deadline);
   h += '<div style="background:#fff;padding:10px;border-radius:8px;margin-bottom:10px">';
@@ -2260,10 +2266,19 @@ function renderOrderDetailOverlay() {
   h += '<div class="sheet-handle"></div>';
 
   // Header
-  h += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">';
+  h += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">';
   h += '<div style="font-size:2.8rem;background:linear-gradient(135deg,#f0f5ff,#e0ecff);width:66px;height:66px;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(30,48,96,0.1)">'+(rr.emoji||'🎁')+'</div>';
   h += '<div style="flex:1"><h2 style="font-family:\'Playfair Display\',serif;font-size:1.25rem;color:var(--b2);margin-bottom:6px">'+esc(rr.name)+'</h2>';
   h += '<span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:10px;font-size:.72rem;font-weight:700;background:'+sd.bg+';color:'+sd.col+'">'+sd.label+'</span></div></div>';
+
+  var rw = S.rewards.find(function(r) { return r.name === rr.name; });
+  var orderDesc = rr.desc || (rw ? rw.desc : '');
+  if (orderDesc) {
+    h += '<div style="margin-bottom:16px;font-size:.85rem;color:var(--b3);line-height:1.45;padding:14px;background:rgba(0,0,0,0.03);border-radius:12px;border:1px solid rgba(0,0,0,0.05)">';
+    h += '<strong style="display:block;margin-bottom:6px;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">📝 Dettagli Ordine</strong>';
+    h += esc(orderDesc);
+    h += '</div>';
+  }
 
   // Order ID + date row
   h += '<div style="background:#f8faff;border-radius:12px;padding:14px 16px;margin-bottom:16px;border:1px solid #e8f0fc">';
