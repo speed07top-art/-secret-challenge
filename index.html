@@ -1560,13 +1560,11 @@ function renderHero(pts, ptPts, ptName, ptOnline, flashAnsweredToday, u, dAgo) {
   var warning = dAgo === 2;
   var safe = dAgo === 0 || dAgo === 1;
   
-  var h = '<div class="balance-hero" style="background:linear-gradient(135deg,#5e83ca,#4268b3);border-radius:24px;padding:26px 20px 20px;position:relative;overflow:hidden;box-shadow:0 12px 24px rgba(66,104,179,0.2)">';
+  var h = '<div class="balance-hero" style="padding:15px 0 20px;position:relative;">';
   
-  h += '<div style="position:absolute;top:-40px;right:-20px;width:140px;height:140px;background:radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%);border-radius:50%"></div>';
-
-  var dangerBg = danger ? 'rgba(231,76,60,0.2)' : (warning ? 'rgba(243,156,18,0.2)' : 'rgba(255,255,255,0.08)');
-  var dangerBorder = danger ? 'rgba(231,76,60,0.4)' : (warning ? 'rgba(243,156,18,0.4)' : 'rgba(255,255,255,0.1)');
-  var dangerColor = danger ? '#ffaaaa' : (warning ? '#ffd580' : '#fff');
+  var dangerBg = danger ? 'rgba(231,76,60,0.1)' : (warning ? 'rgba(243,156,18,0.1)' : 'rgba(255,255,255,0.08)');
+  var dangerBorder = danger ? 'rgba(231,76,60,0.4)' : (warning ? 'rgba(243,156,18,0.4)' : 'transparent');
+  var dangerColor = danger ? '#e74c3c' : (warning ? '#f39c12' : '#fff');
   
   // Flash Sale Slider (Changes every 5 hours)
   var epoch = Math.floor(Date.now() / (5 * 3600 * 1000));
@@ -1585,42 +1583,57 @@ function renderHero(pts, ptPts, ptName, ptOnline, flashAnsweredToday, u, dAgo) {
     fSales = a.slice(0, 3);
   }
 
-  h += '<div style="position:relative;z-index:2">';
-  h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px">';
-  h += '<div style="font-size:.85rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.05em">⚡ Flash Sale</div>';
+  var gradients = [
+    'linear-gradient(135deg, #FF6B6B, #FF8E53)',
+    'linear-gradient(135deg, #4facfe, #00f2fe)',
+    'linear-gradient(135deg, #667eea, #764ba2)'
+  ];
+
+  h += '<div style="position:relative;z-index:2;padding:0 20px">';
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
+  h += '<div style="font-size:1.15rem;font-weight:900;color:#fff;letter-spacing:.02em;font-family:\'Playfair Display\',serif">⚡ Flash Sale</div>';
   var hrsLeft = 5 - (Math.floor(Date.now() / 3600000) % 5);
-  h += '<div style="font-size:.7rem;color:#e6effc;font-weight:600">Scade tra '+hrsLeft+'h</div>';
+  h += '<div style="font-size:.7rem;color:#b0c8f8;font-weight:800;background:rgba(255,255,255,0.1);padding:4px 10px;border-radius:12px">Scade tra '+hrsLeft+'h</div>';
+  h += '</div>';
+  h += '<div style="font-size:.8rem;color:rgba(255,255,255,0.7);font-weight:500;margin-bottom:8px">Sconti speciali validi solo per poco tempo!</div>';
   h += '</div>';
   
-  h += '<div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:12px;margin:0 -20px;padding-left:20px;padding-right:20px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch">';
+  h += '<div style="display:flex;gap:16px;overflow-x:auto;padding:15px 20px 20px;margin:0;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch">';
   var fSeed = epoch;
-  fSales.forEach(function(fs) {
+  fSales.forEach(function(fs, i) {
     var fx = Math.sin(fSeed++) * 10000;
     var dscPct = (fx - Math.floor(fx)) > 0.5 ? 0.10 : 0.05; // 10% or 5%
     var dscCost = Math.floor(fs.cost * (1 - dscPct));
-    h += '<div style="flex:0 0 140px;scroll-snap-align:start;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:16px;padding:14px;position:relative;cursor:pointer" data-action="open-claim" data-arg="'+fs.id+'" data-arg2="'+dscCost+'">';
-    h += '<div style="position:absolute;top:-8px;right:-8px;background:var(--red);color:#fff;font-size:.65rem;font-weight:800;padding:4px 8px;border-radius:10px;box-shadow:0 4px 10px rgba(231,76,60,0.4)">-'+(dscPct*100)+'%</div>';
-    h += '<div style="font-size:2rem;margin-bottom:8px">'+(fs.emoji||'🎁')+'</div>';
-    h += '<div style="font-size:.78rem;font-weight:700;color:#fff;margin-bottom:12px;line-height:1.2;height:28px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">'+esc(fs.name)+'</div>';
-    h += '<div style="display:flex;align-items:end;gap:6px">';
-    h += '<div style="font-size:1.15rem;font-weight:800;color:#fff;font-family:\'Playfair Display\',serif">🔷 '+dscCost+'</div>';
-    h += '<div style="font-size:.7rem;color:rgba(255,255,255,0.4);text-decoration:line-through;margin-bottom:2px">'+fs.cost+'</div>';
+    var bg = gradients[i % gradients.length];
+    var descText = fs.desc || 'Scopri questo fantastico premio per ravvivare l\'intimità!';
+    
+    h += '<div style="flex:0 0 170px;scroll-snap-align:start;background:'+bg+';border-radius:24px;padding:18px 16px;position:relative;cursor:pointer;box-shadow:0 12px 24px rgba(0,0,0,0.12);display:flex;flex-direction:column;transition:transform 0.2s" data-action="open-claim" data-arg="'+fs.id+'" data-arg2="'+dscCost+'">';
+    h += '<div style="position:absolute;top:-8px;right:-4px;background:#fff;color:var(--red);font-size:.8rem;font-weight:900;padding:4px 10px;border-radius:12px;box-shadow:0 6px 12px rgba(0,0,0,0.15)">-'+(dscPct*100)+'%</div>';
+    h += '<div style="font-size:2.4rem;margin-bottom:12px;filter:drop-shadow(0 4px 6px rgba(0,0,0,0.2))">'+(fs.emoji||'🎁')+'</div>';
+    h += '<div style="font-size:.9rem;font-weight:800;color:#fff;margin-bottom:6px;line-height:1.2;height:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(fs.name)+'</div>';
+    h += '<div style="font-size:.75rem;color:rgba(255,255,255,0.9);line-height:1.35;margin-bottom:14px;height:30px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">'+esc(descText)+'</div>';
+    h += '<div style="display:flex;align-items:end;gap:6px;margin-bottom:14px">';
+    h += '<div style="font-size:1.4rem;font-weight:900;color:#fff;font-family:\'Playfair Display\',serif;line-height:1">🔷 '+dscCost+'</div>';
+    h += '<div style="font-size:.8rem;color:rgba(255,255,255,0.7);text-decoration:line-through;margin-bottom:2px">'+fs.cost+'</div>';
+    h += '</div>';
+    h += '<div style="margin-top:auto">';
+    h += '<div style="background:rgba(255,255,255,0.25);color:#fff;text-align:center;padding:12px;border-radius:14px;font-size:.85rem;font-weight:800;backdrop-filter:blur(4px);box-shadow:0 4px 10px rgba(0,0,0,0.05)">Acquista Ora</div>';
     h += '</div></div>';
   });
-  h += '</div></div>';
+  h += '</div>';
 
   if (!u.lastRewardClaim) {
-    h += '<div style="margin-top:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:12px;position:relative;z-index:2;cursor:pointer;transition:all 0.2s" onclick="document.querySelector(\'.ni[data-arg=shop]\').click()">';
-    h += '<div style="font-size:1.6rem;line-height:1">🛍️</div>';
-    h += '<div><div style="font-size:.8rem;font-weight:700;color:#fff;margin-bottom:3px">Benvenuto nello Shop!</div><div style="font-size:.7rem;color:rgba(176,200,248,0.9);line-height:1.4">Fai il tuo <strong>primo acquisto</strong> per sbloccare l\'analisi clinica di coppia. <strong>Tocca qui!</strong></div></div>';
+    h += '<div style="margin:0 20px 14px;background:#fff;border:1px solid #e0eaf8;border-radius:16px;padding:14px;display:flex;align-items:center;gap:14px;position:relative;z-index:2;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.03)" onclick="document.querySelector(\'.ni[data-arg=shop]\').click()">';
+    h += '<div style="font-size:2rem;line-height:1">🛍️</div>';
+    h += '<div><div style="font-size:.9rem;font-weight:800;color:var(--b2);margin-bottom:4px">Benvenuto nello Shop!</div><div style="font-size:.75rem;color:var(--b3);line-height:1.4">Fai il tuo <strong>primo acquisto</strong> per sbloccare l\'analisi clinica di coppia.</div></div>';
     h += '</div>';
   } else if (danger) {
-    h += '<div style="margin-top:14px;background:rgba(231,76,60,0.15);border:1px dashed rgba(231,76,60,0.5);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;position:relative;z-index:2;cursor:pointer;transition:all 0.2s" onclick="document.querySelector(\'.ni[data-arg=shop]\').click()">';
-    h += '<div style="font-size:1.8rem;line-height:1">🚨</div>';
-    h += '<div><div style="font-size:.8rem;font-weight:700;color:#ffaaaa;margin-bottom:3px">Penalità Imminente!</div><div style="font-size:.7rem;color:rgba(255,170,170,0.85);line-height:1.4">Non fare pause così lunghe, sfoglia lo <strong>Shop</strong> e acquista qualcosa per disinnescare la penalità! <strong>Tocca qui</strong>.</div></div>';
+    h += '<div style="margin:0 20px 14px;background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);border-radius:16px;padding:14px;display:flex;align-items:center;gap:14px;position:relative;z-index:2;cursor:pointer;" onclick="document.querySelector(\'.ni[data-arg=shop]\').click()">';
+    h += '<div style="font-size:2rem;line-height:1">🚨</div>';
+    h += '<div><div style="font-size:.9rem;font-weight:800;color:#c0392b;margin-bottom:4px">Penalità Imminente!</div><div style="font-size:.75rem;color:#e74c3c;line-height:1.4">Non fare pause così lunghe, sfoglia lo <strong>Shop</strong> e acquista qualcosa per disinnescare la penalità!</div></div>';
     h += '</div>';
   } else if (warning) {
-    h += '<div style="margin-top:14px;background:rgba(243,156,18,0.15);border:1px dashed rgba(243,156,18,0.5);border-radius:12px;padding:10px;text-align:center;position:relative;z-index:2;cursor:pointer;font-size:.75rem;color:#ffd580;font-weight:600" onclick="document.querySelector(\'.ni[data-arg=shop]\').click()">';
+    h += '<div style="margin:0 20px 14px;background:rgba(243,156,18,0.1);border:1px dashed rgba(243,156,18,0.4);border-radius:16px;padding:12px;text-align:center;position:relative;z-index:2;cursor:pointer;font-size:.8rem;color:#d68910;font-weight:700" onclick="document.querySelector(\'.ni[data-arg=shop]\').click()">';
     h += '⏳ Attenzione: Sei a quota 2 giorni senza acquisti.<br>Rimedia subito prima della penalità!';
     h += '</div>';
   }
