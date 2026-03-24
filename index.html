@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -56,7 +57,7 @@ textarea{resize:vertical;min-height:70px}
 .topbar-name{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--b3);flex:1}
 .pts-badge{display:flex;align-items:center;gap:5px;background:var(--b10);border:1px solid var(--b9);border-radius:20px;padding:5px 12px;font-size:.82rem;font-weight:700;color:var(--b4)}
 .icon-btn{background:none;border:none;cursor:pointer;padding:5px;color:var(--muted);line-height:0;border-radius:8px}
-.bnav{display:grid;grid-template-columns:repeat(4,1fr);background:white;border-top:1px solid #e0eaf8;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom)}
+.bnav{display:grid;grid-template-columns:repeat(3,1fr);background:white;border-top:1px solid #e0eaf8;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom)}
 .ni{display:flex;flex-direction:column;align-items:center;padding:9px 4px 8px;gap:3px;border:none;background:none;cursor:pointer;font-size:.6rem;font-weight:600;color:var(--muted);letter-spacing:.04em;font-family:'DM Sans',sans-serif;position:relative}
 .ni.on{color:var(--b5)}
 .ni svg{width:20px;height:20px}
@@ -124,44 +125,67 @@ textarea{resize:vertical;min-height:70px}
 .mandatory-alert{background:linear-gradient(135deg,#fff0ee,#fde8e6);border:1.5px solid #f5c0bc;border-radius:14px;padding:14px 16px}
 .mandatory-alert h4{font-family:'Playfair Display',serif;color:var(--red);font-size:.9rem;margin-bottom:4px}
 .mandatory-alert p{font-size:.78rem;color:#8b2020;line-height:1.45}
+
+/* ── FLASH QUESTION ── */
+.fq-wrap{background:linear-gradient(135deg,#0e1933,#1e3060);border-radius:22px;padding:22px 20px;color:white;position:relative;overflow:hidden}
+.fq-wrap::after{content:’’;position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:rgba(255,255,255,.05);border-radius:50%}
+.fq-label{font-size:.68rem;opacity:.7;text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:8px}
+.fq-timer{position:absolute;top:18px;right:18px;background:rgba(255,255,255,.12);border-radius:20px;padding:4px 10px;font-size:.72rem;font-weight:700}
+.fq-timer.urgent{background:rgba(231,76,60,.4)}
+.fq-question{font-family:‘Playfair Display’,serif;font-size:1rem;font-weight:700;line-height:1.45;margin-bottom:16px;position:relative}
+.fq-opts{display:flex;flex-direction:column;gap:7px}
+.fq-opt{padding:11px 14px;border:1.5px solid rgba(255,255,255,.15);border-radius:11px;cursor:pointer;font-size:.85rem;font-weight:500;text-align:left;background:rgba(255,255,255,.06);color:white;font-family:‘DM Sans’,sans-serif;width:100%;transition:all .18s}
+.fq-opt:hover:not([disabled]){background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35)}
+.fq-opt.fq-ok{background:rgba(46,204,113,.25);border-color:var(–green);font-weight:600}
+.fq-opt.fq-ko{background:rgba(231,76,60,.25);border-color:var(–red);font-weight:600}
+.fq-opt.fq-reveal{background:rgba(46,204,113,.15);border-color:var(–green)}
+.fq-result-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-weight:700;font-size:.85rem;margin-top:10px}
+.fq-pos{background:rgba(46,204,113,.25);color:#7effc0}
+.fq-neg{background:rgba(231,76,60,.25);color:#ffaaaa}
+
+/* Reward nudge inside flash result */
+.reward-nudge{background:linear-gradient(135deg,#1a1040,#2a1860);border:1.5px solid rgba(139,92,246,.4);border-radius:14px;padding:16px;margin-top:14px;text-align:center}
+.reward-nudge h4{font-family:‘Playfair Display’,serif;font-size:.95rem;color:#c4b5fd;margin-bottom:6px}
+.reward-nudge p{font-size:.78rem;color:rgba(196,181,253,.75);margin-bottom:12px;line-height:1.45}
+.reward-nudge-btns{display:flex;gap:8px;justify-content:center}
 .overlay{position:fixed;inset:0;background:rgba(5,10,30,.7);display:flex;align-items:flex-end;justify-content:center;z-index:200;backdrop-filter:blur(4px)}
 .overlay.center{align-items:center}
 .sheet{background:white;border-radius:24px 24px 0 0;padding:24px 20px 36px;width:100%;max-width:430px;max-height:92vh;overflow-y:auto;animation:slideUp .28s cubic-bezier(.32,1,.36,1)}
 .sheet.rounded{border-radius:24px;text-align:center;padding:32px 24px 28px}
 @keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
 .sheet-handle{width:40px;height:4px;background:#e0eaf8;border-radius:2px;margin:0 auto 20px}
-.sheet h2{font-family:'Playfair Display',serif;font-size:1.25rem;color:var(--b2);margin-bottom:6px}
-.sheet-sub{font-size:.83rem;color:var(--muted);margin-bottom:18px;line-height:1.5}
+.sheet h2{font-family:‘Playfair Display’,serif;font-size:1.25rem;color:var(–b2);margin-bottom:6px}
+.sheet-sub{font-size:.83rem;color:var(–muted);margin-bottom:18px;line-height:1.5}
 .sheet-actions{display:flex;gap:8px;margin-top:16px}
 .mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px}
-.mode-tab{padding:9px;border:1.5px solid #e0eaf8;border-radius:10px;cursor:pointer;font-size:.82rem;font-weight:600;background:white;color:var(--muted);text-align:center;transition:all .18s}
-.mode-tab.on{border-color:var(--b6);background:var(--b10);color:var(--b4)}
-.toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);background:var(--b2);color:white;padding:10px 20px;border-radius:12px;font-size:.82rem;font-weight:500;z-index:300;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.35);white-space:nowrap}
-.empty{text-align:center;padding:30px 16px;color:var(--muted)}
+.mode-tab{padding:9px;border:1.5px solid #e0eaf8;border-radius:10px;cursor:pointer;font-size:.82rem;font-weight:600;background:white;color:var(–muted);text-align:center;transition:all .18s}
+.mode-tab.on{border-color:var(–b6);background:var(–b10);color:var(–b4)}
+.toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);background:var(–b2);color:white;padding:10px 20px;border-radius:12px;font-size:.82rem;font-weight:500;z-index:300;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.35);white-space:nowrap}
+.empty{text-align:center;padding:30px 16px;color:var(–muted)}
 .empty-ico{font-size:2.2rem;display:block;margin-bottom:10px}
 .empty p{font-size:.83rem;line-height:1.5}
 .ob-dots{display:flex;justify-content:center;gap:6px;margin:20px 0}
-.ob-dot{height:7px;border-radius:4px;background:var(--b9);transition:all .3s}
-.ob-dot.on{background:var(--b5);width:20px}
+.ob-dot{height:7px;border-radius:4px;background:var(–b9);transition:all .3s}
+.ob-dot.on{background:var(–b5);width:20px}
 .ob-dot.off{width:7px}
-.adm-wrap{height:100vh;overflow-y:auto;background:#070d1f;color:#c8d8f8;font-family:'DM Sans',sans-serif}
+.adm-wrap{height:100vh;overflow-y:auto;background:#070d1f;color:#c8d8f8;font-family:‘DM Sans’,sans-serif}
 .adm-top{background:#0e1933;padding:14px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #162448;position:sticky;top:0;z-index:10}
-.adm-top h1{font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--b9)}
+.adm-top h1{font-family:‘Playfair Display’,serif;font-size:1.15rem;color:var(–b9)}
 .adm-body{padding:18px 18px 40px;max-width:860px;margin:0 auto}
 .adm-tabs{display:flex;gap:3px;margin-bottom:20px;background:#0e1933;padding:5px;border-radius:11px;border:1px solid #162448}
-.adm-tab{flex:1;padding:9px 6px;border:none;background:none;color:#5a7090;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;transition:all .18s}
-.adm-tab.on{background:var(--b5);color:white}
+.adm-tab{flex:1;padding:9px 6px;border:none;background:none;color:#5a7090;border-radius:8px;cursor:pointer;font-family:‘DM Sans’,sans-serif;font-size:.78rem;font-weight:600;transition:all .18s}
+.adm-tab.on{background:var(–b5);color:white}
 .acard{background:#0e1933;border-radius:13px;padding:18px;margin-bottom:12px;border:1px solid #162448}
-.acard h3{font-family:'Playfair Display',serif;color:var(--b8);margin-bottom:14px;font-size:.9rem}
+.acard h3{font-family:‘Playfair Display’,serif;color:var(–b8);margin-bottom:14px;font-size:.9rem}
 .agrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
 .af{display:flex;flex-direction:column;gap:5px}
 .af label{font-size:.69rem;color:#5a7090;font-weight:600;text-transform:uppercase;letter-spacing:.07em}
-.af input,.af select,.af textarea{background:#070d1f;border:1px solid #162448;color:#c8d8f8;border-radius:8px;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.83rem;outline:none;width:100%}
-.af input:focus,.af select:focus{border-color:var(--b7)}
+.af input,.af select,.af textarea{background:#070d1f;border:1px solid #162448;color:#c8d8f8;border-radius:8px;padding:9px 12px;font-family:‘DM Sans’,sans-serif;font-size:.83rem;outline:none;width:100%}
+.af input:focus,.af select:focus{border-color:var(–b7)}
 .af select option{background:#0e1933}
-.abtn{background:var(--b5);color:white;border:none;padding:10px 16px;border-radius:9px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;font-size:.81rem;display:inline-flex;align-items:center;gap:5px;transition:all .18s}
-.abtn:hover{background:var(--b6)}
-.abtn.gold{background:var(--gold-d)}.abtn.grn{background:var(--green-d)}
+.abtn{background:var(–b5);color:white;border:none;padding:10px 16px;border-radius:9px;font-family:‘DM Sans’,sans-serif;font-weight:600;cursor:pointer;font-size:.81rem;display:inline-flex;align-items:center;gap:5px;transition:all .18s}
+.abtn:hover{background:var(–b6)}
+.abtn.gold{background:var(–gold-d)}.abtn.grn{background:var(–green-d)}
 .alist{display:flex;flex-direction:column;gap:7px;margin-top:12px}
 .aitem{background:#070d1f;border-radius:9px;padding:11px 14px;display:flex;justify-content:space-between;align-items:flex-start;border:1px solid #162448;gap:10px}
 .aitem h4{font-size:.83rem;font-weight:600;margin-bottom:3px;color:#c8d8f8}
@@ -169,17 +193,18 @@ textarea{resize:vertical;min-height:70px}
 .adel{background:#1a0e0e;border:1px solid #4a1a1a;color:#d08080;border-radius:7px;padding:5px 10px;cursor:pointer;font-size:.72rem;flex-shrink:0}
 .astats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
 .astat{background:#070d1f;border-radius:9px;padding:13px;border:1px solid #162448}
-.astat .v{font-family:'Playfair Display',serif;font-size:1.7rem;color:var(--b8);font-weight:700}
+.astat .v{font-family:‘Playfair Display’,serif;font-size:1.7rem;color:var(–b8);font-weight:700}
 .astat .l{font-size:.69rem;color:#4a6080;margin-top:2px}
 .chip{display:inline-flex;padding:2px 8px;border-radius:10px;font-size:.67rem;font-weight:700}
-.cg{background:rgba(58,92,168,.25);color:var(--b8)}
-.cs{background:rgba(14,25,51,.6);color:var(--b9)}
+.cg{background:rgba(58,92,168,.25);color:var(–b8)}
+.cs{background:rgba(14,25,51,.6);color:var(–b9)}
 .cb{background:rgba(139,92,246,.2);color:#c4b5fd}
-.reset-btn{background:#1a0e0e;color:#d08080;border:1px solid #4a1a30;border-radius:8px;padding:9px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.79rem;font-weight:600;margin-top:10px}
+.reset-btn{background:#1a0e0e;color:#d08080;border:1px solid #4a1a30;border-radius:8px;padding:9px 14px;cursor:pointer;font-family:‘DM Sans’,sans-serif;font-size:.79rem;font-weight:600;margin-top:10px}
 .sync-pill{display:flex;align-items:center;gap:5px;margin-left:auto;font-size:.7rem;color:#4a6080}
-.sdot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(–green);flex-shrink:0}
 @media(max-width:480px){.agrid{grid-template-columns:1fr}}
 </style>
+
 </head>
 <body>
 <div id="R"></div>
@@ -188,900 +213,1112 @@ textarea{resize:vertical;min-height:70px}
 'use strict';
 
 /* ── GLOBAL EVENT DELEGATION ── */
-document.addEventListener('click', function(e) {
-  var el = e.target;
-  // Walk up to find a [data-action] element
-  while (el && el !== document) {
-    var action = el.getAttribute('data-action');
-    if (action) { handleAction(action, el, e); return; }
-    el = el.parentElement;
-  }
+document.addEventListener(‘click’, function(e) {
+var el = e.target;
+// Walk up to find a [data-action] element
+while (el && el !== document) {
+var action = el.getAttribute(‘data-action’);
+if (action) { handleAction(action, el, e); return; }
+el = el.parentElement;
+}
 });
 
 function handleAction(action, el, e) {
-  var arg = el.getAttribute('data-arg') || '';
-  var arg2 = el.getAttribute('data-arg2') || '';
-  switch(action) {
-    case 'pick-user':      selU = arg; render(); break;
-    case 'go-admin':       session = 'admin'; render(); break;
-    case 'do-login':       doLogin(); break;
-    case 'do-adm-login':   doAdmLogin(); break;
-    case 'logout':         if(session && session!=='admin') db.ref('sc_presence/'+session).remove(); clearSession(); session = null; quizSess = null; render(); break;
-    case 'adm-logout':     session = null; adminAuthed = false; sessionStorage.removeItem('adm_ok'); render(); break;
-    case 'set-tab':        tab = arg; render(); break;
-    case 'set-adm-tab':    adminTab = arg; render(); break;
-    case 'start-quiz':     startQuiz(); break;
-    case 'ans-quiz':       answerQuiz(+arg); break;
-    case 'quiz-exit':      quizSess = null; tab = 'quiz'; render(); break;
-    case 'quiz-home':      quizSess = null; tab = 'home'; render(); break;
-    case 'open-claim':     openClaim(arg); break;
-    case 'set-mode':       claimMode = arg; render(); break;
-    case 'close-overlay':  if (e.target === el) { overlay = null; render(); } break;
-    case 'cancel-overlay': overlay = null; render(); break;
-    case 'submit-claim':   submitClaim(); break;
-    case 'mark-done':      markDone(arg); break;
-    case 'confirm-done':   confirmDone(arg, arg2 === 'yes'); break;
-    case 'toggle-acc':     toggleAcc(+arg, el); break;
-    case 'ob-next':        obStep++; render(); break;
-    case 'ob-back':        obStep--; render(); break;
-    case 'ob-close':       showOB = false; render(); break;
-    case 'add-q':          addQ(); break;
-    case 'del-q':          delQ(arg); break;
-    case 'add-r':          addR(); break;
-    case 'del-r':          delR(arg); break;
-    case 'adj-pts':        adjPts(arg, +arg2); break;
-    case 'do-reset':       doReset(); break;
-    case 'copy-topic':
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(arg).then(function(){ showToast('Topic copiato! ✅'); }).catch(function(){ showToast('Copia: ' + arg); });
-      } else { showToast('Topic: ' + arg); }
-      break;
-  }
+var arg = el.getAttribute(‘data-arg’) || ‘’;
+var arg2 = el.getAttribute(‘data-arg2’) || ‘’;
+switch(action) {
+case ‘pick-user’:      selU = arg; render(); break;
+case ‘go-admin’:       session = ‘admin’; render(); break;
+case ‘do-login’:       doLogin(); break;
+case ‘do-adm-login’:   doAdmLogin(); break;
+case ‘logout’:         if(session && session!==‘admin’) db.ref(‘sc_presence/’+session).remove(); clearSession(); session = null; quizSess = null; render(); break;
+case ‘adm-logout’:     session = null; adminAuthed = false; sessionStorage.removeItem(‘adm_ok’); render(); break;
+case ‘set-tab’:        tab = arg; render(); break;
+case ‘set-adm-tab’:    adminTab = arg; render(); break;
+
+```
+case 'open-claim':     openClaim(arg); break;
+case 'set-mode':       claimMode = arg; render(); break;
+case 'close-overlay':  if (e.target === el) { overlay = null; render(); } break;
+case 'cancel-overlay': overlay = null; render(); break;
+case 'submit-claim':   submitClaim(); break;
+case 'mark-done':      markDone(arg); break;
+case 'confirm-done':   confirmDone(arg, arg2 === 'yes'); break;
+case 'toggle-acc':     toggleAcc(+arg, el); break;
+case 'ob-next':        obStep++; render(); break;
+case 'ob-back':        obStep--; render(); break;
+case 'ob-close':       showOB = false; render(); break;
+case 'add-q':          addQ(); break;
+case 'del-q':          delQ(arg); break;
+case 'add-r':          addR(); break;
+case 'del-r':          delR(arg); break;
+case 'adj-pts':        adjPts(arg, +arg2); break;
+case 'do-reset':       doReset(); break;
+case 'copy-topic':     copyToClipboard(arg); break;
+case 'fq-answer':      answerFlashQ(+arg); break;
+case 'fq-dismiss':     dismissFlashQ(); break;
+case 'fq-claim':       flashQ=null; tab='shop'; render(); break;
+case 'fq-skip-claim':  flashQ=null; render(); break;
+case 'copy-topic':
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(arg).then(function(){ showToast('Topic copiato! ✅'); }).catch(function(){ showToast('Copia: ' + arg); });
+  } else { showToast('Topic: ' + arg); }
+  break;
+```
+
+}
 }
 
 /* ── FIREBASE SETUP ── */
 var firebaseConfig = {
-  apiKey: "AIzaSyB9iufetY1k5ScWdI5fiOPNK567kPNw6ug",
-  authDomain: "secretchallenge-7aabf.firebaseapp.com",
-  databaseURL: "https://secretchallenge-7aabf-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "secretchallenge-7aabf",
-  storageBucket: "secretchallenge-7aabf.firebasestorage.app",
-  messagingSenderId: "877944784958",
-  appId: "1:877944784958:web:f62468f13fa5a23365696f"
+apiKey: “AIzaSyB9iufetY1k5ScWdI5fiOPNK567kPNw6ug”,
+authDomain: “secretchallenge-7aabf.firebaseapp.com”,
+databaseURL: “https://secretchallenge-7aabf-default-rtdb.europe-west1.firebasedatabase.app”,
+projectId: “secretchallenge-7aabf”,
+storageBucket: “secretchallenge-7aabf.firebasestorage.app”,
+messagingSenderId: “877944784958”,
+appId: “1:877944784958:web:f62468f13fa5a23365696f”
 };
 firebase.initializeApp(firebaseConfig);
 var db = firebase.database();
-var DB_REF = 'sc_app';
+var DB_REF = ‘sc_app’;
 
 /* ── DATA ── */
-function freshUser() { return {pwd:'',pwdSet:false,pts:1000,quizToday:null,lastRewardClaim:null,penaltyChecked:null}; }
+function freshUser() { return {pwd:’’,pwdSet:false,pts:1000,quizToday:null,lastRewardClaim:null,penaltyChecked:null}; }
 var BLANK = {users:{giulia:freshUser(),stefano:freshUser()},questions:[],rewards:[],requests:[]};
 
 /* ── EMBEDDED QUESTION BANK (from CSV) ── */
-var QUESTION_BANK = [{"id": "1", "text": "Qual è la capitale d'Italia?", "opts": ["Roma", "Milano", "Napoli", "Torino"], "correct": 0, "diff": 1, "ambito": "Geografia"}, {"id": "2", "text": "Qual è la capitale della Francia?", "opts": ["Parigi", "Lione", "Marsiglia", "Nizza"], "correct": 0, "diff": 1, "ambito": "Geografia"}, {"id": "3", "text": "Qual è il pianeta più vicino al Sole?", "opts": ["Venere", "Mercurio", "Marte", "Giove"], "correct": 1, "diff": 1, "ambito": "Scienza"}, {"id": "4", "text": "Chi ha scritto \"Romeo e Giulietta\"?", "opts": ["Dante", "Shakespeare", "Boccaccio", "Manzoni"], "correct": 1, "diff": 2, "ambito": "Letteratura"}, {"id": "5", "text": "Quanto fa 2+2?", "opts": ["3", "4", "5", "6"], "correct": 1, "diff": 1, "ambito": "Matematica"}, {"id": "6", "text": "Qual è il colore del cielo sereno?", "opts": ["Blu", "Verde", "Rosso", "Giallo"], "correct": 0, "diff": 1, "ambito": "Scienza"}, {"id": "7", "text": "Chi era il primo presidente USA?", "opts": ["Lincoln", "Washington", "Jefferson", "Adams"], "correct": 1, "diff": 2, "ambito": "Storia"}, {"id": "8", "text": "Qual è l’oceano più grande?", "opts": ["Atlantico", "Indiano", "Pacifico", "Artico"], "correct": 2, "diff": 2, "ambito": "Geografia"}, {"id": "9", "text": "Quanti giorni ha una settimana?", "opts": ["5", "6", "7", "8"], "correct": 2, "diff": 1, "ambito": "Varie"}, {"id": "10", "text": "Simbolo chimico dell’acqua?", "opts": ["H2O", "O2", "CO2", "NaCl"], "correct": 0, "diff": 1, "ambito": "Scienza"}, {"id": "11", "text": "Chi ha dipinto la Gioconda?", "opts": ["Van Gogh", "Leonardo", "Picasso", "Raffaello"], "correct": 1, "diff": 2, "ambito": "Arte"}, {"id": "12", "text": "Quanto fa 10x10?", "opts": ["50", "100", "10", "20"], "correct": 1, "diff": 1, "ambito": "Matematica"}, {"id": "13", "text": "Chi ha scoperto l’America?", "opts": ["Colombo", "Magellano", "Cook", "Vespucci"], "correct": 0, "diff": 2, "ambito": "Storia"}, {"id": "14", "text": "Continente più grande?", "opts": ["Africa", "Asia", "Europa", "America"], "correct": 1, "diff": 2, "ambito": "Geografia"}, {"id": "15", "text": "Numero lati triangolo?", "opts": ["2", "3", "4", "5"], "correct": 1, "diff": 1, "ambito": "Matematica"}, {"id": "16", "text": "Chi ha teorizzato la relatività?", "opts": ["Newton", "Einstein", "Galileo", "Bohr"], "correct": 1, "diff": 4, "ambito": "Scienza"}, {"id": "17", "text": "Capitale Germania?", "opts": ["Berlino", "Monaco", "Amburgo", "Colonia"], "correct": 0, "diff": 2, "ambito": "Geografia"}, {"id": "18", "text": "Pianeta più grande?", "opts": ["Saturno", "Terra", "Giove", "Urano"], "correct": 2, "diff": 2, "ambito": "Scienza"}, {"id": "19", "text": "Radice quadrata di 16?", "opts": ["2", "4", "6", "8"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "20", "text": "Gas principale atmosfera?", "opts": ["Ossigeno", "Azoto", "CO2", "Idrogeno"], "correct": 1, "diff": 3, "ambito": "Scienza"}, {"id": "21", "text": "Capitale Spagna?", "opts": ["Madrid", "Barcellona", "Valencia", "Siviglia"], "correct": 0, "diff": 2, "ambito": "Geografia"}, {"id": "22", "text": "Simbolo oro?", "opts": ["Ag", "Au", "Fe", "O"], "correct": 1, "diff": 3, "ambito": "Scienza"}, {"id": "23", "text": "Autore \"I Promessi Sposi\"?", "opts": ["Manzoni", "Dante", "Pirandello", "Leopardi"], "correct": 0, "diff": 2, "ambito": "Letteratura"}, {"id": "24", "text": "5x6=?", "opts": ["11", "30", "25", "20"], "correct": 1, "diff": 1, "ambito": "Matematica"}, {"id": "25", "text": "Paese più popoloso?", "opts": ["India", "Cina", "USA", "Indonesia"], "correct": 1, "diff": 3, "ambito": "Geografia"}, {"id": "26", "text": "Chi era Galileo?", "opts": ["Artista", "Scienziato", "Re", "Poeta"], "correct": 1, "diff": 3, "ambito": "Scienza"}, {"id": "27", "text": "Capitale Cina?", "opts": ["Pechino", "Shanghai", "Hong Kong", "Nanchino"], "correct": 0, "diff": 2, "ambito": "Geografia"}, {"id": "28", "text": "Pianeta con anelli?", "opts": ["Marte", "Giove", "Saturno", "Venere"], "correct": 2, "diff": 2, "ambito": "Scienza"}, {"id": "29", "text": "12/3=?", "opts": ["2", "3", "4", "5"], "correct": 2, "diff": 1, "ambito": "Matematica"}, {"id": "30", "text": "Vulcano famoso Italia?", "opts": ["Etna", "Vesuvio", "Stromboli", "Fuji"], "correct": 1, "diff": 2, "ambito": "Geografia"}, {"id": "31", "text": "Teoria evoluzione?", "opts": ["Darwin", "Newton", "Einstein", "Curie"], "correct": 0, "diff": 4, "ambito": "Scienza"}, {"id": "32", "text": "Capitale Russia?", "opts": ["Mosca", "San Pietroburgo", "Kiev", "Minsk"], "correct": 0, "diff": 2, "ambito": "Geografia"}, {"id": "33", "text": "Numero pianeti sistema solare?", "opts": ["7", "8", "9", "10"], "correct": 1, "diff": 3, "ambito": "Scienza"}, {"id": "34", "text": "7x8=?", "opts": ["54", "56", "58", "60"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "35", "text": "Capitale India?", "opts": ["Delhi", "Mumbai", "Kolkata", "Chennai"], "correct": 0, "diff": 3, "ambito": "Geografia"}, {"id": "36", "text": "Gas che respiriamo?", "opts": ["Ossigeno", "Azoto", "CO2", "Elio"], "correct": 0, "diff": 1, "ambito": "Scienza"}, {"id": "37", "text": "100-45=?", "opts": ["45", "55", "65", "35"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "38", "text": "Capitale Messico?", "opts": ["Monterrey", "Cancun", "Città del Messico", "Guadalajara"], "correct": 2, "diff": 3, "ambito": "Geografia"}, {"id": "39", "text": "Simbolo sodio?", "opts": ["So", "Na", "Sn", "Sd"], "correct": 1, "diff": 4, "ambito": "Scienza"}, {"id": "40", "text": "6^2=?", "opts": ["12", "18", "36", "24"], "correct": 2, "diff": 3, "ambito": "Matematica"}, {"id": "41", "text": "Capitale Egitto?", "opts": ["Il Cairo", "Alessandria", "Giza", "Luxor"], "correct": 0, "diff": 3, "ambito": "Geografia"}, {"id": "42", "text": "Nome galassia?", "opts": ["Andromeda", "Via Lattea", "Orione", "Centauro"], "correct": 1, "diff": 3, "ambito": "Scienza"}, {"id": "43", "text": "50/5=?", "opts": ["5", "10", "15", "20"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "44", "text": "Capitale Grecia?", "opts": ["Atene", "Sparta", "Salonicco", "Creta"], "correct": 0, "diff": 3, "ambito": "Geografia"}, {"id": "45", "text": "Scoperta gravità?", "opts": ["Newton", "Einstein", "Galileo", "Tesla"], "correct": 0, "diff": 3, "ambito": "Scienza"}, {"id": "46", "text": "3x9=?", "opts": ["18", "21", "27", "24"], "correct": 2, "diff": 1, "ambito": "Matematica"}, {"id": "47", "text": "144/12=?", "opts": ["10", "11", "12", "13"], "correct": 2, "diff": 2, "ambito": "Matematica"}, {"id": "48", "text": "11x11=?", "opts": ["111", "121", "131", "141"], "correct": 1, "diff": 3, "ambito": "Matematica"}, {"id": "49", "text": "81/9=?", "opts": ["7", "8", "9", "10"], "correct": 2, "diff": 2, "ambito": "Matematica"}, {"id": "50", "text": "8^2=?", "opts": ["16", "32", "64", "48"], "correct": 2, "diff": 3, "ambito": "Matematica"}, {"id": "51", "text": "20x5=?", "opts": ["50", "75", "100", "120"], "correct": 2, "diff": 2, "ambito": "Matematica"}, {"id": "52", "text": "18+27=?", "opts": ["35", "45", "55", "40"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "53", "text": "100/4=?", "opts": ["20", "25", "30", "35"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "54", "text": "14x3=?", "opts": ["42", "36", "48", "40"], "correct": 0, "diff": 2, "ambito": "Matematica"}, {"id": "55", "text": "60/3=?", "opts": ["15", "20", "25", "30"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "56", "text": "13+19=?", "opts": ["30", "31", "32", "33"], "correct": 2, "diff": 2, "ambito": "Matematica"}, {"id": "57", "text": "25x4=?", "opts": ["80", "90", "100", "110"], "correct": 2, "diff": 2, "ambito": "Matematica"}, {"id": "58", "text": "90/10=?", "opts": ["8", "9", "10", "11"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "59", "text": "7^3=?", "opts": ["343", "49", "21", "512"], "correct": 0, "diff": 4, "ambito": "Matematica"}, {"id": "60", "text": "121/11=?", "opts": ["9", "10", "11", "12"], "correct": 2, "diff": 3, "ambito": "Matematica"}, {"id": "61", "text": "19+23=?", "opts": ["40", "41", "42", "43"], "correct": 2, "diff": 2, "ambito": "Matematica"}, {"id": "62", "text": "200/5=?", "opts": ["20", "30", "40", "50"], "correct": 2, "diff": 3, "ambito": "Matematica"}, {"id": "63", "text": "15x7=?", "opts": ["95", "100", "105", "110"], "correct": 2, "diff": 3, "ambito": "Matematica"}, {"id": "64", "text": "256/16=?", "opts": ["14", "15", "16", "18"], "correct": 2, "diff": 3, "ambito": "Matematica"}, {"id": "65", "text": "3^4=?", "opts": ["27", "64", "81", "12"], "correct": 2, "diff": 4, "ambito": "Matematica"}, {"id": "66", "text": "Chi ha scritto \"1984\"?", "opts": ["Orwell", "Huxley", "Tolkien", "Rowling"], "correct": 0, "diff": 3, "ambito": "Letteratura"}, {"id": "67", "text": "Autore \"Divina Commedia\"?", "opts": ["Dante", "Petrarca", "Boccaccio", "Leopardi"], "correct": 0, "diff": 2, "ambito": "Letteratura"}, {"id": "68", "text": "Autore \"Odissea\"?", "opts": ["Omero", "Virgilio", "Ovidio", "Platone"], "correct": 0, "diff": 3, "ambito": "Letteratura"}, {"id": "69", "text": "Autore \"Don Chisciotte\"?", "opts": ["Cervantes", "Borges", "Neruda", "Allende"], "correct": 0, "diff": 4, "ambito": "Letteratura"}, {"id": "70", "text": "Autore \"Guerra e Pace\"?", "opts": ["Tolstoj", "Dostoevskij", "Pushkin", "Gogol"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "71", "text": "Autore \"Moby Dick\"?", "opts": ["Melville", "Twain", "Hemingway", "Fitzgerald"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "72", "text": "Autore \"Dracula\"?", "opts": ["Stoker", "Shelley", "Poe", "Wilde"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "73", "text": "Autore \"Frankenstein\"?", "opts": ["Shelley", "Austen", "Brontë", "Stoker"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "74", "text": "Autore \"Ulisse\"?", "opts": ["Joyce", "Beckett", "Eliot", "Yeats"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "75", "text": "Autore \"Il Processo\"?", "opts": ["Kafka", "Goethe", "Mann", "Hesse"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "76", "text": "Autore \"Lolita\"?", "opts": ["Nabokov", "Bulgakov", "Pasternak", "Solzenicyn"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "77", "text": "Autore \"Il Gattopardo\"?", "opts": ["Tomasi di Lampedusa", "Calvino", "Eco", "Pavese"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "78", "text": "Autore \"Se questo è un uomo\"?", "opts": ["Levi", "Sciascia", "Fenoglio", "Moravia"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "79", "text": "Autore \"La coscienza di Zeno\"?", "opts": ["Svevo", "Pirandello", "Verga", "Deledda"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "80", "text": "Autore \"Madame Bovary\"?", "opts": ["Flaubert", "Balzac", "Zola", "Hugo"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "81", "text": "Autore \"Dorian Gray\"?", "opts": ["Wilde", "Shaw", "Dickens", "Austen"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "82", "text": "Autore \"Il deserto dei Tartari\"?", "opts": ["Buzzati", "Calvino", "Primo Levi", "Saba"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "83", "text": "Autore \"La nausea\"?", "opts": ["Sartre", "Camus", "Beauvoir", "Merleau-Ponty"], "correct": 0, "diff": 7, "ambito": "Letteratura"}, {"id": "84", "text": "Autore \"Cent’anni di solitudine\"?", "opts": ["Marquez", "Borges", "Cortazar", "Neruda"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "85", "text": "Autore \"Orgoglio e pregiudizio\"?", "opts": ["Austen", "Brontë", "Eliot", "Alcott"], "correct": 0, "diff": 5, "ambito": "Letteratura"}];
+var QUESTION_BANK = [{“id”: “1”, “text”: “Qual è la capitale d’Italia?”, “opts”: [“Roma”, “Milano”, “Napoli”, “Torino”], “correct”: 0, “diff”: 1, “ambito”: “Geografia”}, {“id”: “2”, “text”: “Qual è la capitale della Francia?”, “opts”: [“Parigi”, “Lione”, “Marsiglia”, “Nizza”], “correct”: 0, “diff”: 1, “ambito”: “Geografia”}, {“id”: “3”, “text”: “Qual è il pianeta più vicino al Sole?”, “opts”: [“Venere”, “Mercurio”, “Marte”, “Giove”], “correct”: 1, “diff”: 1, “ambito”: “Scienza”}, {“id”: “4”, “text”: “Chi ha scritto "Romeo e Giulietta"?”, “opts”: [“Dante”, “Shakespeare”, “Boccaccio”, “Manzoni”], “correct”: 1, “diff”: 2, “ambito”: “Letteratura”}, {“id”: “5”, “text”: “Quanto fa 2+2?”, “opts”: [“3”, “4”, “5”, “6”], “correct”: 1, “diff”: 1, “ambito”: “Matematica”}, {“id”: “6”, “text”: “Qual è il colore del cielo sereno?”, “opts”: [“Blu”, “Verde”, “Rosso”, “Giallo”], “correct”: 0, “diff”: 1, “ambito”: “Scienza”}, {“id”: “7”, “text”: “Chi era il primo presidente USA?”, “opts”: [“Lincoln”, “Washington”, “Jefferson”, “Adams”], “correct”: 1, “diff”: 2, “ambito”: “Storia”}, {“id”: “8”, “text”: “Qual è l’oceano più grande?”, “opts”: [“Atlantico”, “Indiano”, “Pacifico”, “Artico”], “correct”: 2, “diff”: 2, “ambito”: “Geografia”}, {“id”: “9”, “text”: “Quanti giorni ha una settimana?”, “opts”: [“5”, “6”, “7”, “8”], “correct”: 2, “diff”: 1, “ambito”: “Varie”}, {“id”: “10”, “text”: “Simbolo chimico dell’acqua?”, “opts”: [“H2O”, “O2”, “CO2”, “NaCl”], “correct”: 0, “diff”: 1, “ambito”: “Scienza”}, {“id”: “11”, “text”: “Chi ha dipinto la Gioconda?”, “opts”: [“Van Gogh”, “Leonardo”, “Picasso”, “Raffaello”], “correct”: 1, “diff”: 2, “ambito”: “Arte”}, {“id”: “12”, “text”: “Quanto fa 10x10?”, “opts”: [“50”, “100”, “10”, “20”], “correct”: 1, “diff”: 1, “ambito”: “Matematica”}, {“id”: “13”, “text”: “Chi ha scoperto l’America?”, “opts”: [“Colombo”, “Magellano”, “Cook”, “Vespucci”], “correct”: 0, “diff”: 2, “ambito”: “Storia”}, {“id”: “14”, “text”: “Continente più grande?”, “opts”: [“Africa”, “Asia”, “Europa”, “America”], “correct”: 1, “diff”: 2, “ambito”: “Geografia”}, {“id”: “15”, “text”: “Numero lati triangolo?”, “opts”: [“2”, “3”, “4”, “5”], “correct”: 1, “diff”: 1, “ambito”: “Matematica”}, {“id”: “16”, “text”: “Chi ha teorizzato la relatività?”, “opts”: [“Newton”, “Einstein”, “Galileo”, “Bohr”], “correct”: 1, “diff”: 4, “ambito”: “Scienza”}, {“id”: “17”, “text”: “Capitale Germania?”, “opts”: [“Berlino”, “Monaco”, “Amburgo”, “Colonia”], “correct”: 0, “diff”: 2, “ambito”: “Geografia”}, {“id”: “18”, “text”: “Pianeta più grande?”, “opts”: [“Saturno”, “Terra”, “Giove”, “Urano”], “correct”: 2, “diff”: 2, “ambito”: “Scienza”}, {“id”: “19”, “text”: “Radice quadrata di 16?”, “opts”: [“2”, “4”, “6”, “8”], “correct”: 1, “diff”: 2, “ambito”: “Matematica”}, {“id”: “20”, “text”: “Gas principale atmosfera?”, “opts”: [“Ossigeno”, “Azoto”, “CO2”, “Idrogeno”], “correct”: 1, “diff”: 3, “ambito”: “Scienza”}, {“id”: “21”, “text”: “Capitale Spagna?”, “opts”: [“Madrid”, “Barcellona”, “Valencia”, “Siviglia”], “correct”: 0, “diff”: 2, “ambito”: “Geografia”}, {“id”: “22”, “text”: “Simbolo oro?”, “opts”: [“Ag”, “Au”, “Fe”, “O”], “correct”: 1, “diff”: 3, “ambito”: “Scienza”}, {“id”: “23”, “text”: “Autore "I Promessi Sposi"?”, “opts”: [“Manzoni”, “Dante”, “Pirandello”, “Leopardi”], “correct”: 0, “diff”: 2, “ambito”: “Letteratura”}, {“id”: “24”, “text”: “5x6=?”, “opts”: [“11”, “30”, “25”, “20”], “correct”: 1, “diff”: 1, “ambito”: “Matematica”}, {“id”: “25”, “text”: “Paese più popoloso?”, “opts”: [“India”, “Cina”, “USA”, “Indonesia”], “correct”: 1, “diff”: 3, “ambito”: “Geografia”}, {“id”: “26”, “text”: “Chi era Galileo?”, “opts”: [“Artista”, “Scienziato”, “Re”, “Poeta”], “correct”: 1, “diff”: 3, “ambito”: “Scienza”}, {“id”: “27”, “text”: “Capitale Cina?”, “opts”: [“Pechino”, “Shanghai”, “Hong Kong”, “Nanchino”], “correct”: 0, “diff”: 2, “ambito”: “Geografia”}, {“id”: “28”, “text”: “Pianeta con anelli?”, “opts”: [“Marte”, “Giove”, “Saturno”, “Venere”], “correct”: 2, “diff”: 2, “ambito”: “Scienza”}, {“id”: “29”, “text”: “12/3=?”, “opts”: [“2”, “3”, “4”, “5”], “correct”: 2, “diff”: 1, “ambito”: “Matematica”}, {“id”: “30”, “text”: “Vulcano famoso Italia?”, “opts”: [“Etna”, “Vesuvio”, “Stromboli”, “Fuji”], “correct”: 1, “diff”: 2, “ambito”: “Geografia”}, {“id”: “31”, “text”: “Teoria evoluzione?”, “opts”: [“Darwin”, “Newton”, “Einstein”, “Curie”], “correct”: 0, “diff”: 4, “ambito”: “Scienza”}, {“id”: “32”, “text”: “Capitale Russia?”, “opts”: [“Mosca”, “San Pietroburgo”, “Kiev”, “Minsk”], “correct”: 0, “diff”: 2, “ambito”: “Geografia”}, {“id”: “33”, “text”: “Numero pianeti sistema solare?”, “opts”: [“7”, “8”, “9”, “10”], “correct”: 1, “diff”: 3, “ambito”: “Scienza”}, {“id”: “34”, “text”: “7x8=?”, “opts”: [“54”, “56”, “58”, “60”], “correct”: 1, “diff”: 2, “ambito”: “Matematica”}, {“id”: “35”, “text”: “Capitale India?”, “opts”: [“Delhi”, “Mumbai”, “Kolkata”, “Chennai”], “correct”: 0, “diff”: 3, “ambito”: “Geografia”}, {“id”: “36”, “text”: “Gas che respiriamo?”, “opts”: [“Ossigeno”, “Azoto”, “CO2”, “Elio”], “correct”: 0, “diff”: 1, “ambito”: “Scienza”}, {“id”: “37”, “text”: “100-45=?”, “opts”: [“45”, “55”, “65”, “35”], “correct”: 1, “diff”: 2, “ambito”: “Matematica”}, {“id”: “38”, “text”: “Capitale Messico?”, “opts”: [“Monterrey”, “Cancun”, “Città del Messico”, “Guadalajara”], “correct”: 2, “diff”: 3, “ambito”: “Geografia”}, {“id”: “39”, “text”: “Simbolo sodio?”, “opts”: [“So”, “Na”, “Sn”, “Sd”], “correct”: 1, “diff”: 4, “ambito”: “Scienza”}, {“id”: “40”, “text”: “6^2=?”, “opts”: [“12”, “18”, “36”, “24”], “correct”: 2, “diff”: 3, “ambito”: “Matematica”}, {“id”: “41”, “text”: “Capitale Egitto?”, “opts”: [“Il Cairo”, “Alessandria”, “Giza”, “Luxor”], “correct”: 0, “diff”: 3, “ambito”: “Geografia”}, {“id”: “42”, “text”: “Nome galassia?”, “opts”: [“Andromeda”, “Via Lattea”, “Orione”, “Centauro”], “correct”: 1, “diff”: 3, “ambito”: “Scienza”}, {“id”: “43”, “text”: “50/5=?”, “opts”: [“5”, “10”, “15”, “20”], “correct”: 1, “diff”: 2, “ambito”: “Matematica”}, {“id”: “44”, “text”: “Capitale Grecia?”, “opts”: [“Atene”, “Sparta”, “Salonicco”, “Creta”], “correct”: 0, “diff”: 3, “ambito”: “Geografia”}, {“id”: “45”, “text”: “Scoperta gravità?”, “opts”: [“Newton”, “Einstein”, “Galileo”, “Tesla”], “correct”: 0, “diff”: 3, “ambito”: “Scienza”}, {“id”: “46”, “text”: “3x9=?”, “opts”: [“18”, “21”, “27”, “24”], “correct”: 2, “diff”: 1, “ambito”: “Matematica”}, {“id”: “47”, “text”: “144/12=?”, “opts”: [“10”, “11”, “12”, “13”], “correct”: 2, “diff”: 2, “ambito”: “Matematica”}, {“id”: “48”, “text”: “11x11=?”, “opts”: [“111”, “121”, “131”, “141”], “correct”: 1, “diff”: 3, “ambito”: “Matematica”}, {“id”: “49”, “text”: “81/9=?”, “opts”: [“7”, “8”, “9”, “10”], “correct”: 2, “diff”: 2, “ambito”: “Matematica”}, {“id”: “50”, “text”: “8^2=?”, “opts”: [“16”, “32”, “64”, “48”], “correct”: 2, “diff”: 3, “ambito”: “Matematica”}, {“id”: “51”, “text”: “20x5=?”, “opts”: [“50”, “75”, “100”, “120”], “correct”: 2, “diff”: 2, “ambito”: “Matematica”}, {“id”: “52”, “text”: “18+27=?”, “opts”: [“35”, “45”, “55”, “40”], “correct”: 1, “diff”: 2, “ambito”: “Matematica”}, {“id”: “53”, “text”: “100/4=?”, “opts”: [“20”, “25”, “30”, “35”], “correct”: 1, “diff”: 2, “ambito”: “Matematica”}, {“id”: “54”, “text”: “14x3=?”, “opts”: [“42”, “36”, “48”, “40”], “correct”: 0, “diff”: 2, “ambito”: “Matematica”}, {“id”: “55”, “text”: “60/3=?”, “opts”: [“15”, “20”, “25”, “30”], “correct”: 1, “diff”: 2, “ambito”: “Matematica”}, {“id”: “56”, “text”: “13+19=?”, “opts”: [“30”, “31”, “32”, “33”], “correct”: 2, “diff”: 2, “ambito”: “Matematica”}, {“id”: “57”, “text”: “25x4=?”, “opts”: [“80”, “90”, “100”, “110”], “correct”: 2, “diff”: 2, “ambito”: “Matematica”}, {“id”: “58”, “text”: “90/10=?”, “opts”: [“8”, “9”, “10”, “11”], “correct”: 1, “diff”: 2, “ambito”: “Matematica”}, {“id”: “59”, “text”: “7^3=?”, “opts”: [“343”, “49”, “21”, “512”], “correct”: 0, “diff”: 4, “ambito”: “Matematica”}, {“id”: “60”, “text”: “121/11=?”, “opts”: [“9”, “10”, “11”, “12”], “correct”: 2, “diff”: 3, “ambito”: “Matematica”}, {“id”: “61”, “text”: “19+23=?”, “opts”: [“40”, “41”, “42”, “43”], “correct”: 2, “diff”: 2, “ambito”: “Matematica”}, {“id”: “62”, “text”: “200/5=?”, “opts”: [“20”, “30”, “40”, “50”], “correct”: 2, “diff”: 3, “ambito”: “Matematica”}, {“id”: “63”, “text”: “15x7=?”, “opts”: [“95”, “100”, “105”, “110”], “correct”: 2, “diff”: 3, “ambito”: “Matematica”}, {“id”: “64”, “text”: “256/16=?”, “opts”: [“14”, “15”, “16”, “18”], “correct”: 2, “diff”: 3, “ambito”: “Matematica”}, {“id”: “65”, “text”: “3^4=?”, “opts”: [“27”, “64”, “81”, “12”], “correct”: 2, “diff”: 4, “ambito”: “Matematica”}, {“id”: “66”, “text”: “Chi ha scritto "1984"?”, “opts”: [“Orwell”, “Huxley”, “Tolkien”, “Rowling”], “correct”: 0, “diff”: 3, “ambito”: “Letteratura”}, {“id”: “67”, “text”: “Autore "Divina Commedia"?”, “opts”: [“Dante”, “Petrarca”, “Boccaccio”, “Leopardi”], “correct”: 0, “diff”: 2, “ambito”: “Letteratura”}, {“id”: “68”, “text”: “Autore "Odissea"?”, “opts”: [“Omero”, “Virgilio”, “Ovidio”, “Platone”], “correct”: 0, “diff”: 3, “ambito”: “Letteratura”}, {“id”: “69”, “text”: “Autore "Don Chisciotte"?”, “opts”: [“Cervantes”, “Borges”, “Neruda”, “Allende”], “correct”: 0, “diff”: 4, “ambito”: “Letteratura”}, {“id”: “70”, “text”: “Autore "Guerra e Pace"?”, “opts”: [“Tolstoj”, “Dostoevskij”, “Pushkin”, “Gogol”], “correct”: 0, “diff”: 5, “ambito”: “Letteratura”}, {“id”: “71”, “text”: “Autore "Moby Dick"?”, “opts”: [“Melville”, “Twain”, “Hemingway”, “Fitzgerald”], “correct”: 0, “diff”: 5, “ambito”: “Letteratura”}, {“id”: “72”, “text”: “Autore "Dracula"?”, “opts”: [“Stoker”, “Shelley”, “Poe”, “Wilde”], “correct”: 0, “diff”: 5, “ambito”: “Letteratura”}, {“id”: “73”, “text”: “Autore "Frankenstein"?”, “opts”: [“Shelley”, “Austen”, “Brontë”, “Stoker”], “correct”: 0, “diff”: 5, “ambito”: “Letteratura”}, {“id”: “74”, “text”: “Autore "Ulisse"?”, “opts”: [“Joyce”, “Beckett”, “Eliot”, “Yeats”], “correct”: 0, “diff”: 6, “ambito”: “Letteratura”}, {“id”: “75”, “text”: “Autore "Il Processo"?”, “opts”: [“Kafka”, “Goethe”, “Mann”, “Hesse”], “correct”: 0, “diff”: 6, “ambito”: “Letteratura”}, {“id”: “76”, “text”: “Autore "Lolita"?”, “opts”: [“Nabokov”, “Bulgakov”, “Pasternak”, “Solzenicyn”], “correct”: 0, “diff”: 6, “ambito”: “Letteratura”}, {“id”: “77”, “text”: “Autore "Il Gattopardo"?”, “opts”: [“Tomasi di Lampedusa”, “Calvino”, “Eco”, “Pavese”], “correct”: 0, “diff”: 5, “ambito”: “Letteratura”}, {“id”: “78”, “text”: “Autore "Se questo è un uomo"?”, “opts”: [“Levi”, “Sciascia”, “Fenoglio”, “Moravia”], “correct”: 0, “diff”: 5, “ambito”: “Letteratura”}, {“id”: “79”, “text”: “Autore "La coscienza di Zeno"?”, “opts”: [“Svevo”, “Pirandello”, “Verga”, “Deledda”], “correct”: 0, “diff”: 5, “ambito”: “Letteratura”}, {“id”: “80”, “text”: “Autore "Madame Bovary"?”, “opts”: [“Flaubert”, “Balzac”, “Zola”, “Hugo”], “correct”: 0, “diff”: 6, “ambito”: “Letteratura”}, {“id”: “81”, “text”: “Autore "Dorian Gray"?”, “opts”: [“Wilde”, “Shaw”, “Dickens”, “Austen”], “correct”: 0, “diff”: 6, “ambito”: “Letteratura”}, {“id”: “82”, “text”: “Autore "Il deserto dei Tartari"?”, “opts”: [“Buzzati”, “Calvino”, “Primo Levi”, “Saba”], “correct”: 0, “diff”: 6, “ambito”: “Letteratura”}, {“id”: “83”, “text”: “Autore "La nausea"?”, “opts”: [“Sartre”, “Camus”, “Beauvoir”, “Merleau-Ponty”], “correct”: 0, “diff”: 7, “ambito”: “Letteratura”}, {“id”: “84”, “text”: “Autore "Cent’anni di solitudine"?”, “opts”: [“Marquez”, “Borges”, “Cortazar”, “Neruda”], “correct”: 0, “diff”: 6, “ambito”: “Letteratura”}, {“id”: “85”, “text”: “Autore "Orgoglio e pregiudizio"?”, “opts”: [“Austen”, “Brontë”, “Eliot”, “Alcott”], “correct”: 0, “diff”: 5, “ambito”: “Letteratura”}];
 
 /* Select 10 questions balanced by difficulty.
-   Strategy: divide bank into LOW (1-3), MED (4-6), HIGH (7-10),
-   pick ~4 LOW + 4 MED + 2 HIGH (adjusting if a bucket is small),
-   then shuffle the final 10. */
+Strategy: divide bank into LOW (1-3), MED (4-6), HIGH (7-10),
+pick ~4 LOW + 4 MED + 2 HIGH (adjusting if a bucket is small),
+then shuffle the final 10. */
 function selectDailyQuestions() {
-  var low  = QUESTION_BANK.filter(function(q){ return q.diff <= 3; });
-  var med  = QUESTION_BANK.filter(function(q){ return q.diff >= 4 && q.diff <= 6; });
-  var high = QUESTION_BANK.filter(function(q){ return q.diff >= 7; });
+var low  = QUESTION_BANK.filter(function(q){ return q.diff <= 3; });
+var med  = QUESTION_BANK.filter(function(q){ return q.diff >= 4 && q.diff <= 6; });
+var high = QUESTION_BANK.filter(function(q){ return q.diff >= 7; });
 
-  function pick(arr, n) {
-    var shuffled = arr.slice().sort(function(){ return Math.random() - 0.5; });
-    return shuffled.slice(0, Math.min(n, shuffled.length));
-  }
+function pick(arr, n) {
+var shuffled = arr.slice().sort(function(){ return Math.random() - 0.5; });
+return shuffled.slice(0, Math.min(n, shuffled.length));
+}
 
-  // Targets: 4 low, 4 med, 2 high — fill gaps from other buckets
-  var targets = [4, 4, 2];
-  var buckets = [low, med, high];
-  var chosen = [];
-  var remaining = 10;
+// Targets: 4 low, 4 med, 2 high — fill gaps from other buckets
+var targets = [4, 4, 2];
+var buckets = [low, med, high];
+var chosen = [];
+var remaining = 10;
 
-  for (var i = 0; i < 3; i++) {
-    var got = pick(buckets[i], targets[i]);
-    chosen = chosen.concat(got);
-    remaining -= got.length;
-  }
+for (var i = 0; i < 3; i++) {
+var got = pick(buckets[i], targets[i]);
+chosen = chosen.concat(got);
+remaining -= got.length;
+}
 
-  // If we still need more (e.g. high bucket small), fill from any remaining
-  if (remaining > 0) {
-    var usedIds = {};
-    chosen.forEach(function(q){ usedIds[q.id] = true; });
-    var leftover = QUESTION_BANK.filter(function(q){ return !usedIds[q.id]; });
-    leftover.sort(function(){ return Math.random() - 0.5; });
-    chosen = chosen.concat(leftover.slice(0, remaining));
-  }
+// If we still need more (e.g. high bucket small), fill from any remaining
+if (remaining > 0) {
+var usedIds = {};
+chosen.forEach(function(q){ usedIds[q.id] = true; });
+var leftover = QUESTION_BANK.filter(function(q){ return !usedIds[q.id]; });
+leftover.sort(function(){ return Math.random() - 0.5; });
+chosen = chosen.concat(leftover.slice(0, remaining));
+}
 
-  // Final shuffle
-  chosen.sort(function(){ return Math.random() - 0.5; });
-  return chosen.slice(0, 10);
+// Final shuffle
+chosen.sort(function(){ return Math.random() - 0.5; });
+return chosen.slice(0, 10);
 }
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
 /* ── STATE ── */
 var S = clone(BLANK);
 var fbReady = false; // true once first Firebase snapshot received
-var session = null, tab = 'home', overlay = null;
+var session = null, tab = ‘home’, overlay = null;
 var toast = null, toastT = null;
-var adminAuthed = sessionStorage.getItem('adm_ok') === '1';
-var adminTab = 'quiz', adminUser = '', adminPwd = '';
+var adminAuthed = sessionStorage.getItem(‘adm_ok’) === ‘1’;
+var adminTab = ‘quiz’, adminUser = ‘’, adminPwd = ‘’;
 var selU = null, showOB = false, obStep = 0;
-var quizSess = null;
-var claimMode = 'deadline';
+var quizSess = null; // kept for compatibility, unused
+var claimMode = ‘deadline’;
 var expandedInfo = {};
 var onlineUsers = {};
 
+/* ── FLASH QUESTION STATE ── */
+var flashQ = null;
+/* flashQ shape: {
+q: {question object},
+slotKey: ‘YYYY-M-D-H’ (hour slot),
+answered: false,
+ansIdx: null,
+showNudge: false,   // show reward nudge after answer
+timerLeft: 3600     // seconds remaining in this hour
+} */
+var flashTimer = null;
+
 /* ── FIREBASE SAVE / SYNC ── */
+/* Write guard: suppress self-triggered Firebase echoes */
+var _writing = false;
+var _writeTimer = null;
+
 function save(s) {
-  // Arrays → objects for Firebase (Firebase doesn't support arrays natively)
-  var payload = {
-    users: s.users,
-    questions: arrToObj(s.questions),
-    rewards: arrToObj(s.rewards),
-    requests: arrToObj(s.requests)
-  };
-  db.ref(DB_REF).set(payload);
+var payload = {
+users: s.users,
+questions: arrToObj(s.questions),
+rewards: arrToObj(s.rewards),
+requests: arrToObj(s.requests)
+};
+_writing = true;
+if (_writeTimer) clearTimeout(_writeTimer);
+_writeTimer = setTimeout(function(){ _writing = false; }, 3000);
+db.ref(DB_REF).set(payload);
+}
+
+/* Returns true if user is focused on an input field */
+function userIsTyping() {
+var el = document.activeElement;
+if (!el) return false;
+var t = el.tagName;
+return t === ‘INPUT’ || t === ‘TEXTAREA’ || t === ‘SELECT’;
+}
+
+/* Debounced remote render — waits until safe to update */
+var _remoteTimer = null;
+function scheduleRemoteRender() {
+if (_remoteTimer) clearTimeout(_remoteTimer);
+_remoteTimer = setTimeout(function() {
+if (!overlay && !userIsTyping()) {
+render();
+} else {
+scheduleRemoteRender(); // retry in 1.5s
+}
+}, 1500);
 }
 
 function arrToObj(arr) {
-  if (!arr || !arr.length) return {};
-  var obj = {};
-  arr.forEach(function(item) { if (item && item.id) obj[item.id] = item; });
-  return obj;
+if (!arr || !arr.length) return {};
+var obj = {};
+arr.forEach(function(item) { if (item && item.id) obj[item.id] = item; });
+return obj;
 }
 
 function objToArr(obj) {
-  if (!obj) return [];
-  return Object.values(obj);
+if (!obj) return [];
+return Object.values(obj);
 }
 
 /* ── PRESENCE (online users) ── */
 function announcePresence() {
-  if (!session || session === 'admin') return;
-  var presRef = db.ref('sc_presence/' + session);
-  presRef.set({online: true, t: Date.now()});
-  presRef.onDisconnect().remove();
+if (!session || session === ‘admin’) return;
+var presRef = db.ref(‘sc_presence/’ + session);
+presRef.set({online: true, t: Date.now()});
+presRef.onDisconnect().remove();
 }
 
 /* ── HELPERS ── */
-function todayKey() { var d = new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function todayKey() { var d = new Date(); return d.getFullYear()+’-’+(d.getMonth()+1)+’-’+d.getDate(); }
 function daysAgo(iso) { if (!iso) return 0; return Math.round((Date.now() - new Date(iso)) / 86400000); }
-function fmtDt(s) { if (!s) return ''; try { return new Date(s).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); } catch(e) { return s; } }
-function fmtTime(s) { if (!s) return ''; try { return new Date(s).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}); } catch(e) { return s; } }
+function fmtDt(s) { if (!s) return ‘’; try { return new Date(s).toLocaleString(‘it-IT’,{day:‘2-digit’,month:‘2-digit’,hour:‘2-digit’,minute:‘2-digit’}); } catch(e) { return s; } }
+function fmtTime(s) { if (!s) return ‘’; try { return new Date(s).toLocaleTimeString(‘it-IT’,{hour:‘2-digit’,minute:‘2-digit’}); } catch(e) { return s; } }
 
 /* ── NTFY NOTIFICATIONS ── */
-var APP_URL = window.location.href.split('?')[0];
-var SESSION_KEY = 'sc_session_v1'; // {user, expires}
+var APP_URL = window.location.href.split(’?’)[0];
+var SESSION_KEY = ‘sc_session_v1’; // {user, expires}
 var SESSION_HOURS = 48;
 
 function saveSession(user) {
-  var expires = Date.now() + SESSION_HOURS * 3600 * 1000;
-  try { localStorage.setItem(SESSION_KEY, JSON.stringify({user: user, expires: expires})); } catch(e) {}
+var expires = Date.now() + SESSION_HOURS * 3600 * 1000;
+try { localStorage.setItem(SESSION_KEY, JSON.stringify({user: user, expires: expires})); } catch(e) {}
 }
 
 function loadSession() {
-  try {
-    var raw = localStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
-    var s = JSON.parse(raw);
-    if (!s || !s.user || !s.expires) return null;
-    if (Date.now() > s.expires) { localStorage.removeItem(SESSION_KEY); return null; }
-    return s.user;
-  } catch(e) { return null; }
+try {
+var raw = localStorage.getItem(SESSION_KEY);
+if (!raw) return null;
+var s = JSON.parse(raw);
+if (!s || !s.user || !s.expires) return null;
+if (Date.now() > s.expires) { localStorage.removeItem(SESSION_KEY); return null; }
+return s.user;
+} catch(e) { return null; }
 }
 
 function clearSession() {
-  try { localStorage.removeItem(SESSION_KEY); } catch(e) {}
+try { localStorage.removeItem(SESSION_KEY); } catch(e) {}
 }
-var NTFY_BASE = 'https://ntfy.sh/';
+var NTFY_BASE = ‘https://ntfy.sh/’;
 
 function genTopic(user) {
-  var rand = Math.random().toString(36).slice(2,10);
-  return 'secretchallenge-' + user + '-' + rand;
+var rand = Math.random().toString(36).slice(2,10);
+return ‘secretchallenge-’ + user + ‘-’ + rand;
 }
 
 function ensureTopic(user) {
-  if (!S.users[user].ntfyTopic) {
-    S.users[user].ntfyTopic = genTopic(user);
-    save(S);
-  }
-  return S.users[user].ntfyTopic;
+if (!S.users[user].ntfyTopic) {
+S.users[user].ntfyTopic = genTopic(user);
+save(S);
+}
+return S.users[user].ntfyTopic;
 }
 
 function ntfySend(topic, title, message, tags) {
-  if (!topic) return;
-  var payload = { topic: topic, title: title, message: message, click: APP_URL };
-  if (tags) payload.tags = tags;
-  fetch(NTFY_BASE + topic, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  }).catch(function(e) { console.warn('ntfy error:', e); });
+if (!topic) return;
+var payload = { topic: topic, title: title, message: message, click: APP_URL };
+if (tags) payload.tags = tags;
+fetch(NTFY_BASE + topic, {
+method: ‘POST’,
+headers: { ‘Content-Type’: ‘application/json’ },
+body: JSON.stringify(payload)
+}).catch(function(e) { console.warn(‘ntfy error:’, e); });
 }
 
 function notifyPartnerNewReward(rewardName, deadline) {
-  var pt = session === 'giulia' ? 'stefano' : 'giulia';
-  var topic = S.users[pt] && S.users[pt].ntfyTopic;
-  if (!topic) return;
-  var myName = session === 'giulia' ? '🌸 Giulia' : '⚡ Stefano';
-  var msg = myName + ' ha richiesto: ' + rewardName;
-  if (deadline) msg += '\nEntro: ' + fmtDt(deadline);
-  ntfySend(topic, '🎁 Nuovo premio da eseguire!', msg, ['gift']);
+var pt = session === ‘giulia’ ? ‘stefano’ : ‘giulia’;
+var topic = S.users[pt] && S.users[pt].ntfyTopic;
+if (!topic) return;
+var myName = session === ‘giulia’ ? ‘🌸 Giulia’ : ‘⚡ Stefano’;
+var msg = myName + ’ ha richiesto: ’ + rewardName;
+if (deadline) msg += ’\nEntro: ’ + fmtDt(deadline);
+ntfySend(topic, ‘🎁 Nuovo premio da eseguire!’, msg, [‘gift’]);
+}
+
+/* ── FLASH QUESTION ENGINE ── */
+
+var FLASH_HOURS = [15, 16, 17, 18, 19, 20, 21]; // hours when flash Q fires
+
+function flashSlotKey() {
+var d = new Date();
+return d.getFullYear()+’-’+d.getMonth()+’-’+d.getDate()+’-’+d.getHours();
+}
+
+function isFlashHour() {
+var h = new Date().getHours();
+return FLASH_HOURS.indexOf(h) >= 0;
+}
+
+function secondsUntilNextHour() {
+var now = new Date();
+return 3600 - now.getMinutes() * 60 - now.getSeconds();
+}
+
+function pickFlashQuestion() {
+if (!QUESTION_BANK || !QUESTION_BANK.length) return null;
+// Pick a random question, prefer ones not seen today
+var today = todayKey();
+var seenKey = ‘fq_seen_’ + today;
+var seen = [];
+try { seen = JSON.parse(sessionStorage.getItem(seenKey) || ‘[]’); } catch(e) {}
+var pool = QUESTION_BANK.filter(function(q) { return seen.indexOf(q.id) < 0; });
+if (!pool.length) pool = QUESTION_BANK; // all seen — reset
+return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function markFlashQuestionSeen(qid) {
+var today = todayKey();
+var seenKey = ‘fq_seen_’ + today;
+var seen = [];
+try { seen = JSON.parse(sessionStorage.getItem(seenKey) || ‘[]’); } catch(e) {}
+if (seen.indexOf(qid) < 0) seen.push(qid);
+try { sessionStorage.setItem(seenKey, JSON.stringify(seen)); } catch(e) {}
+}
+
+function checkFlashQuestion() {
+if (!session || session === ‘admin’) return;
+if (!isFlashHour()) { flashQ = null; return; }
+
+var slotKey = flashSlotKey();
+var doneKey = ‘fq_done_’ + slotKey;
+
+// Already answered or dismissed this hour slot
+if (sessionStorage.getItem(doneKey)) return;
+// Already active
+if (flashQ && flashQ.slotKey === slotKey) return;
+
+// New flash question for this hour
+var q = pickFlashQuestion();
+if (!q) return;
+
+flashQ = {
+q: q,
+slotKey: slotKey,
+answered: false,
+ansIdx: null,
+showNudge: false,
+timerLeft: secondsUntilNextHour()
+};
+
+// Start countdown timer
+if (flashTimer) clearInterval(flashTimer);
+flashTimer = setInterval(function() {
+if (!flashQ) { clearInterval(flashTimer); return; }
+flashQ.timerLeft–;
+if (flashQ.timerLeft <= 0) {
+// Time’s up — no penalty, but send ntfy reminder
+clearInterval(flashTimer);
+var dk = ‘fq_done_’ + flashQ.slotKey;
+sessionStorage.setItem(dk, ‘skip’);
+// Notify user they missed this slot
+var missedTopic = S.users[session] && S.users[session].ntfyTopic;
+if (missedTopic) {
+var missedHour = new Date().getHours();
+var nextH = FLASH_HOURS.filter(function(h){ return h > missedHour; })[0];
+var nextMsg = nextH ? ‘Prossima domanda alle ‘+nextH+’:00!’ : ‘Per oggi non ci sono altre domande flash.’;
+ntfySend(missedTopic, ‘⚡ Hai perso la domanda delle ‘+missedHour+’:00’, ’Nessuna penalità, ma hai perso punti! ’ + nextMsg, [‘zap’]);
+}
+flashQ = null;
+render();
+} else {
+// Update timer display only (no full re-render)
+var el = document.getElementById(‘fq-timer’);
+if (el) {
+var m = Math.floor(flashQ.timerLeft / 60);
+var s = flashQ.timerLeft % 60;
+el.textContent = m + ‘:’ + (s < 10 ? ‘0’ : ‘’) + s;
+if (flashQ.timerLeft < 120) el.classList.add(‘urgent’);
+}
+}
+}, 1000);
+
+render();
+}
+
+function answerFlashQ(optIdx) {
+if (!flashQ || flashQ.answered) return;
+var ok = optIdx === flashQ.q.correct;
+flashQ.answered = true;
+flashQ.ansIdx = optIdx;
+flashQ.ok = ok;
+
+// Award/deduct points
+var pts = ok ? 100 : -50;
+S.users[session].pts = Math.max(0, (S.users[session].pts || 0) + pts);
+save(S);
+
+// Mark slot as done
+sessionStorage.setItem(‘fq_done_’ + flashQ.slotKey, ‘answered’);
+markFlashQuestionSeen(flashQ.q.id);
+if (flashTimer) clearInterval(flashTimer);
+
+// After answer: show reward popup if user can afford any reward
+var myPtsNow = S.users[session].pts || 0;
+var affordableRws = (S.rewards || []).filter(function(r) {
+return (r.partner === session || r.partner === ‘both’) && r.cost <= myPtsNow;
+});
+flashQ.showNudge = affordableRws.length > 0;
+flashQ.affordableCount = affordableRws.length;
+
+render();
+
+// After short delay, show the reward popup
+if (affordableRws.length > 0) {
+setTimeout(function() {
+if (flashQ && flashQ.answered) {
+overlay = {type: ‘reward_nudge’, pts: myPtsNow, count: affordableRws.length};
+render();
+}
+}, 1200);
+}
+}
+
+function dismissFlashQ() {
+if (!flashQ) return;
+if (!flashQ.answered) {
+sessionStorage.setItem(‘fq_done_’ + flashQ.slotKey, ‘skip’);
+}
+if (flashTimer) clearInterval(flashTimer);
+flashQ = null;
+render();
+}
+
+function sendFlashQNotification() {
+if (!session || session === ‘admin’) return;
+var u = S.users[session];
+var topic = u && u.ntfyTopic;
+if (!topic) return;
+var h = new Date().getHours();
+ntfySend(topic,
+’⚡ Domanda Flash delle ’ + h + ‘:00!’,
+‘Una domanda ti aspetta in app. Rispondi subito: +100 pt se corretta!’,
+[‘zap’]
+);
+}
+
+function renderFlashQuestion() {
+if (!flashQ) return ‘’;
+var fq = flashQ, q = fq.q;
+var m = Math.floor(fq.timerLeft / 60);
+var s = fq.timerLeft % 60;
+var timerStr = m + ‘:’ + (s < 10 ? ‘0’ : ‘’) + s;
+var urgent = fq.timerLeft < 120;
+
+var h = ‘<div class="fq-wrap">’;
+h += ‘<div class="fq-label">⚡ Domanda Flash</div>’;
+if (!fq.answered) {
+h += ‘<div class="fq-timer' + (urgent ? ' urgent' : '') + '" id="fq-timer">’ + timerStr + ‘</div>’;
+}
+h += ‘<div class="fq-question">’ + esc(q.text) + ‘</div>’;
+
+if (!fq.answered) {
+h += ‘<div class="fq-opts">’;
+q.opts.forEach(function(o, i) {
+h += ‘<button class="fq-opt" data-action="fq-answer" data-arg="' + i + '">’ + esc(o) + ‘</button>’;
+});
+h += ‘</div>’;
+h += ‘<div style="margin-top:12px;text-align:right">’;
+h += ‘<button data-action="fq-dismiss" style="background:none;border:none;font-size:.72rem;color:rgba(255,255,255,.4);cursor:pointer;font-family:sans-serif">Salta</button>’;
+h += ‘</div>’;
+} else {
+// Show answers with feedback
+h += ‘<div class="fq-opts">’;
+q.opts.forEach(function(o, i) {
+var cls = ‘fq-opt’;
+if (i === q.correct) cls += ’ fq-ok’;
+else if (i === fq.ansIdx && !fq.ok) cls += ’ fq-ko’;
+h += ‘<button class="' + cls + '" disabled>’ + esc(o) + ‘</button>’;
+});
+h += ‘</div>’;
+h += ‘<div style="margin-top:10px">’;
+h += ‘<div class="fq-result-pill ' + (fq.ok ? 'fq-pos' : 'fq-neg') + '">’;
+h += fq.ok ? ‘✅ Corretto! +100 pt’ : ‘❌ Sbagliato! -50 pt’;
+h += ‘</div></div>’;
+
+```
+h += '<div style="margin-top:10px;text-align:right">';
+h += '<button data-action="fq-dismiss" style="background:none;border:none;font-size:.75rem;color:rgba(255,255,255,.5);cursor:pointer;font-family:sans-serif">Chiudi</button>';
+h += '</div>';
+```
+
+}
+h += ‘</div>’;
+return h;
 }
 
 function notifyRewardDone(req) {
-  var topic = S.users[req.by] && S.users[req.by].ntfyTopic;
-  if (!topic) return;
-  var executor = req.by === 'giulia' ? '⚡ Stefano' : '🌸 Giulia';
-  ntfySend(topic, '✅ Premio eseguito — conferma!', executor + ' ha eseguito: ' + req.name + '\nConfermi?', ['white_check_mark']);
+var topic = S.users[req.by] && S.users[req.by].ntfyTopic;
+if (!topic) return;
+var executor = req.by === ‘giulia’ ? ‘⚡ Stefano’ : ‘🌸 Giulia’;
+ntfySend(topic, ‘✅ Premio eseguito — conferma!’, executor + ’ ha eseguito: ’ + req.name + ‘\nConfermi?’, [‘white_check_mark’]);
 }
 
 function checkPenaltyWarning() {
-  if (!session || session === 'admin') return;
-  var u = S.users[session];
-  if (!u || !u.lastRewardClaim) return;
-  var days = daysAgo(u.lastRewardClaim);
-  var warnKey = 'pw_warned_' + todayKey();
-  if (days >= 2 && days < 3 && !sessionStorage.getItem(warnKey)) {
-    sessionStorage.setItem(warnKey, '1');
-    var topic = u.ntfyTopic;
-    if (topic) {
-      ntfySend(topic, '⚠️ Penalità in arrivo!', 'Sono ' + days + ' giorni senza richiedere un premio. Entro domani perdi 500 pt!', ['warning']);
-    }
-  }
+if (!session || session === ‘admin’) return;
+var u = S.users[session];
+if (!u) return;
+
+// ── Premio inactivity warning (2 days) ──
+if (u.lastRewardClaim) {
+var days = daysAgo(u.lastRewardClaim);
+var warnKey = ‘pw_warned_’ + todayKey();
+if (days >= 2 && days < 3 && !sessionStorage.getItem(warnKey)) {
+sessionStorage.setItem(warnKey, ‘1’);
+var topic = u.ntfyTopic;
+if (topic) {
+ntfySend(topic, ‘⚠️ Penalità in arrivo!’, ‘Sono ’ + days + ’ giorni senza richiedere un premio. Entro domani perdi 500 pt!’, [‘warning’]);
 }
-function pname(u) { return u === 'giulia' ? 'Giulia' : 'Stefano'; }
-function partner() { return session === 'giulia' ? 'stefano' : 'giulia'; }
+}
+}
+
+// ── Quiz deadline reminder: warn at 13:00 if not done ──
+var now = new Date();
+var today = todayKey();
+}
+function pname(u) { return u === ‘giulia’ ? ‘Giulia’ : ‘Stefano’; }
+function partner() { return session === ‘giulia’ ? ‘stefano’ : ‘giulia’; }
 function myPts() { return S.users[session] ? (S.users[session].pts || 0) : 0; }
 function ptOf(u) { return S.users[u] ? (S.users[u].pts || 0) : 0; }
 function countdown(dl) {
-  var diff = new Date(dl) - Date.now();
-  if (diff <= 0) return 'Scaduto';
-  var h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000);
-  if (h >= 24) { var d = Math.floor(h/24); return d+'g '+(h%24)+'h'; }
-  return h > 0 ? h+'h '+m+'m' : m+' min';
+var diff = new Date(dl) - Date.now();
+if (diff <= 0) return ‘Scaduto’;
+var h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000);
+if (h >= 24) { var d = Math.floor(h/24); return d+‘g ‘+(h%24)+‘h’; }
+return h > 0 ? h+‘h ‘+m+‘m’ : m+’ min’;
 }
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s) { return String(s||’’).replace(/&/g,’&’).replace(/</g,’<’).replace(/>/g,’>’).replace(/”/g,’"’); }
+function copyToClipboard(text) {
+if (navigator.clipboard) {
+navigator.clipboard.writeText(text).then(function(){ showToast(‘✅ Copiato!’); }).catch(function(){ showToast(’Copia: ’ + text, 5000); });
+} else {
+showToast(’Topic: ’ + text, 6000);
+}
+}
 function showToast(msg, dur) {
-  if (toastT) clearTimeout(toastT);
-  toast = msg; render();
-  toastT = setTimeout(function() { toast = null; render(); }, dur || 3200);
+if (toastT) clearTimeout(toastT);
+toast = msg; render();
+toastT = setTimeout(function() { toast = null; render(); }, dur || 3200);
 }
 
 /* ── TICK ── */
 function checkTick() {
-  if (!session || session === 'admin') return;
-  var u = S.users[session], today = todayKey(), changed = false;
-  if (u.penaltyChecked !== today && u.lastRewardClaim) {
-    if (daysAgo(u.lastRewardClaim) >= 3) {
-      S.users[session].pts = Math.max(0, (u.pts||0) - 500);
-      S.users[session].penaltyChecked = today;
-      S.users[session].lastRewardClaim = new Date().toISOString();
-      changed = true;
-      showToast('Penalità: -500 pt per inattività premi!', 5000);
-    }
-  }
-  S.requests.forEach(function(rr, i) {
-    if (rr.status === 'pending' && rr.mode === 'deadline' && rr.deadline && new Date(rr.deadline) < new Date()) {
-      S.requests[i].status = 'expired'; changed = true;
-    }
-  });
-  if (changed) save(S);
+if (!session || session === ‘admin’) return;
+var u = S.users[session], today = todayKey(), changed = false;
+
+// ── Premio inactivity penalty (3 days) ──
+if (u.penaltyChecked !== today && u.lastRewardClaim) {
+if (daysAgo(u.lastRewardClaim) >= 3) {
+S.users[session].pts = Math.max(0, (u.pts||0) - 500);
+S.users[session].penaltyChecked = today;
+S.users[session].lastRewardClaim = new Date().toISOString();
+changed = true;
+showToast(‘Penalità: -500 pt per inattività premi!’, 5000);
+}
+}
+
+// ── Expire overdue reward requests ──
+S.requests.forEach(function(rr, i) {
+if (rr.status === ‘pending’ && rr.mode === ‘deadline’ && rr.deadline && new Date(rr.deadline) < new Date()) {
+S.requests[i].status = ‘expired’; changed = true;
+}
+});
+
+if (changed) save(S);
 }
 
 /* ── ACTIONS ── */
 function doLogin() {
-  var u = selU; if (!u) return;
-  var pw = (document.getElementById('ipwd') || {}).value || '';
-  var pw2 = (document.getElementById('ipwd2') || {}).value || '';
-  var err = document.getElementById('aerr');
-  if (!pw) { if (err) err.textContent = 'Inserisci la password'; return; }
-  if (!S.users[u].pwdSet) {
-    if (pw.length < 4) { if (err) err.textContent = 'Minimo 4 caratteri'; return; }
-    if (pw !== pw2) { if (err) err.textContent = 'Le password non corrispondono'; return; }
-    S.users[u].pwd = pw; S.users[u].pwdSet = true;
-    S.users[u].pts = 1000; S.users[u].lastRewardClaim = new Date().toISOString();
-    save(S); session = u; saveSession(u); tab = 'home'; selU = null; showOB = true; obStep = 0;
-    ensureTopic(u);
-    checkTick(); announcePresence(); render();
-  } else {
-    if (pw === S.users[u].pwd) { session = u; saveSession(u); tab = 'home'; selU = null; ensureTopic(u); checkTick(); checkPenaltyWarning(); announcePresence(); render(); }
-    else { if (err) err.textContent = 'Password errata'; }
-  }
+var u = selU; if (!u) return;
+var pw = (document.getElementById(‘ipwd’) || {}).value || ‘’;
+var pw2 = (document.getElementById(‘ipwd2’) || {}).value || ‘’;
+var err = document.getElementById(‘aerr’);
+if (!pw) { if (err) err.textContent = ‘Inserisci la password’; return; }
+if (!S.users[u].pwdSet) {
+if (pw.length < 4) { if (err) err.textContent = ‘Minimo 4 caratteri’; return; }
+if (pw !== pw2) { if (err) err.textContent = ‘Le password non corrispondono’; return; }
+S.users[u].pwd = pw; S.users[u].pwdSet = true;
+S.users[u].pts = 1000; S.users[u].lastRewardClaim = new Date().toISOString();
+save(S); session = u; saveSession(u); tab = ‘home’; selU = null; showOB = true; obStep = 0;
+ensureTopic(u);
+checkTick(); checkFlashQuestion(); announcePresence(); render();
+} else {
+if (pw === S.users[u].pwd) { session = u; saveSession(u); tab = ‘home’; selU = null; ensureTopic(u); checkTick(); checkPenaltyWarning(); checkFlashQuestion(); announcePresence(); render(); }
+else { if (err) err.textContent = ‘Password errata’; }
 }
-
-function startQuiz() {
-  var daily = selectDailyQuestions();
-  if (!daily.length) { showToast('Nessuna domanda disponibile!'); return; }
-  quizSess = {qs: daily, cur: 0, answers: [], score: 0, done: false};
-  tab = 'quiz'; render();
-}
-
-function answerQuiz(idx) {
-  if (!quizSess || quizSess.done) return;
-  var q = quizSess.qs[quizSess.cur];
-  var ok = idx === q.correct;
-  quizSess.answers.push({idx:idx, ok:ok});
-  quizSess.score += ok ? 100 : -50;
-  render();
-  setTimeout(function() {
-    quizSess.cur++;
-    if (quizSess.cur >= quizSess.qs.length) {
-      quizSess.done = true;
-      S.users[session].pts = Math.max(0, (S.users[session].pts||0) + quizSess.score);
-      S.users[session].quizToday = {date: todayKey(), score: quizSess.score};
-      save(S);
-    }
-    render();
-  }, 900);
 }
 
 function openClaim(rid) {
-  var r = S.rewards.filter(function(x) { return x.id === rid; })[0];
-  if (!r) return;
-  claimMode = 'deadline';
-  overlay = {type: 'claim', reward: r};
-  render();
+var r = S.rewards.filter(function(x) { return x.id === rid; })[0];
+if (!r) return;
+claimMode = ‘deadline’;
+overlay = {type: ‘claim’, reward: r};
+render();
 }
 
 function submitClaim() {
-  if (!overlay || !overlay.reward) return;
-  var r = overlay.reward;
-  var dl = (document.getElementById('claimDL') || {}).value || '';
-  var note = (document.getElementById('claimNote') || {}).value || '';
-  if (!dl) { showToast('Imposta scadenza o orario'); return; }
-  var pts = myPts();
-  if (pts < r.cost) { showToast('Punti insufficienti!'); return; }
-  S.users[session].pts = pts - r.cost;
-  S.users[session].lastRewardClaim = new Date().toISOString();
-  S.requests.push({
-    id: Date.now()+'', by: session,
-    name: r.name, emoji: r.emoji || '🎁',
-    requestedAt: new Date().toISOString(),
-    mode: claimMode, deadline: dl, note: note, status: 'pending'
-  });
-  save(S); overlay = null;
-  notifyPartnerNewReward(r.name, dl);
-  showToast('Premio richiesto! Il partner lo vedrà subito.');
+if (!overlay || !overlay.reward) return;
+var r = overlay.reward;
+var dl = (document.getElementById(‘claimDL’) || {}).value || ‘’;
+var note = (document.getElementById(‘claimNote’) || {}).value || ‘’;
+if (!dl) { showToast(‘Imposta scadenza o orario’); return; }
+var pts = myPts();
+if (pts < r.cost) { showToast(‘Punti insufficienti!’); return; }
+S.users[session].pts = pts - r.cost;
+S.users[session].lastRewardClaim = new Date().toISOString();
+S.requests.push({
+id: Date.now()+’’, by: session,
+name: r.name, emoji: r.emoji || ‘🎁’,
+requestedAt: new Date().toISOString(),
+mode: claimMode, deadline: dl, note: note, status: ‘pending’
+});
+save(S); overlay = null;
+notifyPartnerNewReward(r.name, dl);
+showToast(‘Premio richiesto! Il partner lo vedrà subito.’);
 }
 
 function markDone(rrId) {
-  var i = S.requests.findIndex(function(r) { return r.id === rrId; });
-  if (i < 0) return;
-  S.requests[i].status = 'done_confirm';
-  S.requests[i].doneAt = new Date().toISOString();
-  save(S);
-  notifyRewardDone(S.requests[i]);
-  showToast('Segnato! In attesa di conferma da ' + pname(S.requests[i].by) + '…', 4000);
-  render();
+var i = S.requests.findIndex(function(r) { return r.id === rrId; });
+if (i < 0) return;
+S.requests[i].status = ‘done_confirm’;
+S.requests[i].doneAt = new Date().toISOString();
+save(S);
+notifyRewardDone(S.requests[i]);
+showToast(’Segnato! In attesa di conferma da ’ + pname(S.requests[i].by) + ‘…’, 4000);
+render();
 }
 
 function confirmDone(rrId, yes) {
-  var i = S.requests.findIndex(function(r) { return r.id === rrId; });
-  if (i < 0) return;
-  if (yes) {
-    S.requests[i].status = 'done'; S.requests[i].confirmedAt = new Date().toISOString();
-    showToast('Premio confermato!');
-  } else {
-    S.requests[i].status = 'pending'; delete S.requests[i].doneAt;
-    showToast('Rimandato — il partner dovrà ripetere!', 4000);
-  }
-  save(S); render();
+var i = S.requests.findIndex(function(r) { return r.id === rrId; });
+if (i < 0) return;
+if (yes) {
+S.requests[i].status = ‘done’; S.requests[i].confirmedAt = new Date().toISOString();
+showToast(‘Premio confermato!’);
+} else {
+S.requests[i].status = ‘pending’; delete S.requests[i].doneAt;
+showToast(‘Rimandato — il partner dovrà ripetere!’, 4000);
+}
+save(S); render();
 }
 
 function doAdmLogin() {
-  var u = (document.getElementById('au') || {}).value || '';
-  var p = (document.getElementById('ap') || {}).value || '';
-  if (u === 'admin' && p === 'Beggione12') { adminAuthed = true; sessionStorage.setItem('adm_ok','1'); render(); }
-  else { var e = document.getElementById('admerr'); if (e) e.textContent = 'Credenziali errate'; }
+var u = (document.getElementById(‘au’) || {}).value || ‘’;
+var p = (document.getElementById(‘ap’) || {}).value || ‘’;
+if (u === ‘admin’ && p === ‘Beggione12’) { adminAuthed = true; sessionStorage.setItem(‘adm_ok’,‘1’); render(); }
+else { var e = document.getElementById(‘admerr’); if (e) e.textContent = ‘Credenziali errate’; }
 }
 function addQ() {
-  var text = ((document.getElementById('qT')||{}).value||'').trim();
-  var opts = [0,1,2,3].map(function(i) { return ((document.getElementById('qO'+i)||{}).value||'').trim(); });
-  var correct = +((document.getElementById('qC')||{}).value||0);
-  if (!text || opts.some(function(o){return !o;})) { showToast('Compila domanda e tutte le opzioni'); return; }
-  S.questions.push({id:Date.now()+'', text:text, opts:opts, correct:correct});
-  save(S); showToast('Domanda aggiunta!'); render();
+var text = ((document.getElementById(‘qT’)||{}).value||’’).trim();
+var opts = [0,1,2,3].map(function(i) { return ((document.getElementById(‘qO’+i)||{}).value||’’).trim(); });
+var correct = +((document.getElementById(‘qC’)||{}).value||0);
+if (!text || opts.some(function(o){return !o;})) { showToast(‘Compila domanda e tutte le opzioni’); return; }
+S.questions.push({id:Date.now()+’’, text:text, opts:opts, correct:correct});
+save(S); showToast(‘Domanda aggiunta!’); render();
 }
 function delQ(id) { S.questions = S.questions.filter(function(q){return q.id!==id;}); save(S); render(); }
 function addR() {
-  var partner = (document.getElementById('rPt')||{}).value||'giulia';
-  var cost = +((document.getElementById('rC')||{}).value||100);
-  var emoji = (document.getElementById('rE')||{}).value||'🎁';
-  var name = ((document.getElementById('rN')||{}).value||'').trim();
-  var desc = ((document.getElementById('rD')||{}).value||'').trim();
-  if (!name || !cost) { showToast('Compila nome e costo'); return; }
-  S.rewards.push({id:Date.now()+'', partner:partner, name:name, desc:desc, emoji:emoji, cost:cost});
-  save(S); showToast('Premio aggiunto!'); render();
+var partner = (document.getElementById(‘rPt’)||{}).value||‘giulia’;
+var cost = +((document.getElementById(‘rC’)||{}).value||100);
+var emoji = (document.getElementById(‘rE’)||{}).value||‘🎁’;
+var name = ((document.getElementById(‘rN’)||{}).value||’’).trim();
+var desc = ((document.getElementById(‘rD’)||{}).value||’’).trim();
+if (!name || !cost) { showToast(‘Compila nome e costo’); return; }
+S.rewards.push({id:Date.now()+’’, partner:partner, name:name, desc:desc, emoji:emoji, cost:cost});
+save(S); showToast(‘Premio aggiunto!’); render();
 }
 function delR(id) { S.rewards = S.rewards.filter(function(r){return r.id!==id;}); save(S); render(); }
-function adjPts(p, d) { S.users[p].pts = Math.max(0, (S.users[p].pts||0) + d); save(S); showToast((d>0?'+':'')+d+' pt a '+pname(p)); render(); }
+function adjPts(p, d) { S.users[p].pts = Math.max(0, (S.users[p].pts||0) + d); save(S); showToast((d>0?’+’:’’)+d+’ pt a ’+pname(p)); render(); }
 function doReset() {
-  if (confirm('Reset completo? Irreversibile!')) {
-    S = clone(BLANK);
-    save(S);
-    showToast('Reset completato');
-    render();
-  }
+if (confirm(‘Reset completo? Irreversibile!’)) {
+S = clone(BLANK);
+save(S);
+showToast(‘Reset completato’);
+render();
+}
 }
 
 /* ── RENDER ROOT ── */
 function render() {
-  var root = document.getElementById('R');
-  if (!root) return;
-  if (!session) { root.innerHTML = renderAuth(); return; }
-  if (session === 'admin') { root.innerHTML = renderAdmin(); return; }
-  if (quizSess && !quizSess.done) { root.innerHTML = renderQuizActive(); return; }
-  if (quizSess && quizSess.done) { root.innerHTML = renderQuizDone(); return; }
-  root.innerHTML = renderApp();
+var root = document.getElementById(‘R’);
+if (!root) return;
+if (!session) { root.innerHTML = renderAuth(); return; }
+if (session === ‘admin’) { root.innerHTML = renderAdmin(); return; }
+
+root.innerHTML = renderApp();
 }
 
 /* ── AUTH ── */
 function renderAuth() {
-  var u = selU ? S.users[selU] : null;
-  var isFirst = u && !u.pwdSet;
-  var h = '<div class="auth-wrap"><div class="auth-card">';
-  h += '<div class="auth-logo"><span class="auth-gem">🔷</span><h1>Secret Challenge</h1><p>Le tue sfide quotidiane segrete</p></div>';
-  h += '<div class="field"><span class="lbl">Chi sei?</span><div class="user-grid">';
-  h += '<button class="ubtn'+(selU==='giulia'?' on':'')+'" data-action="pick-user" data-arg="giulia">🌸 Giulia</button>';
-  h += '<button class="ubtn'+(selU==='stefano'?' on':'')+'" data-action="pick-user" data-arg="stefano">⚡ Stefano</button>';
-  h += '</div></div>';
-  if (selU) {
-    if (isFirst) h += '<div class="note-box">👋 Primo accesso '+esc(pname(selU))+'! Ricevi <strong>1000 punti</strong> di benvenuto 🎉</div>';
-    h += '<div class="field"><label class="lbl">Password</label><input type="password" id="ipwd" placeholder="'+(isFirst?'Scegli una password':'Inserisci password')+'"/></div>';
-    if (isFirst) h += '<div class="field"><label class="lbl">Conferma password</label><input type="password" id="ipwd2" placeholder="Ripeti la password"/></div>';
-    h += '<div id="aerr" class="err"></div>';
-    h += '<div class="field"><button class="btn btn-p btn-full" data-action="do-login">'+(isFirst?'Imposta e accedi →':'Accedi →')+'</button></div>';
-  }
-  h += '<div style="text-align:right;margin-top:10px"><button data-action="go-admin" style="background:none;border:none;font-size:.72rem;color:var(--muted);cursor:pointer;font-family:sans-serif;padding:4px">Settings</button></div>';
-  h += '</div></div>';
-  return h;
+var u = selU ? S.users[selU] : null;
+var isFirst = u && !u.pwdSet;
+var h = ‘<div class="auth-wrap"><div class="auth-card">’;
+h += ‘<div class="auth-logo"><span class="auth-gem">🔷</span><h1>Secret Challenge</h1><p>Le tue sfide quotidiane segrete</p></div>’;
+h += ‘<div class="field"><span class="lbl">Chi sei?</span><div class="user-grid">’;
+h += ‘<button class="ubtn'+(selU==='giulia'?' on':'')+'" data-action="pick-user" data-arg="giulia">🌸 Giulia</button>’;
+h += ‘<button class="ubtn'+(selU==='stefano'?' on':'')+'" data-action="pick-user" data-arg="stefano">⚡ Stefano</button>’;
+h += ‘</div></div>’;
+if (selU) {
+if (isFirst) h += ‘<div class="note-box">👋 Primo accesso ‘+esc(pname(selU))+’! Ricevi <strong>1000 punti</strong> di benvenuto 🎉</div>’;
+h += ‘<div class="field"><label class="lbl">Password</label><input type="password" id="ipwd" placeholder="'+(isFirst?'Scegli una password':'Inserisci password')+'"/></div>’;
+if (isFirst) h += ‘<div class="field"><label class="lbl">Conferma password</label><input type="password" id="ipwd2" placeholder="Ripeti la password"/></div>’;
+h += ‘<div id="aerr" class="err"></div>’;
+h += ‘<div class="field"><button class="btn btn-p btn-full" data-action="do-login">’+(isFirst?‘Imposta e accedi →’:‘Accedi →’)+’</button></div>’;
+}
+h += ‘<div style="text-align:right;margin-top:10px"><button data-action="go-admin" style="background:none;border:none;font-size:.72rem;color:var(--muted);cursor:pointer;font-family:sans-serif;padding:4px">Settings</button></div>’;
+h += ‘</div></div>’;
+return h;
 }
 
 /* ── ONBOARDING ── */
 var OB = [
-  {icon:'🔷', title:'Benvenuto/a in Secret Challenge!', body:'Qui trovi il tuo saldo punti, le attività e le richieste del partner. Inizi con <strong>1000 punti</strong>.'},
-  {icon:'🧠', title:'Quiz del giorno', body:'Ogni giorno hai <strong>10 domande</strong> di cultura generale. Risposta giusta → <strong>+100 pt</strong>. Risposta sbagliata → <strong>-50 pt</strong>. Si rinnova ogni giorno.'},
-  {icon:'🎁', title:'Riscatta un premio', body:'Nel tab <em>Riscatta</em> scegli un premio, spendi i punti e dici al partner entro quando o a che ora vuoi riceverlo.'},
-  {icon:'📨', title:'Esegui i premi del partner', body:'Nel tab <em>Esegui</em> vedi le richieste. Quando finisci, segnalo: il partner dovrà <strong>confermare</strong>.'},
-  {icon:'⚠️', title:'Regola dei 3 giorni', body:'Devi richiedere <strong>almeno un premio ogni 3 giorni</strong>. Se dimentichi, perdi automaticamente <strong>500 punti</strong>.'},
-  {icon:'🚀', title:'Sei pronto/a!', body:'Completa il quiz di oggi e richiedi il tuo primo premio. Buona fortuna!'}
+{icon:‘🔷’, title:‘Benvenuto/a in Secret Challenge!’, body:‘Qui trovi il tuo saldo punti, le attività e le richieste del partner. Inizi con <strong>1000 punti</strong>.’},
+{icon:‘⚡’, title:‘Domande Flash’, body:‘Ogni ora dalle 15:00 alle 21:00 appare una domanda flash in Home. +100 pt se corretta, -50 se sbagliata. Puoi saltarla senza penalità. Sono 7 occasioni ogni giorno!’},
+{icon:‘🎁’, title:‘Riscatta un premio’, body:‘Nel tab <em>Riscatta</em> scegli un premio, spendi i punti e dici al partner entro quando o a che ora vuoi riceverlo.’},
+{icon:‘📨’, title:‘Esegui i premi del partner’, body:‘Nel tab <em>Esegui</em> vedi le richieste. Quando finisci, segnalo: il partner dovrà <strong>confermare</strong>.’},
+{icon:‘⚠️’, title:‘Regola dei 3 giorni’, body:‘Devi richiedere <strong>almeno un premio ogni 3 giorni</strong>. Se dimentichi, perdi automaticamente <strong>500 punti</strong>.’},
+{icon:‘🚀’, title:‘Sei pronto/a!’, body:‘Completa il quiz di oggi e richiedi il tuo primo premio. Buona fortuna!’}
 ];
 function renderOnboarding() {
-  var s = OB[obStep], isLast = obStep === OB.length - 1;
-  var dots = OB.map(function(_, i) {
-    return '<div class="ob-dot '+(i===obStep?'on':'off')+'"></div>';
-  }).join('');
-  var h = '<div class="overlay center" data-action="close-overlay">';
-  h += '<div class="sheet rounded">';
-  h += '<div style="font-size:3.5rem;margin-bottom:14px">'+s.icon+'</div>';
-  h += '<h2 style="font-size:1.25rem;color:var(--b2);margin-bottom:8px">'+esc(s.title)+'</h2>';
-  h += '<p style="font-size:.85rem;color:var(--muted);line-height:1.65;margin-bottom:6px">'+s.body+'</p>';
-  h += '<div class="ob-dots">'+dots+'</div>';
-  h += '<div style="display:flex;gap:10px;justify-content:center">';
-  if (obStep > 0) h += '<button class="btn btn-o btn-sm" data-action="ob-back">← Indietro</button>';
-  if (isLast) h += '<button class="btn btn-p" style="min-width:120px" data-action="ob-close">Inizia! 🚀</button>';
-  else h += '<button class="btn btn-p" style="min-width:120px" data-action="ob-next">Avanti →</button>';
-  h += '</div>';
-  if (!isLast) h += '<div style="margin-top:12px"><button data-action="ob-close" style="background:none;border:none;font-size:.75rem;color:var(--muted);cursor:pointer;font-family:sans-serif">Salta la guida</button></div>';
-  h += '</div></div>';
-  return h;
-}
-
-/* ── QUIZ ── */
-function renderQuizActive() {
-  var qs = quizSess, q = qs.qs[qs.cur];
-  var answered = qs.answers.length > qs.cur;
-  var lastAns = answered ? qs.answers[qs.cur] : null;
-  var dots = qs.qs.map(function(_, i) {
-    var c = 'quiz-dot';
-    if (i < qs.answers.length) c += ' '+(qs.answers[i].ok ? 'ok' : 'ko');
-    else if (i === qs.cur) c += ' active';
-    return '<div class="'+c+'"></div>';
-  }).join('');
-  var opts = q.opts.map(function(o, i) {
-    var c = 'quiz-opt';
-    if (answered) {
-      if (i === q.correct) c += ' opt-ok';
-      else if (lastAns && i === lastAns.idx && !lastAns.ok) c += ' opt-ko';
-    }
-    return '<button class="'+c+'" '+(answered?'disabled':'')+' data-action="ans-quiz" data-arg="'+i+'">'+esc(o)+'</button>';
-  }).join('');
-  var h = '<div class="app">';
-  h += '<div class="topbar"><span class="topbar-name">Quiz del giorno</span>';
-  h += '<div class="pts-badge">🔷 '+myPts()+'</div>';
-  h += '<button class="icon-btn" data-action="quiz-exit">'+svgX()+'</button></div>';
-  h += '<div class="page"><div class="quiz-card">';
-  h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
-  h += '<span style="font-size:.75rem;color:var(--muted);font-weight:600">Domanda '+(qs.cur+1)+' di '+qs.qs.length+'</span>';
-  if (answered) h += '<span class="score-pill '+(lastAns.ok?'pill-pos':'pill-neg')+'" style="font-size:.75rem;padding:4px 10px">'+(lastAns.ok?'+100 pt':'-50 pt')+'</span>';
-  h += '</div><div class="quiz-prog">'+dots+'</div>';
-  h += '<div class="quiz-q">'+esc(q.text)+'</div>';
-  h += '<div class="quiz-opts">'+opts+'</div>';
-  h += '</div></div>';
-  if (toast) h += '<div class="toast">'+toast+'</div>';
-  h += '</div>';
-  return h;
-}
-
-function renderQuizDone() {
-  var qs = quizSess;
-  var correct = qs.answers.filter(function(a){return a.ok;}).length;
-  var pct = Math.round(correct / qs.qs.length * 100);
-  var h = '<div class="app">';
-  h += '<div class="topbar"><span class="topbar-name">Quiz completato</span><div class="pts-badge">🔷 '+myPts()+'</div></div>';
-  h += '<div class="page" style="align-items:center;justify-content:center;text-align:center">';
-  h += '<div style="font-size:4rem;margin-bottom:8px">'+(pct>=70?'🏆':pct>=40?'👍':'📚')+'</div>';
-  h += '<h2 style="color:var(--b3);margin-bottom:6px">'+(pct>=70?'Ottimo lavoro!':pct>=40?'Non male!':'Continua a studiare!')+'</h2>';
-  h += '<p style="color:var(--muted);font-size:.85rem;margin-bottom:20px">'+correct+'/'+qs.qs.length+' risposte corrette</p>';
-  h += '<div class="score-pill '+(qs.score>0?'pill-pos':qs.score<0?'pill-neg':'pill-neu')+'">'+(qs.score>0?'+':'')+qs.score+' punti</div>';
-  h += '<div style="margin-top:24px"><button class="btn btn-p" data-action="quiz-home">Torna alla home</button></div>';
-  h += '</div>';
-  if (toast) h += '<div class="toast">'+toast+'</div>';
-  h += '</div>';
-  return h;
+var s = OB[obStep], isLast = obStep === OB.length - 1;
+var dots = OB.map(function(_, i) {
+return ‘<div class="ob-dot '+(i===obStep?'on':'off')+'"></div>’;
+}).join(’’);
+var h = ‘<div class="overlay center" data-action="close-overlay">’;
+h += ‘<div class="sheet rounded">’;
+h += ‘<div style="font-size:3.5rem;margin-bottom:14px">’+s.icon+’</div>’;
+h += ‘<h2 style="font-size:1.25rem;color:var(--b2);margin-bottom:8px">’+esc(s.title)+’</h2>’;
+h += ‘<p style="font-size:.85rem;color:var(--muted);line-height:1.65;margin-bottom:6px">’+s.body+’</p>’;
+h += ‘<div class="ob-dots">’+dots+’</div>’;
+h += ‘<div style="display:flex;gap:10px;justify-content:center">’;
+if (obStep > 0) h += ‘<button class="btn btn-o btn-sm" data-action="ob-back">← Indietro</button>’;
+if (isLast) h += ‘<button class="btn btn-p" style="min-width:120px" data-action="ob-close">Inizia! 🚀</button>’;
+else h += ‘<button class="btn btn-p" style="min-width:120px" data-action="ob-next">Avanti →</button>’;
+h += ‘</div>’;
+if (!isLast) h += ‘<div style="margin-top:12px"><button data-action="ob-close" style="background:none;border:none;font-size:.75rem;color:var(--muted);cursor:pointer;font-family:sans-serif">Salta la guida</button></div>’;
+h += ‘</div></div>’;
+return h;
 }
 
 /* ── MAIN APP ── */
 function renderApp() {
-  var me = session, pt = partner();
-  var u = S.users[me], pts = myPts(), ptPts = ptOf(pt);
-  var quizDone = u.quizToday && u.quizToday.date === todayKey();
-  var ptOnline = onlineUsers[pt] && (Date.now() - onlineUsers[pt] < 12000);
-  var dAgo = u.lastRewardClaim ? daysAgo(u.lastRewardClaim) : 0;
-  var myReqs = S.requests.filter(function(r){return r.by===me;});
-  var toExec = S.requests.filter(function(r){return r.by!==me && r.status==='pending';});
-  var toConf = S.requests.filter(function(r){return r.by===me && r.status==='done_confirm';});
-  var myRws = S.rewards.filter(function(r){return r.partner===me||r.partner==='both';});
-  var hasBadge = toExec.length > 0 || toConf.length > 0;
-  var page = '';
+var me = session, pt = partner();
+var u = S.users[me], pts = myPts(), ptPts = ptOf(pt);
+var ptOnline = onlineUsers[pt] && (Date.now() - onlineUsers[pt] < 12000);
+var dAgo = u.lastRewardClaim ? daysAgo(u.lastRewardClaim) : 0;
+var myReqs = S.requests.filter(function(r){return r.by===me;});
+var toExec = S.requests.filter(function(r){return r.by!==me && r.status===‘pending’;});
+var toConf = S.requests.filter(function(r){return r.by===me && r.status===‘done_confirm’;});
+var myRws = S.rewards.filter(function(r){return r.partner===me||r.partner===‘both’;});
+var hasBadge = toExec.length > 0 || toConf.length > 0;
+var page = ‘’;
 
-  if (tab === 'home') {
-    page += renderHero(pts, ptPts, pname(pt), ptOnline, quizDone, u, dAgo);
-    if (dAgo >= 3) page += renderMandatoryAlert();
-    if (toConf.length > 0) {
-      page += '<div class="sec-label">🔔 Conferma richiesta ('+toConf.length+')</div>';
-      toConf.forEach(function(rr) { page += renderMyReqCard(rr); });
-    }
-    if (toExec.length > 0) {
-      page += '<div class="sec-label">📨 Da eseguire ('+toExec.length+')</div>';
-      toExec.forEach(function(rr) { page += renderExecCard(rr, false); });
-    }
-    page += '<div class="sec-label">📋 Attività recente</div>';
-    var recent = myReqs.filter(function(r){return r.status!=='done_confirm';}).slice().reverse().slice(0,3);
-    if (!recent.length) page += '<div class="empty"><span class="empty-ico">🔷</span><p>Nessuna attività ancora.<br>Vai su Riscatta per iniziare!</p></div>';
-    else recent.forEach(function(rr) { page += renderMyReqCard(rr); });
-    page += renderPointsCard();
-  }
+if (tab === ‘home’) {
+// Flash question sits at top if active
+if (flashQ) page += renderFlashQuestion();
+page += renderHero(pts, ptPts, pname(pt), ptOnline, false, u, dAgo);
+if (dAgo >= 3) page += renderMandatoryAlert();
+if (toConf.length > 0) {
+page += ‘<div class="sec-label">🔔 Conferma richiesta (’+toConf.length+’)</div>’;
+toConf.forEach(function(rr) { page += renderMyReqCard(rr); });
+}
+if (toExec.length > 0) {
+page += ‘<div class="sec-label">📨 Da eseguire (’+toExec.length+’)</div>’;
+toExec.forEach(function(rr) { page += renderExecCard(rr, false); });
+}
+page += ‘<div class="sec-label">📋 Attività recente</div>’;
+var recent = myReqs.filter(function(r){return r.status!==‘done_confirm’;}).slice().reverse().slice(0,3);
+if (!recent.length) page += ‘<div class="empty"><span class="empty-ico">🔷</span><p>Nessuna attività ancora.<br>Vai su Riscatta per iniziare!</p></div>’;
+else recent.forEach(function(rr) { page += renderMyReqCard(rr); });
+page += renderPointsCard();
+}
 
-  else if (tab === 'quiz') {
-    page += '<div class="card" style="text-align:center;padding:28px 20px">';
-    page += '<div style="font-size:2.5rem;margin-bottom:12px">🧠</div>';
-    page += '<h3 style="color:var(--b3);margin-bottom:8px">Quiz del giorno</h3>';
-    page += '<p style="font-size:.83rem;color:var(--muted);margin-bottom:20px;line-height:1.5">10 domande di cultura generale.<br>+100 risposta giusta &nbsp;·&nbsp; -50 risposta sbagliata</p>';
-    if (quizDone) {
-      var sc = u.quizToday.score;
-      page += '<div class="score-pill '+(sc>0?'pill-pos':sc<0?'pill-neg':'pill-neu')+'" style="margin:0 auto 14px;font-size:.9rem">'+(sc>0?'+':'')+sc+' pt oggi</div>';
-      page += '<p style="font-size:.8rem;color:var(--muted)">Hai già completato il quiz di oggi. Torna domani!</p>';
-    } else {
-      page += '<button class="btn btn-p btn-full" data-action="start-quiz">Inizia il quiz →</button>';
-    }
-    page += '</div>';
-  }
+else if (tab === ‘shop’) {
+page += ‘<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">’;
+page += ‘<div class="sec-label" style="margin-bottom:0">🛍 Premi disponibili</div>’;
+page += ‘<div class="pts-badge" style="font-size:.78rem">🔷 ‘+pts+’ pt</div></div>’;
+if (!myRws.length) page += ‘<div class="empty"><span class="empty-ico">🎁</span><p>Nessun premio disponibile.<br>L'admin li aggiungerà presto!</p></div>’;
+else myRws.forEach(function(r) { page += renderShopItem(r, pts); });
+if (dAgo >= 3) page += renderMandatoryAlert();
+var pendingMine = myReqs.filter(function(r){return r.status===‘pending’;});
+if (pendingMine.length) {
+page += ‘<div class="sec-label" style="margin-top:4px">⏳ Miei premi in attesa</div>’;
+pendingMine.forEach(function(rr) { page += renderMyReqCard(rr); });
+}
+}
 
-  else if (tab === 'shop') {
-    page += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
-    page += '<div class="sec-label" style="margin-bottom:0">🛍 Premi disponibili</div>';
-    page += '<div class="pts-badge" style="font-size:.78rem">🔷 '+pts+' pt</div></div>';
-    if (!myRws.length) page += '<div class="empty"><span class="empty-ico">🎁</span><p>Nessun premio disponibile.<br>L\'admin li aggiungerà presto!</p></div>';
-    else myRws.forEach(function(r) { page += renderShopItem(r, pts); });
-    if (dAgo >= 3) page += renderMandatoryAlert();
-    var pendingMine = myReqs.filter(function(r){return r.status==='pending';});
-    if (pendingMine.length) {
-      page += '<div class="sec-label" style="margin-top:4px">⏳ Miei premi in attesa</div>';
-      pendingMine.forEach(function(rr) { page += renderMyReqCard(rr); });
-    }
-  }
+else if (tab === ‘execute’) {
+page += ‘<div class="sec-label">📨 Premi da eseguire per ‘+esc(pname(pt))+’</div>’;
+if (!toExec.length) page += ‘<div class="empty"><span class="empty-ico">✅</span><p>Nessun premio da eseguire.<br>’+esc(pname(pt))+’ non ha richiesto nulla.</p></div>’;
+else toExec.forEach(function(rr) { page += renderExecCard(rr, true); });
+var hist = S.requests.filter(function(r){return r.by!==me && r.status!==‘pending’;}).slice().reverse().slice(0,5);
+if (hist.length) {
+page += ‘<div class="sec-label" style="margin-top:4px">📋 Storico</div>’;
+hist.forEach(function(rr) {
+var bc = rr.status===‘done’?‘badge-ok’:rr.status===‘done_confirm’?‘badge-conf’:‘badge-exp’;
+var bt = rr.status===‘done’?‘✅ Confermato’:rr.status===‘done_confirm’?‘🔔 In attesa’:‘⏰ Scaduto’;
+page += ‘<div class="ar-card grey"><div class="ar-header"><div class="ar-title">’+esc(rr.emoji||‘🎁’)+’ ‘+esc(rr.name)+’</div><span class="ar-badge '+bc+'">’+bt+’</span></div>’;
+page += ‘<div style="font-size:.72rem;color:var(--muted)">Richiesto il ‘+fmtDt(rr.requestedAt)+’</div></div>’;
+});
+}
+}
 
-  else if (tab === 'execute') {
-    page += '<div class="sec-label">📨 Premi da eseguire per '+esc(pname(pt))+'</div>';
-    if (!toExec.length) page += '<div class="empty"><span class="empty-ico">✅</span><p>Nessun premio da eseguire.<br>'+esc(pname(pt))+' non ha richiesto nulla.</p></div>';
-    else toExec.forEach(function(rr) { page += renderExecCard(rr, true); });
-    var hist = S.requests.filter(function(r){return r.by!==me && r.status!=='pending';}).slice().reverse().slice(0,5);
-    if (hist.length) {
-      page += '<div class="sec-label" style="margin-top:4px">📋 Storico</div>';
-      hist.forEach(function(rr) {
-        var bc = rr.status==='done'?'badge-ok':rr.status==='done_confirm'?'badge-conf':'badge-exp';
-        var bt = rr.status==='done'?'✅ Confermato':rr.status==='done_confirm'?'🔔 In attesa':'⏰ Scaduto';
-        page += '<div class="ar-card grey"><div class="ar-header"><div class="ar-title">'+esc(rr.emoji||'🎁')+' '+esc(rr.name)+'</div><span class="ar-badge '+bc+'">'+bt+'</span></div>';
-        page += '<div style="font-size:.72rem;color:var(--muted)">Richiesto il '+fmtDt(rr.requestedAt)+'</div></div>';
-      });
-    }
-  }
-
-  var ovHtml = overlay ? renderOverlay() : (showOB ? renderOnboarding() : '');
-  var h = '<div class="app">';
-  h += '<div class="topbar"><span class="topbar-name">'+esc(pname(me))+'</span>';
-  h += '<div class="pts-badge">🔷 '+pts+' pt</div>';
-  h += '<button class="icon-btn" data-action="logout">'+svgLogout()+'</button></div>';
-  h += '<div class="page">'+page+'</div>';
-  h += '<div class="bnav">';
-  h += '<button class="ni'+(tab==='home'?' on':'')+'" data-action="set-tab" data-arg="home">'+svgHome()+'<span>Home</span></button>';
-  h += '<button class="ni'+(tab==='quiz'?' on':'')+'" data-action="set-tab" data-arg="quiz">'+svgQuiz()+'<span>Quiz</span></button>';
-  h += '<button class="ni'+(tab==='shop'?' on':'')+'" data-action="set-tab" data-arg="shop">'+svgShop()+'<span>Riscatta</span></button>';
-  h += '<button class="ni'+(tab==='execute'?' on':'')+'" data-action="set-tab" data-arg="execute" style="position:relative">'+svgGift()+'<span>Esegui</span>'+(hasBadge?'<div class="ni-dot"></div>':'')+'</button>';
-  h += '</div>'+ovHtml+(toast?'<div class="toast">'+toast+'</div>':'')+'</div>';
-  return h;
+var ovHtml = overlay ? renderOverlay() : (showOB ? renderOnboarding() : ‘’);
+var h = ‘<div class="app">’;
+h += ‘<div class="topbar"><span class="topbar-name">’+esc(pname(me))+’</span>’;
+h += ‘<div class="pts-badge">🔷 ‘+pts+’ pt</div>’;
+h += ‘<button class="icon-btn" data-action="logout">’+svgLogout()+’</button></div>’;
+h += ‘<div class="page">’+page+’</div>’;
+h += ‘<div class="bnav">’;
+h += ‘<button class="ni'+(tab==='home'?' on':'')+'" data-action="set-tab" data-arg="home">’+svgHome()+’<span>Home</span></button>’;
+h += ‘<button class="ni'+(tab==='shop'?' on':'')+'" data-action="set-tab" data-arg="shop">’+svgShop()+’<span>Riscatta</span></button>’;
+h += ‘<button class="ni'+(tab==='execute'?' on':'')+'" data-action="set-tab" data-arg="execute" style="position:relative">’+svgGift()+’<span>Esegui</span>’+(hasBadge?’<div class="ni-dot"></div>’:’’)+’</button>’;
+h += ‘</div>’+ovHtml+(toast?’<div class="toast">’+toast+’</div>’:’’)+’</div>’;
+return h;
 }
 
 /* ── COMPONENTS ── */
-function renderHero(pts, ptPts, ptName, ptOnline, quizDone, u, dAgo) {
-  var qv = quizDone ? (u.quizToday.score > 0 ? '+'+u.quizToday.score : u.quizToday.score)+'' : '—';
-  var danger = dAgo >= 3;
-  var h = '<div class="balance-hero">';
-  h += '<div class="bal-label">Il tuo saldo</div>';
-  h += '<div class="bal-amount">🔷 '+pts+'</div>';
-  h += '<div class="bal-sub">'+esc(ptName)+': '+ptPts+' pt &nbsp;·&nbsp; '+(ptOnline?'🟢 online':'⬤ offline')+'</div>';
-  h += '<div class="bal-grid">';
-  h += '<div class="bal-stat"><div class="bal-stat-val">'+qv+'</div><div class="bal-stat-lbl">Quiz oggi</div></div>';
-  h += '<div class="bal-stat'+(danger?' danger':'')+'"><div class="bal-stat-val">'+(danger?'⚠️':dAgo+'g')+'</div><div class="bal-stat-lbl">'+(danger?'Penalità oggi!':'Senza premi')+'</div></div>';
-  h += '</div></div>';
-  return h;
+function renderHero(pts, ptPts, ptName, ptOnline, flashAnsweredToday, u, dAgo) {
+var danger = dAgo >= 3;
+// Flash Q stat: how many answered today
+var flashCount = getFlashCountToday();
+var h = ‘<div class="balance-hero">’;
+h += ‘<div class="bal-label">Il tuo saldo</div>’;
+h += ‘<div class="bal-amount">🔷 ‘+pts+’</div>’;
+h += ‘<div class="bal-sub">’+esc(ptName)+’: ‘+ptPts+’ pt  ·  ‘+(ptOnline?‘🟢 online’:‘⬤ offline’)+’</div>’;
+h += ‘<div class="bal-grid">’;
+h += ‘<div class="bal-stat"><div class="bal-stat-val">’+flashCount+’/7</div><div class="bal-stat-lbl">Flash oggi</div></div>’;
+h += ‘<div class="bal-stat'+(danger?' danger':'')+'"><div class="bal-stat-val">’+(danger?‘⚠️’:dAgo+‘g’)+’</div><div class="bal-stat-lbl">’+(danger?‘Penalità oggi!’:‘Senza premi’)+’</div></div>’;
+h += ‘</div></div>’;
+return h;
+}
+
+function getFlashCountToday() {
+var today = todayKey();
+var count = 0;
+FLASH_HOURS.forEach(function(h) {
+var slotKey = new Date().getFullYear()+’-’+new Date().getMonth()+’-’+new Date().getDate()+’-’+h;
+if (sessionStorage.getItem(‘fq_done_’ + slotKey) === ‘answered’) count++;
+});
+return count;
 }
 
 function renderMandatoryAlert() {
-  return '<div class="mandatory-alert"><h4>⚠️ Richiedi un premio!</h4><p>Sono passati 3+ giorni dall\'ultimo premio. Se non lo richiedi oggi perdi 500 punti.<br>Vai al tab <strong>Riscatta</strong>.</p></div>';
+return ‘<div class="mandatory-alert"><h4>⚠️ Richiedi un premio!</h4><p>Sono passati 3+ giorni dall'ultimo premio. Se non lo richiedi oggi perdi 500 punti.<br>Vai al tab <strong>Riscatta</strong>.</p></div>’;
 }
 
 var POINTS_INFO = [
-  {icon:'✅', label:'Risposta corretta al quiz', val:'+100 pt', valColor:'var(--green)', body:'Ogni giorno ricevi 10 domande casuali. Per ogni risposta esatta guadagni 100 punti. Il quiz si rinnova ogni giorno e non è ripetibile.', red:false},
-  {icon:'❌', label:'Risposta sbagliata al quiz', val:'-50 pt', valColor:'var(--red)', body:'Se sbagli una risposta perdi 50 punti. Leggi bene prima di rispondere!', red:false},
-  {icon:'⚠️', label:'Inattività premi (3 giorni)', val:'-500 pt', valColor:'var(--red)', body:'Devi richiedere almeno un premio ogni 3 giorni. Se non lo fai perdi 500 punti automaticamente. Non aspettare!', red:true},
-  {icon:'🎁', label:'Riscatta un premio', val:'- costo', valColor:'var(--b5)', body:'Nel tab Riscatta scegli un premio, spendi i punti e indica al partner entro quando o a che ora vuoi riceverlo.', red:false}
+{icon:‘⚡’, label:‘Domanda Flash — risposta corretta’, val:’+100 pt’, valColor:‘var(–green)’, body:‘Ogni ora dalle 15:00 alle 21:00 ricevi una domanda di cultura generale. Se rispondi correttamente guadagni 100 punti. Sono 7 opportunità al giorno!’, red:false},
+{icon:‘❌’, label:‘Domanda Flash — risposta sbagliata’, val:’-50 pt’, valColor:‘var(–red)’, body:‘Se sbagli la domanda flash perdi 50 punti. Nessuna penalità se non rispondi — la domanda scade alla fine dell\u2019ora.’, red:false},
+{icon:‘⚠️’, label:‘Inattività premi (3 giorni)’, val:’-500 pt’, valColor:‘var(–red)’, body:‘Devi riscattare almeno un premio ogni 3 giorni. Se non lo fai perdi 500 punti automaticamente. I premi si riscattano sempre — non aspettare!’, red:true},
+{icon:‘🎁’, label:‘Riscatta un premio’, val:’- costo’, valColor:‘var(–b5)’, body:‘Nel tab Riscatta scegli un premio, spendi i punti e indica al partner entro quando o a che ora vuoi riceverlo. Dopo ogni domanda flash ti viene chiesto se vuoi riscattarne uno.’, red:false}
 ];
 
 /* Pure DOM toggle — no render(), no scroll jump */
 function toggleAcc(idx, triggerEl) {
-  var card = triggerEl;
-  while (card && !card.classList.contains('card')) card = card.parentElement;
-  if (!card) return;
-  var rows = card.querySelectorAll('.acc-row');
-  rows.forEach(function(row, i) {
-    if (i === idx) {
-      row.classList.toggle('open');
-    } else {
-      row.classList.remove('open'); // close others
-    }
-  });
+var card = triggerEl;
+while (card && !card.classList.contains(‘card’)) card = card.parentElement;
+if (!card) return;
+var rows = card.querySelectorAll(’.acc-row’);
+rows.forEach(function(row, i) {
+if (i === idx) {
+row.classList.toggle(‘open’);
+} else {
+row.classList.remove(‘open’); // close others
+}
+});
 }
 
 function renderPointsCard() {
-  var h = '<div class="card"><div class="card-title">📊 Come funzionano i punti</div>';
-  h += '<p style="font-size:.75rem;color:var(--muted);margin-bottom:12px">Tocca una voce per i dettagli.</p>';
-  POINTS_INFO.forEach(function(r, i) {
-    h += '<div class="acc-row">';
-    h += '<div class="acc-header" data-action="toggle-acc" data-arg="'+i+'">';
-    h += '<span style="font-size:.82rem;color:var(--ink)">'+r.icon+' '+esc(r.label)+'</span>';
-    h += '<div class="acc-right"><span class="acc-val" style="color:'+r.valColor+'">'+r.val+'</span><span class="acc-arrow">▾</span></div>';
-    h += '</div>';
-    h += '<div class="acc-body '+(r.red?'red':'blue')+'">'+esc(r.body)+'</div>';
-    h += '</div>';
-  });
-  h += '</div>';
-  return h;
+var h = ‘<div class="card"><div class="card-title">📊 Come funzionano i punti</div>’;
+h += ‘<p style="font-size:.75rem;color:var(--muted);margin-bottom:12px">Tocca una voce per i dettagli.</p>’;
+POINTS_INFO.forEach(function(r, i) {
+h += ‘<div class="acc-row">’;
+h += ‘<div class="acc-header" data-action="toggle-acc" data-arg="'+i+'">’;
+h += ‘<span style="font-size:.82rem;color:var(--ink)">’+r.icon+’ ‘+esc(r.label)+’</span>’;
+h += ‘<div class="acc-right"><span class="acc-val" style="color:'+r.valColor+'">’+r.val+’</span><span class="acc-arrow">▾</span></div>’;
+h += ‘</div>’;
+h += ‘<div class="acc-body '+(r.red?'red':'blue')+'">’+esc(r.body)+’</div>’;
+h += ‘</div>’;
+});
+h += ‘</div>’;
+return h;
 }
 
 function renderShopItem(r, pts) {
-  var canAfford = pts >= r.cost;
-  var h = '<div class="rw-item">';
-  h += '<div class="rw-icon">'+(r.emoji||'🎁')+'</div>';
-  h += '<div class="rw-info"><div class="rw-name">'+esc(r.name)+'</div>';
-  if (r.desc) h += '<div class="rw-desc">'+esc(r.desc)+'</div>';
-  h += '<div class="rw-cost">🔷 '+r.cost+' pt</div>';
-  h += '<div style="margin-top:8px">';
-  if (canAfford) h += '<button class="btn btn-p btn-sm" data-action="open-claim" data-arg="'+esc(r.id)+'">Richiedi →</button>';
-  else h += '<button class="btn btn-o btn-sm" disabled style="opacity:.5;cursor:not-allowed">Punti insufficienti</button>';
-  h += '</div></div></div>';
-  return h;
+var canAfford = pts >= r.cost;
+var h = ‘<div class="rw-item">’;
+h += ‘<div class="rw-icon">’+(r.emoji||‘🎁’)+’</div>’;
+h += ‘<div class="rw-info"><div class="rw-name">’+esc(r.name)+’</div>’;
+if (r.desc) h += ‘<div class="rw-desc">’+esc(r.desc)+’</div>’;
+h += ‘<div class="rw-cost">🔷 ‘+r.cost+’ pt</div>’;
+h += ‘<div style="margin-top:8px">’;
+if (canAfford) h += ‘<button class="btn btn-p btn-sm" data-action="open-claim" data-arg="'+esc(r.id)+'">Richiedi →</button>’;
+else h += ‘<button class="btn btn-o btn-sm" disabled style="opacity:.5;cursor:not-allowed">Punti insufficienti</button>’;
+h += ‘</div></div></div>’;
+return h;
 }
 
 function renderMyReqCard(rr) {
-  var s = rr.status;
-  var bc = s==='pending'?'badge-wait':s==='done'?'badge-ok':s==='done_confirm'?'badge-conf':'badge-exp';
-  var bt = s==='pending'?'⏳ In attesa':s==='done'?'✅ Completato':s==='done_confirm'?'🔔 Conferma':'⏰ Scaduto';
-  var cc = s==='done_confirm'?'ar-card purple':s==='done'||s==='expired'?'ar-card grey':'ar-card gold';
-  var h = '<div class="'+cc+'">';
-  h += '<div class="ar-header"><div class="ar-title">'+(rr.emoji||'🎁')+' '+esc(rr.name)+'</div><span class="ar-badge '+bc+'">'+bt+'</span></div>';
-  if (s === 'pending') {
-    if (rr.mode==='deadline' && rr.deadline) h += '<div class="countdown" style="color:#8b5e00">⏱ '+countdown(rr.deadline)+' rimasto</div>';
-    else if (rr.mode==='time' && rr.deadline) h += '<div class="countdown" style="color:#8b5e00">🕐 Alle '+fmtTime(rr.deadline)+'</div>';
-  }
-  if (rr.note) h += '<div style="font-size:.75rem;color:#8b6000;margin-top:5px;font-style:italic">"'+esc(rr.note)+'"</div>';
-  h += '<div style="font-size:.72rem;color:var(--muted);margin-top:4px">Richiesto il '+fmtDt(rr.requestedAt)+'</div>';
-  if (s === 'done_confirm') {
-    h += '<div class="confirm-box"><p>Il partner ha segnato come eseguito. Confermi?</p>';
-    h += '<div style="display:flex;gap:8px">';
-    h += '<button class="btn btn-d btn-sm" data-action="confirm-done" data-arg="'+esc(rr.id)+'" data-arg2="no">❌ Non ancora</button>';
-    h += '<button class="btn btn-s btn-sm" data-action="confirm-done" data-arg="'+esc(rr.id)+'" data-arg2="yes">✅ Sì, confermo!</button>';
-    h += '</div></div>';
-  }
-  h += '</div>';
-  return h;
+var s = rr.status;
+var bc = s===‘pending’?‘badge-wait’:s===‘done’?‘badge-ok’:s===‘done_confirm’?‘badge-conf’:‘badge-exp’;
+var bt = s===‘pending’?‘⏳ In attesa’:s===‘done’?‘✅ Completato’:s===‘done_confirm’?‘🔔 Conferma’:‘⏰ Scaduto’;
+var cc = s===‘done_confirm’?‘ar-card purple’:s===‘done’||s===‘expired’?‘ar-card grey’:‘ar-card gold’;
+var h = ‘<div class="'+cc+'">’;
+h += ‘<div class="ar-header"><div class="ar-title">’+(rr.emoji||‘🎁’)+’ ‘+esc(rr.name)+’</div><span class="ar-badge '+bc+'">’+bt+’</span></div>’;
+if (s === ‘pending’) {
+if (rr.mode===‘deadline’ && rr.deadline) h += ‘<div class="countdown" style="color:#8b5e00">⏱ ‘+countdown(rr.deadline)+’ rimasto</div>’;
+else if (rr.mode===‘time’ && rr.deadline) h += ‘<div class="countdown" style="color:#8b5e00">🕐 Alle ‘+fmtTime(rr.deadline)+’</div>’;
+}
+if (rr.note) h += ‘<div style="font-size:.75rem;color:#8b6000;margin-top:5px;font-style:italic">”’+esc(rr.note)+’”</div>’;
+h += ‘<div style="font-size:.72rem;color:var(--muted);margin-top:4px">Richiesto il ‘+fmtDt(rr.requestedAt)+’</div>’;
+if (s === ‘done_confirm’) {
+h += ‘<div class="confirm-box"><p>Il partner ha segnato come eseguito. Confermi?</p>’;
+h += ‘<div style="display:flex;gap:8px">’;
+h += ‘<button class="btn btn-d btn-sm" data-action="confirm-done" data-arg="'+esc(rr.id)+'" data-arg2="no">❌ Non ancora</button>’;
+h += ‘<button class="btn btn-s btn-sm" data-action="confirm-done" data-arg="'+esc(rr.id)+'" data-arg2="yes">✅ Sì, confermo!</button>’;
+h += ‘</div></div>’;
+}
+h += ‘</div>’;
+return h;
 }
 
 function renderExecCard(rr, showBtn) {
-  var h = '<div class="ar-card purple">';
-  h += '<h4 style="font-family:\'Playfair Display\',serif;color:var(--purple);font-size:.9rem;margin-bottom:4px">🎁 '+(rr.emoji||'')+' '+esc(rr.name)+'</h4>';
-  if (rr.mode==='time' && rr.deadline) h += '<p style="font-size:.78rem;color:#6040a0;margin-bottom:6px">'+esc(pname(rr.by))+' lo vuole alle <strong>'+fmtTime(rr.deadline)+'</strong></p>';
-  else h += '<p style="font-size:.78rem;color:#6040a0;margin-bottom:6px">'+esc(pname(rr.by))+' lo vuole entro <strong>'+fmtDt(rr.deadline)+'</strong></p>';
-  if (rr.mode==='deadline' && rr.deadline) h += '<div class="countdown" style="color:var(--purple)">⏱ Tempo rimasto: <strong>'+countdown(rr.deadline)+'</strong></div>';
-  else if (rr.mode==='time' && rr.deadline) h += '<div class="countdown" style="color:var(--purple)">🕐 Orario: <strong>'+fmtTime(rr.deadline)+'</strong></div>';
-  if (rr.note) h += '<div style="font-size:.77rem;color:#6040a0;margin-top:5px;font-style:italic">"'+esc(rr.note)+'"</div>';
-  if (showBtn) h += '<div style="margin-top:10px"><button class="btn btn-s btn-sm" data-action="mark-done" data-arg="'+esc(rr.id)+'">✅ Ho eseguito il premio!</button></div>';
-  h += '</div>';
-  return h;
+var h = ‘<div class="ar-card purple">’;
+h += ‘<h4 style="font-family:\'Playfair Display\',serif;color:var(--purple);font-size:.9rem;margin-bottom:4px">🎁 ‘+(rr.emoji||’’)+’ ‘+esc(rr.name)+’</h4>’;
+if (rr.mode===‘time’ && rr.deadline) h += ‘<p style="font-size:.78rem;color:#6040a0;margin-bottom:6px">’+esc(pname(rr.by))+’ lo vuole alle <strong>’+fmtTime(rr.deadline)+’</strong></p>’;
+else h += ‘<p style="font-size:.78rem;color:#6040a0;margin-bottom:6px">’+esc(pname(rr.by))+’ lo vuole entro <strong>’+fmtDt(rr.deadline)+’</strong></p>’;
+if (rr.mode===‘deadline’ && rr.deadline) h += ‘<div class="countdown" style="color:var(--purple)">⏱ Tempo rimasto: <strong>’+countdown(rr.deadline)+’</strong></div>’;
+else if (rr.mode===‘time’ && rr.deadline) h += ‘<div class="countdown" style="color:var(--purple)">🕐 Orario: <strong>’+fmtTime(rr.deadline)+’</strong></div>’;
+if (rr.note) h += ‘<div style="font-size:.77rem;color:#6040a0;margin-top:5px;font-style:italic">”’+esc(rr.note)+’”</div>’;
+if (showBtn) h += ‘<div style="margin-top:10px"><button class="btn btn-s btn-sm" data-action="mark-done" data-arg="'+esc(rr.id)+'">✅ Ho eseguito il premio!</button></div>’;
+h += ‘</div>’;
+return h;
 }
 
 function renderOverlay() {
-  if (!overlay || overlay.type !== 'claim') return '';
-  var r = overlay.reward;
-  var h = '<div class="overlay" data-action="close-overlay">';
-  h += '<div class="sheet"><div class="sheet-handle"></div>';
-  h += '<h2>Richiedi premio</h2>';
-  h += '<p class="sheet-sub">'+(r.emoji||'🎁')+' <strong>'+esc(r.name)+'</strong> &nbsp;·&nbsp; 🔷 '+r.cost+' pt</p>';
-  h += '<div class="field"><label class="lbl">Modalità</label><div class="mode-tabs">';
-  h += '<div class="mode-tab'+(claimMode==='deadline'?' on':'')+'" data-action="set-mode" data-arg="deadline">📅 Entro una scadenza</div>';
-  h += '<div class="mode-tab'+(claimMode==='time'?' on':'')+'" data-action="set-mode" data-arg="time">🕐 Ad un orario</div>';
-  h += '</div></div>';
-  h += '<div class="field"><label class="lbl">'+(claimMode==='deadline'?'Scadenza (data e ora)':'Orario previsto')+'</label>';
-  h += '<input type="datetime-local" id="claimDL" min="'+new Date().toISOString().slice(0,16)+'"/></div>';
-  h += '<div class="field"><label class="lbl">Nota (opzionale)</label><input type="text" id="claimNote" placeholder="Es. Dopo cena, con candele..."/></div>';
-  h += '<div class="sheet-actions">';
-  h += '<button class="btn btn-o btn-sm" data-action="cancel-overlay">Annulla</button>';
-  h += '<button class="btn btn-gold" data-action="submit-claim">Richiedi 🎉</button>';
-  h += '</div></div></div>';
-  return h;
+if (!overlay) return ‘’;
+if (overlay.type === ‘reward_nudge’) return renderRewardNudgeOverlay();
+if (overlay.type !== ‘claim’) return ‘’;
+var r = overlay.reward;
+var h = ‘<div class="overlay" data-action="close-overlay">’;
+h += ‘<div class="sheet"><div class="sheet-handle"></div>’;
+h += ‘<h2>Richiedi premio</h2>’;
+h += ‘<p class="sheet-sub">’+(r.emoji||‘🎁’)+’ <strong>’+esc(r.name)+’</strong>  ·  🔷 ‘+r.cost+’ pt</p>’;
+h += ‘<div class="field"><label class="lbl">Modalità</label><div class="mode-tabs">’;
+h += ‘<div class="mode-tab'+(claimMode==='deadline'?' on':'')+'" data-action="set-mode" data-arg="deadline">📅 Entro una scadenza</div>’;
+h += ‘<div class="mode-tab'+(claimMode==='time'?' on':'')+'" data-action="set-mode" data-arg="time">🕐 Ad un orario</div>’;
+h += ‘</div></div>’;
+h += ‘<div class="field"><label class="lbl">’+(claimMode===‘deadline’?‘Scadenza (data e ora)’:‘Orario previsto’)+’</label>’;
+h += ‘<input type="datetime-local" id="claimDL" min="'+new Date().toISOString().slice(0,16)+'"/></div>’;
+h += ‘<div class="field"><label class="lbl">Nota (opzionale)</label><input type="text" id="claimNote" placeholder="Es. Dopo cena, con candele..."/></div>’;
+h += ‘<div class="sheet-actions">’;
+h += ‘<button class="btn btn-o btn-sm" data-action="cancel-overlay">Annulla</button>’;
+h += ‘<button class="btn btn-gold" data-action="submit-claim">Richiedi 🎉</button>’;
+h += ‘</div></div></div>’;
+return h;
+}
+
+/* Extra overlay type: reward nudge after flash question */
+function renderRewardNudgeOverlay() {
+var o = overlay;
+var h = ‘<div class="overlay center" data-action="close-overlay">’;
+h += ‘<div class="sheet rounded" style="background:linear-gradient(135deg,#0e1933,#1a1050)">’;
+h += ‘<div style="font-size:3rem;margin-bottom:12px">🎁</div>’;
+h += ‘<h2 style="color:#c4b5fd;font-size:1.2rem;margin-bottom:8px">Vuoi riscattare un premio?</h2>’;
+h += ‘<p style="font-size:.84rem;color:rgba(196,181,253,.75);margin-bottom:20px;line-height:1.55">’;
+h += ‘Hai <strong style="color:#c4b5fd">🔷 ‘+o.pts+’ pt</strong> e ‘+o.count+’ ‘+(o.count===1?‘premio disponibile’:‘premi disponibili’)+’.<br>Puoi riscattarne uno adesso!’;
+h += ‘</p>’;
+h += ‘<div style="display:flex;gap:10px;justify-content:center">’;
+h += ‘<button class="btn btn-o btn-sm" data-action="fq-skip-claim" style="color:rgba(255,255,255,.4);border-color:rgba(255,255,255,.15)">Non ora</button>’;
+h += ‘<button class="btn btn-gold" data-action="fq-claim">Vai ai premi 🎁</button>’;
+h += ‘</div></div></div>’;
+return h;
 }
 
 /* ── ADMIN ── */
 function renderAdmin() {
-  if (!adminAuthed) {
-    var h = '<div class="auth-wrap"><div class="auth-card">';
-    h += '<div class="auth-logo"><span class="auth-gem">⚙️</span><h1>Settings</h1><p>Pannello di amministrazione</p></div>';
-    h += '<div class="field"><label class="lbl">Username</label><input type="text" id="au"/></div>';
-    h += '<div class="field"><label class="lbl">Password</label><input type="password" id="ap"/></div>';
-    h += '<div id="admerr" class="err"></div>';
-    h += '<button class="btn btn-p btn-full" data-action="do-adm-login">Accedi →</button>';
-    h += '<div style="text-align:center;margin-top:12px"><button data-action="logout" style="background:none;border:none;font-size:.75rem;color:var(--muted);cursor:pointer;font-family:sans-serif">← Torna al login</button></div>';
-    h += '</div></div>';
-    return h;
-  }
-  var qs = S.questions, rs = S.rewards, reqs = S.requests;
-  var onlineList = Object.keys(onlineUsers).filter(function(u){ return Date.now()-onlineUsers[u]<12000; });
-  var body = '';
+if (!adminAuthed) {
+var h = ‘<div class="auth-wrap"><div class="auth-card">’;
+h += ‘<div class="auth-logo"><span class="auth-gem">⚙️</span><h1>Settings</h1><p>Pannello di amministrazione</p></div>’;
+h += ‘<div class="field"><label class="lbl">Username</label><input type="text" id="au"/></div>’;
+h += ‘<div class="field"><label class="lbl">Password</label><input type="password" id="ap"/></div>’;
+h += ‘<div id="admerr" class="err"></div>’;
+h += ‘<button class="btn btn-p btn-full" data-action="do-adm-login">Accedi →</button>’;
+h += ‘<div style="text-align:center;margin-top:12px"><button data-action="logout" style="background:none;border:none;font-size:.75rem;color:var(--muted);cursor:pointer;font-family:sans-serif">← Torna al login</button></div>’;
+h += ‘</div></div>’;
+return h;
+}
+var qs = S.questions, rs = S.rewards, reqs = S.requests;
+var onlineList = Object.keys(onlineUsers).filter(function(u){ return Date.now()-onlineUsers[u]<12000; });
+var body = ‘’;
 
-  if (adminTab === 'quiz') {
-    body += '<div class="acard"><h3>➕ Nuova domanda</h3>';
-    body += '<div class="af" style="margin-bottom:11px"><label>Domanda</label><textarea id="qT" placeholder="Es. Qual è la capitale della Francia?"></textarea></div>';
-    body += '<div class="agrid" style="margin-bottom:11px">';
-    for (var i=0; i<4; i++) body += '<div class="af"><label>Opzione '+(i+1)+'</label><input id="qO'+i+'" placeholder="Risposta '+(i+1)+'"/></div>';
-    body += '</div><div class="af" style="margin-bottom:14px"><label>Risposta corretta</label><select id="qC">';
-    for (var j=0; j<4; j++) body += '<option value="'+j+'">Opzione '+(j+1)+'</option>';
-    body += '</select></div><button class="abtn grn" data-action="add-q">+ Aggiungi domanda</button></div>';
-    body += '<div class="acard"><h3>📚 Domande ('+qs.length+')</h3><div class="alist">';
-    if (!qs.length) body += '<div style="color:#4a6080;font-size:.8rem">Nessuna domanda.</div>';
-    else qs.forEach(function(q) {
-      body += '<div class="aitem"><div><h4>'+esc(q.text)+'</h4><p>'+q.opts.map(function(o,i){return (i===q.correct?'✅':'○')+' '+esc(o);}).join(' · ')+'</p></div>';
-      body += '<button class="adel" data-action="del-q" data-arg="'+esc(q.id)+'">🗑</button></div>';
-    });
-    body += '</div></div>';
-  }
+if (adminTab === ‘quiz’) {
+body += ‘<div class="acard"><h3>➕ Nuova domanda</h3>’;
+body += ‘<div class="af" style="margin-bottom:11px"><label>Domanda</label><textarea id="qT" placeholder="Es. Qual è la capitale della Francia?"></textarea></div>’;
+body += ‘<div class="agrid" style="margin-bottom:11px">’;
+for (var i=0; i<4; i++) body += ‘<div class="af"><label>Opzione ‘+(i+1)+’</label><input id="qO'+i+'" placeholder="Risposta '+(i+1)+'"/></div>’;
+body += ‘</div><div class="af" style="margin-bottom:14px"><label>Risposta corretta</label><select id="qC">’;
+for (var j=0; j<4; j++) body += ‘<option value="'+j+'">Opzione ‘+(j+1)+’</option>’;
+body += ‘</select></div><button class="abtn grn" data-action="add-q">+ Aggiungi domanda</button></div>’;
+body += ‘<div class="acard"><h3>📚 Domande (’+qs.length+’)</h3><div class="alist">’;
+if (!qs.length) body += ‘<div style="color:#4a6080;font-size:.8rem">Nessuna domanda.</div>’;
+else qs.forEach(function(q) {
+body += ‘<div class="aitem"><div><h4>’+esc(q.text)+’</h4><p>’+q.opts.map(function(o,i){return (i===q.correct?‘✅’:‘○’)+’ ‘+esc(o);}).join(’ · ‘)+’</p></div>’;
+body += ‘<button class="adel" data-action="del-q" data-arg="'+esc(q.id)+'">🗑</button></div>’;
+});
+body += ‘</div></div>’;
+}
 
-  else if (adminTab === 'rewards') {
-    body += '<div class="acard"><h3>➕ Nuovo premio</h3><div class="agrid">';
-    body += '<div class="af"><label>Per</label><select id="rPt"><option value="giulia">🌸 Giulia</option><option value="stefano">⚡ Stefano</option><option value="both">👫 Entrambi</option></select></div>';
-    body += '<div class="af"><label>Costo (pt)</label><input type="number" id="rC" value="100" min="1"/></div>';
-    body += '<div class="af"><label>Emoji</label><input id="rE" value="🎁"/></div>';
-    body += '<div class="af"><label>Nome</label><input id="rN" placeholder="Es. Cena romantica"/></div>';
-    body += '<div class="af" style="grid-column:span 2"><label>Descrizione</label><input id="rD" placeholder="Cosa include..."/></div>';
-    body += '</div><div style="margin-top:13px"><button class="abtn gold" data-action="add-r">+ Aggiungi premio</button></div></div>';
-    body += '<div class="acard"><h3>🎁 Premi ('+rs.length+')</h3><div class="alist">';
-    if (!rs.length) body += '<div style="color:#4a6080;font-size:.8rem">Nessun premio.</div>';
-    else rs.forEach(function(r) {
-      body += '<div class="aitem"><div><h4>'+(r.emoji||'🎁')+' '+esc(r.name)+'</h4><p><span class="chip '+(r.partner==='both'?'cb':r.partner==='giulia'?'cg':'cs')+'">'+r.partner+'</span> · 🔷 '+r.cost+' pt'+(r.desc?' · '+esc(r.desc):'')+'</p></div>';
-      body += '<button class="adel" data-action="del-r" data-arg="'+esc(r.id)+'">🗑</button></div>';
-    });
-    body += '</div></div>';
-  }
+else if (adminTab === ‘rewards’) {
+body += ‘<div class="acard"><h3>➕ Nuovo premio</h3><div class="agrid">’;
+body += ‘<div class="af"><label>Per</label><select id="rPt"><option value="giulia">🌸 Giulia</option><option value="stefano">⚡ Stefano</option><option value="both">👫 Entrambi</option></select></div>’;
+body += ‘<div class="af"><label>Costo (pt)</label><input type="number" id="rC" value="100" min="1"/></div>’;
+body += ‘<div class="af"><label>Emoji</label><input id="rE" value="🎁"/></div>’;
+body += ‘<div class="af"><label>Nome</label><input id="rN" placeholder="Es. Cena romantica"/></div>’;
+body += ‘<div class="af" style="grid-column:span 2"><label>Descrizione</label><input id="rD" placeholder="Cosa include..."/></div>’;
+body += ‘</div><div style="margin-top:13px"><button class="abtn gold" data-action="add-r">+ Aggiungi premio</button></div></div>’;
+body += ‘<div class="acard"><h3>🎁 Premi (’+rs.length+’)</h3><div class="alist">’;
+if (!rs.length) body += ‘<div style="color:#4a6080;font-size:.8rem">Nessun premio.</div>’;
+else rs.forEach(function(r) {
+body += ‘<div class="aitem"><div><h4>’+(r.emoji||‘🎁’)+’ ‘+esc(r.name)+’</h4><p><span class="chip '+(r.partner==='both'?'cb':r.partner==='giulia'?'cg':'cs')+'">’+r.partner+’</span> · 🔷 ‘+r.cost+’ pt’+(r.desc?’ · ‘+esc(r.desc):’’)+’</p></div>’;
+body += ‘<button class="adel" data-action="del-r" data-arg="'+esc(r.id)+'">🗑</button></div>’;
+});
+body += ‘</div></div>’;
+}
 
-  else if (adminTab === 'stats') {
-    var gPts = ptOf('giulia'), sPts = ptOf('stefano');
-    var gQ = S.users.giulia.quizToday && S.users.giulia.quizToday.date===todayKey() ? 'Fatto' : '—';
-    var sQ = S.users.stefano.quizToday && S.users.stefano.quizToday.date===todayKey() ? 'Fatto' : '—';
-    body += '<div class="acard"><h3>📊 Bilanci</h3><div class="astats">';
-    body += '<div class="astat"><div class="v">🔷 '+gPts+'</div><div class="l">Punti Giulia</div></div>';
-    body += '<div class="astat"><div class="v">🔷 '+sPts+'</div><div class="l">Punti Stefano</div></div>';
-    body += '<div class="astat"><div class="v">'+gQ+'</div><div class="l">Quiz Giulia oggi</div></div>';
-    body += '<div class="astat"><div class="v">'+sQ+'</div><div class="l">Quiz Stefano oggi</div></div>';
-    body += '<div class="astat"><div class="v">'+qs.length+'</div><div class="l">Domande quiz</div></div>';
-    body += '<div class="astat"><div class="v">'+reqs.filter(function(r){return r.status==='pending';}).length+'</div><div class="l">Premi in attesa</div></div>';
-    body += '</div></div>';
-    body += '<div class="acard"><h3>✏️ Modifica punti</h3>';
-    ['giulia','stefano'].forEach(function(p) {
-      body += '<div style="display:flex;align-items:center;gap:7px;margin-bottom:9px;flex-wrap:wrap">';
-      body += '<span style="width:90px;font-size:.82rem;font-weight:600;color:var(--b8)">'+pname(p)+' ('+ptOf(p)+')</span>';
-      [[100,'+100'],[-100,'-100'],[500,'+500'],[-500,'-500']].forEach(function(pair) {
-        body += '<button class="abtn" style="padding:6px 10px" data-action="adj-pts" data-arg="'+p+'" data-arg2="'+pair[0]+'">'+pair[1]+'</button>';
-      });
-      body += '</div>';
-    });
+else if (adminTab === ‘stats’) {
+var gPts = ptOf(‘giulia’), sPts = ptOf(‘stefano’);
+var gQ = S.users.giulia.quizToday && S.users.giulia.quizToday.date===todayKey() ? ‘Fatto’ : ‘—’;
+var sQ = S.users.stefano.quizToday && S.users.stefano.quizToday.date===todayKey() ? ‘Fatto’ : ‘—’;
+body += ‘<div class="acard"><h3>📊 Bilanci</h3><div class="astats">’;
+body += ‘<div class="astat"><div class="v">🔷 ‘+gPts+’</div><div class="l">Punti Giulia</div></div>’;
+body += ‘<div class="astat"><div class="v">🔷 ‘+sPts+’</div><div class="l">Punti Stefano</div></div>’;
+body += ‘<div class="astat"><div class="v">’+gQ+’</div><div class="l">Quiz Giulia oggi</div></div>’;
+body += ‘<div class="astat"><div class="v">’+sQ+’</div><div class="l">Quiz Stefano oggi</div></div>’;
+body += ‘<div class="astat"><div class="v">’+qs.length+’</div><div class="l">Domande quiz</div></div>’;
+body += ‘<div class="astat"><div class="v">’+reqs.filter(function(r){return r.status===‘pending’;}).length+’</div><div class="l">Premi in attesa</div></div>’;
+body += ‘</div></div>’;
+body += ‘<div class="acard"><h3>✏️ Modifica punti</h3>’;
+[‘giulia’,‘stefano’].forEach(function(p) {
+body += ‘<div style="display:flex;align-items:center;gap:7px;margin-bottom:9px;flex-wrap:wrap">’;
+body += ‘<span style="width:90px;font-size:.82rem;font-weight:600;color:var(--b8)">’+pname(p)+’ (’+ptOf(p)+’)</span>’;
+[[100,’+100’],[-100,’-100’],[500,’+500’],[-500,’-500’]].forEach(function(pair) {
+body += ‘<button class="abtn" style="padding:6px 10px" data-action="adj-pts" data-arg="'+p+'" data-arg2="'+pair[0]+'">’+pair[1]+’</button>’;
+});
+body += ‘</div>’;
+});
+body += ‘</div>’;
+body += ‘<div class="acard"><h3>📨 Ultime richieste</h3><div class="alist">’;
+reqs.slice().reverse().slice(0,8).forEach(function(rr) {
+body += ‘<div class="aitem"><div><h4>’+(rr.emoji||‘🎁’)+’ ‘+esc(rr.name)+’</h4><p><span class="chip '+(rr.by==='giulia'?'cg':'cs')+'">’+pname(rr.by)+’</span> · ‘+fmtDt(rr.requestedAt)+’ · ‘+rr.status+’</p></div></div>’;
+});
+if (!reqs.length) body += ‘<div style="color:#4a6080;font-size:.8rem">Nessuna richiesta.</div>’;
+body += ‘</div></div>’;
+body += ‘<div class="acard"><h3 style="color:#d08080">⚠️ Zona pericolosa</h3><p style="color:#4a6080;font-size:.8rem;margin-bottom:9px">Reset completo. Irreversibile.</p>’;
+body += ‘<button class="reset-btn" data-action="do-reset">Reset completo</button></div>’;
+
+```
+// ntfy topics
+body += '<div class="acard"><h3>📲 Topic ntfy (notifiche push)</h3>';
+body += '<p style="color:#4a6080;font-size:.78rem;margin-bottom:14px">Ogni utente deve iscriversi al proprio topic nell\'app <strong>ntfy</strong> (iOS/Android). Tocca per copiare.</p>';
+['giulia','stefano'].forEach(function(p) {
+  var topic = S.users[p] && S.users[p].ntfyTopic;
+  var icon = p === 'giulia' ? '🌸' : '⚡';
+  if (topic) {
+    body += '<div style="margin-bottom:10px">';
+    body += '<div style="font-size:.72rem;color:#5a7090;font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em">'+icon+' '+pname(p)+'</div>';
+    body += '<div style="display:flex;gap:8px;align-items:center">';
+    body += '<code style="background:#070d1f;border:1px solid #162448;color:#7aa0e8;border-radius:7px;padding:8px 11px;font-size:.75rem;flex:1;word-break:break-all">'+esc(topic)+'</code>';
+    body += '<button class="abtn" style="padding:8px 12px;flex-shrink:0" data-action="copy-topic" data-arg="'+esc(topic)+'">📋 Copia</button>';
     body += '</div>';
-    body += '<div class="acard"><h3>📨 Ultime richieste</h3><div class="alist">';
-    reqs.slice().reverse().slice(0,8).forEach(function(rr) {
-      body += '<div class="aitem"><div><h4>'+(rr.emoji||'🎁')+' '+esc(rr.name)+'</h4><p><span class="chip '+(rr.by==='giulia'?'cg':'cs')+'">'+pname(rr.by)+'</span> · '+fmtDt(rr.requestedAt)+' · '+rr.status+'</p></div></div>';
-    });
-    if (!reqs.length) body += '<div style="color:#4a6080;font-size:.8rem">Nessuna richiesta.</div>';
-    body += '</div></div>';
-    body += '<div class="acard"><h3 style="color:#d08080">⚠️ Zona pericolosa</h3><p style="color:#4a6080;font-size:.8rem;margin-bottom:9px">Reset completo. Irreversibile.</p>';
-    body += '<button class="reset-btn" data-action="do-reset">Reset completo</button></div>';
-
-    // ntfy topics
-    body += '<div class="acard"><h3>📲 Topic ntfy (notifiche push)</h3>';
-    body += '<p style="color:#4a6080;font-size:.78rem;margin-bottom:14px">Ogni utente deve iscriversi al proprio topic nell\'app <strong>ntfy</strong> (iOS/Android). Tocca per copiare.</p>';
-    ['giulia','stefano'].forEach(function(p) {
-      var topic = S.users[p] && S.users[p].ntfyTopic;
-      var icon = p === 'giulia' ? '🌸' : '⚡';
-      if (topic) {
-        body += '<div style="margin-bottom:10px">';
-        body += '<div style="font-size:.72rem;color:#5a7090;font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em">'+icon+' '+pname(p)+'</div>';
-        body += '<div style="display:flex;gap:8px;align-items:center">';
-        body += '<code style="background:#070d1f;border:1px solid #162448;color:#7aa0e8;border-radius:7px;padding:8px 11px;font-size:.75rem;flex:1;word-break:break-all">'+esc(topic)+'</code>';
-        body += '<button class="abtn" style="padding:8px 12px;flex-shrink:0" data-action="copy-topic" data-arg="'+esc(topic)+'">📋 Copia</button>';
-        body += '</div>';
-        body += '<div style="margin-top:5px;font-size:.72rem;color:#3a6080">ntfy.sh/'+esc(topic)+'</div>';
-        body += '</div>';
-      } else {
-        body += '<div style="color:#4a6080;font-size:.78rem;margin-bottom:8px">'+icon+' '+pname(p)+': topic non ancora generato (utente deve fare il primo accesso)</div>';
-      }
-    });
-    body += '<div style="margin-top:12px;padding:10px 12px;background:#070d1f;border-radius:8px;border:1px solid #162448">';
-    body += '<div style="font-size:.72rem;color:#5a7090;font-weight:600;margin-bottom:6px">📅 Reminder quiz (cron-job.org)</div>';
-    body += '<p style="font-size:.72rem;color:#4a6080;line-height:1.5">Crea 2 job su <strong style="color:#7aa0e8">cron-job.org</strong> con questi parametri:<br>• Method: POST &nbsp;·&nbsp; Schedule: ogni giorno ore 10:00<br>• URL: <code style="color:#7aa0e8">https://ntfy.sh/[topic-utente]</code><br>• Header <code style="color:#7aa0e8">Title</code>: 🧠 Quiz del giorno!<br>• Body: Hai il quiz da completare oggi!</p>';
-    body += '</div></div>';
+    body += '<div style="margin-top:5px;font-size:.72rem;color:#3a6080">ntfy.sh/'+esc(topic)+'</div>';
+    body += '</div>';
+  } else {
+    body += '<div style="color:#4a6080;font-size:.78rem;margin-bottom:8px">'+icon+' '+pname(p)+': topic non ancora generato (utente deve fare il primo accesso)</div>';
   }
+});
+body += '<div style="margin-top:12px;padding:10px 12px;background:#070d1f;border-radius:8px;border:1px solid #162448">';
+body += '<div style="font-size:.72rem;color:#5a7090;font-weight:600;margin-bottom:6px">📅 Reminder quiz (cron-job.org)</div>';
+body += '<p style="font-size:.72rem;color:#4a6080;line-height:1.5">Crea 2 job su <strong style="color:#7aa0e8">cron-job.org</strong> con questi parametri:<br>• Method: POST &nbsp;·&nbsp; Schedule: ogni giorno ore 10:00<br>• URL: <code style="color:#7aa0e8">https://ntfy.sh/[topic-utente]</code><br>• Header <code style="color:#7aa0e8">Title</code>: 🧠 Quiz del giorno!<br>• Body: Hai il quiz da completare oggi!</p>';
+body += '</div></div>';
+```
 
-  var h = '<div class="adm-wrap">';
-  h += '<div class="adm-top">';
-  h += svgSettings();
-  h += '<h1>Settings</h1>';
-  h += '<div class="sync-pill"><span class="sdot"></span>Live'+(onlineList.length?(' · '+onlineList.map(function(u){return u==='giulia'?'🌸':'⚡';}).join('')):'')+'</div>';
-  h += '<button data-action="adm-logout" style="background:none;border:none;color:#5a7090;cursor:pointer;font-size:.75rem;font-family:sans-serif;margin-left:8px">← Esci</button></div>';
-  h += '<div class="adm-body">';
-  h += '<div class="adm-tabs">';
-  h += '<button class="adm-tab'+(adminTab==='quiz'?' on':'')+'" data-action="set-adm-tab" data-arg="quiz">🧠 Quiz</button>';
-  h += '<button class="adm-tab'+(adminTab==='rewards'?' on':'')+'" data-action="set-adm-tab" data-arg="rewards">🎁 Premi</button>';
-  h += '<button class="adm-tab'+(adminTab==='stats'?' on':'')+'" data-action="set-adm-tab" data-arg="stats">📊 Stats</button>';
-  h += '</div>'+body+'</div>';
-  if (toast) h += '<div class="toast" style="position:fixed;bottom:20px">'+toast+'</div>';
-  h += '</div>';
-  return h;
+}
+
+var h = ‘<div class="adm-wrap">’;
+h += ‘<div class="adm-top">’;
+h += svgSettings();
+h += ‘<h1>Settings</h1>’;
+h += ‘<div class="sync-pill"><span class="sdot"></span>Live’+(onlineList.length?(’ · ‘+onlineList.map(function(u){return u===‘giulia’?‘🌸’:‘⚡’;}).join(’’)):’’)+’</div>’;
+h += ‘<button data-action="adm-logout" style="background:none;border:none;color:#5a7090;cursor:pointer;font-size:.75rem;font-family:sans-serif;margin-left:8px">← Esci</button></div>’;
+h += ‘<div class="adm-body">’;
+h += ‘<div class="adm-tabs">’;
+h += ‘<button class="adm-tab'+(adminTab==='quiz'?' on':'')+'" data-action="set-adm-tab" data-arg="quiz">🧠 Quiz</button>’;
+h += ‘<button class="adm-tab'+(adminTab==='rewards'?' on':'')+'" data-action="set-adm-tab" data-arg="rewards">🎁 Premi</button>’;
+h += ‘<button class="adm-tab'+(adminTab==='stats'?' on':'')+'" data-action="set-adm-tab" data-arg="stats">📊 Stats</button>’;
+h += ‘</div>’+body+’</div>’;
+if (toast) h += ‘<div class="toast" style="position:fixed;bottom:20px">’+toast+’</div>’;
+h += ‘</div>’;
+return h;
 }
 
 /* ── SVG ── */
-function svgHome(){ return '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10" fill="none" stroke="currentColor" stroke-width="2"/></svg>'; }
-function svgQuiz(){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3"/></svg>'; }
-function svgShop(){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>'; }
-function svgGift(){ return '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 12v10H4V12M22 7H2v5h20V7zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>'; }
-function svgX(){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'; }
-function svgLogout(){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>'; }
-function svgSettings(){ return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--b8)"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>'; }
+function svgHome(){ return ‘<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10" fill="none" stroke="currentColor" stroke-width="2"/></svg>’; }
+function svgQuiz(){ return ‘<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3"/></svg>’; }
+function svgShop(){ return ‘<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>’; }
+function svgGift(){ return ‘<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 12v10H4V12M22 7H2v5h20V7zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>’; }
+function svgX(){ return ‘<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>’; }
+function svgLogout(){ return ‘<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>’; }
+function svgSettings(){ return ‘<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--b8)"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>’; }
 
 /* ── INIT ── */
-if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-  try { Notification.requestPermission(); } catch(e) {}
+if (typeof Notification !== ‘undefined’ && Notification.permission === ‘default’) {
+try { Notification.requestPermission(); } catch(e) {}
 }
 
 // Restore 48h session from localStorage
@@ -1089,44 +1326,57 @@ var _savedSession = loadSession();
 if (_savedSession) { session = _savedSession; }
 
 // Show loading screen until Firebase responds
-document.getElementById('R').innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#070d1f,#0e1933);flex-direction:column;gap:16px"><div style="font-size:3rem">🔷</div><div style="color:#b0c8f8;font-family:sans-serif;font-size:.9rem">Connessione in corso...</div></div>';
+document.getElementById(‘R’).innerHTML = ‘<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#070d1f,#0e1933);flex-direction:column;gap:16px"><div style="font-size:3rem">🔷</div><div style="color:#b0c8f8;font-family:sans-serif;font-size:.9rem">Connessione in corso…</div></div>’;
 
 /* ── FIREBASE LISTENERS (after all functions defined) ── */
-db.ref(DB_REF).on('value', function(snapshot) {
-  var data = snapshot.val();
-  if (data) {
-    S = {
-      users: data.users || clone(BLANK).users,
-      questions: objToArr(data.questions),
-      rewards: objToArr(data.rewards),
-      requests: objToArr(data.requests)
-    };
-  }
-  if (!fbReady) {
-    fbReady = true;
-    render(); // first load
-    return;
-  }
-  // Remote update from other device — re-render if not mid-interaction
-  if (!overlay) render();
+db.ref(DB_REF).on(‘value’, function(snapshot) {
+var data = snapshot.val();
+if (data) {
+S = {
+users: data.users || clone(BLANK).users,
+questions: objToArr(data.questions),
+rewards: objToArr(data.rewards),
+requests: objToArr(data.requests)
+};
+}
+if (!fbReady) {
+fbReady = true;
+render(); // first load — always safe
+return;
+}
+// Ignore echoes from our own writes
+if (_writing) return;
+// Remote update from partner device — schedule a safe re-render
+scheduleRemoteRender();
 });
 
-db.ref('sc_presence').on('value', function(snap) {
-  onlineUsers = {};
-  var data = snap.val() || {};
-  Object.keys(data).forEach(function(u) {
-    if (data[u] && data[u].online) onlineUsers[u] = data[u].t;
-  });
-  if (session && session !== 'admin') render();
+db.ref(‘sc_presence’).on(‘value’, function(snap) {
+onlineUsers = {};
+var data = snap.val() || {};
+Object.keys(data).forEach(function(u) {
+if (data[u] && data[u].online) onlineUsers[u] = data[u].t;
+});
+// Update only the presence text node — no full re-render
+if (session && session !== ‘admin’ && fbReady) {
+var heroSub = document.querySelector(’.bal-sub’);
+if (heroSub) {
+var pt = session === ‘giulia’ ? ‘stefano’ : ‘giulia’;
+var ptPts = ptOf(pt);
+var ptOnline = onlineUsers[pt] && (Date.now() - onlineUsers[pt] < 12000);
+heroSub.textContent = pname(pt) + ’: ’ + ptPts + ’ pt  ·  ’ + (ptOnline ? ‘🟢 online’ : ‘⬤ offline’);
+}
+}
 });
 
 setInterval(function() {
-  announcePresence();
-  checkTick();
-  checkPenaltyWarning();
+announcePresence();
+checkTick();
+checkPenaltyWarning();
+checkFlashQuestion();
 }, 10000);
 
 })();
 </script>
+
 </body>
 </html>
