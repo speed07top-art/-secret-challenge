@@ -1,0 +1,2031 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Secret Challenge</title>
+<!-- Firebase SDK (compat - no bundler needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --b2:#0e1933;--b3:#162448;--b4:#1e3060;--b5:#2a4480;--b6:#3a5ca8;--b7:#5278cc;--b8:#7aa0e8;--b9:#b0c8f8;--b10:#e0ecff;
+  --gold:#e8c04a;--gold-d:#c09020;
+  --green:#2ecc71;--green-d:#1a9e50;
+  --red:#e74c3c;--red-l:#fff0ee;
+  --purple:#8b5cf6;
+  --muted:#6080a8;--muted-l:#c8d8f0;
+  --surface:#f0f5ff;--ink:#0a1428;
+  --sh:0 2px 20px rgba(10,20,60,.08);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink);height:100vh;height:100dvh;overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:430px;margin:0 auto;background:var(--surface)}
+/* iOS Safe Area */
+.auth-wrap{padding-top:max(20px, env(safe-area-inset-top));padding-bottom:max(20px, env(safe-area-inset-bottom))}
+h1,h2,h3,h4{font-family:'Playfair Display',serif;line-height:1.2}
+.page{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:14px 14px 20px}
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(160deg,#070d1f,#0e1933,#070d1f)}
+.auth-card{background:rgba(240,245,255,.97);border-radius:28px;padding:36px 28px;width:100%;max-width:380px;box-shadow:0 32px 80px rgba(0,0,0,.55)}
+.auth-logo{text-align:center;margin-bottom:26px}
+.auth-logo h1{font-size:1.8rem;color:var(--b3)}
+.auth-logo p{color:var(--muted);font-size:.82rem;margin-top:5px;font-style:italic}
+.auth-gem{font-size:2rem;display:block;margin-bottom:8px}
+.user-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.ubtn{padding:15px 10px;border:2px solid transparent;border-radius:14px;cursor:pointer;font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;background:#eef2fc;color:var(--b3);transition:all .2s}
+.ubtn.on,.ubtn:hover{border-color:var(--b6);background:rgba(58,92,168,.09);color:var(--b4)}
+.field{margin-bottom:13px}
+.lbl{display:block;font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.07em}
+input,select,textarea{width:100%;padding:12px 14px;border:1.5px solid #d0daf0;border-radius:11px;font-size:.9rem;font-family:'DM Sans',sans-serif;outline:none;background:white;color:var(--ink);transition:border .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--b6)}
+textarea{resize:vertical;min-height:70px}
+.btn{padding:12px 18px;border:none;border-radius:11px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all .18s}
+.btn-full{width:100%}
+.btn-p{background:linear-gradient(135deg,var(--b6),var(--b4));color:white}
+.btn-s{background:linear-gradient(135deg,var(--green),var(--green-d));color:white}
+.btn-d{background:var(--red);color:white}
+.btn-o{background:transparent;border:1.5px solid var(--muted-l);color:var(--muted)}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:white}
+.btn-sm{padding:8px 14px;font-size:.8rem;border-radius:9px}
+.err{color:var(--red);font-size:.8rem;margin-top:5px}
+.note-box{background:#eef4ff;border:1px solid #c0d4f8;border-radius:10px;padding:11px 14px;font-size:.8rem;color:var(--b4);margin-bottom:14px}
+.topbar{display:flex;align-items:center;padding:12px 16px;padding-top:max(12px, env(safe-area-inset-top));background:white;border-bottom:1px solid #e0eaf8;gap:10px;flex-shrink:0}
+.topbar-name{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--b3);flex:1}
+.pts-badge{display:flex;align-items:center;gap:5px;background:var(--b10);border:1px solid var(--b9);border-radius:20px;padding:5px 12px;font-size:.82rem;font-weight:700;color:var(--b4)}
+.icon-btn{background:none;border:none;cursor:pointer;padding:5px;color:var(--muted);line-height:0;border-radius:8px}
+.bnav{display:grid;grid-template-columns:repeat(4,1fr);background:white;border-top:1px solid #e0eaf8;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom)}
+.ni{display:flex;flex-direction:column;align-items:center;padding:9px 4px 8px;gap:3px;border:none;background:none;cursor:pointer;font-size:.6rem;font-weight:600;color:var(--muted);letter-spacing:.04em;font-family:'DM Sans',sans-serif;position:relative}
+.b-ben-item{display:flex;gap:12px;margin-bottom:15px;align-items:flex-start}
+.b-ben-item:last-child{margin-bottom:0}
+.b-icon{font-size:1.5rem;background:#162448;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.b-text{font-size:.8rem;color:#c8d8f8;line-height:1.4}
+.b-text strong{color:#8badaa;font-size:.85rem}
+.ni.on{color:var(--b5)}
+.ni svg{width:20px;height:20px}
+.ni-dot{position:absolute;top:6px;right:50%;margin-right:-14px;width:7px;height:7px;border-radius:50%;background:var(--red)}
+.balance-hero{background:linear-gradient(135deg,var(--b3),var(--b5),var(--b2));border-radius:22px;padding:22px 20px;color:white;position:relative;overflow:hidden;flex-shrink:0}
+.bal-label{font-size:.7rem;opacity:.7;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:4px}
+.bal-amount{font-family:'Playfair Display',serif;font-size:3rem;font-weight:900;line-height:1}
+.bal-sub{font-size:.75rem;opacity:.65;margin-top:6px}
+.bal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.bal-stat{background:rgba(255,255,255,.1);border-radius:12px;padding:10px 12px}
+.bal-stat.danger{background:rgba(231,76,60,.3)}
+.bal-stat-val{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700}
+.bal-stat-lbl{font-size:.62rem;opacity:.7;margin-top:1px;text-transform:uppercase;letter-spacing:.05em}
+.card{background:white;border-radius:16px;padding:16px;box-shadow:var(--sh);border:1px solid #e8f0fc}
+.card-title{font-family:'Playfair Display',serif;font-size:.95rem;font-weight:700;color:var(--b3);margin-bottom:12px}
+.sec-label{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.acc-row{border-bottom:1px solid #f0f5ff}
+.acc-row:last-child{border-bottom:none}
+.acc-header{display:flex;justify-content:space-between;align-items:center;padding:11px 0;cursor:pointer;user-select:none;gap:8px}
+.acc-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.acc-val{font-weight:700;font-size:.82rem;white-space:nowrap}
+.acc-arrow{color:var(--muted);font-size:.85rem;transition:transform .2s;display:inline-block}
+.acc-body{display:none;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:.8rem;line-height:1.55}
+.acc-body.blue{background:var(--b10);color:var(--b4)}
+.acc-body.red{background:#fff0ee;color:#8b2020}
+.acc-row.open .acc-arrow{transform:rotate(180deg)}
+.acc-row.open .acc-body{display:block}
+.quiz-card{background:white;border-radius:18px;padding:20px;box-shadow:var(--sh);border:1px solid #e0eaf8}
+.quiz-prog{display:flex;gap:4px;margin-bottom:18px}
+.quiz-dot{flex:1;height:4px;border-radius:2px;background:#e0eaf8;transition:background .3s}
+.quiz-dot.active{background:var(--b6)}
+.quiz-dot.ok{background:var(--green)}
+.quiz-dot.ko{background:var(--red)}
+.quiz-q{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--b2);line-height:1.45;margin-bottom:18px}
+.quiz-opts{display:flex;flex-direction:column;gap:8px}
+.quiz-opt{padding:13px 16px;border:1.5px solid #e0eaf8;border-radius:12px;cursor:pointer;font-size:.88rem;font-weight:500;text-align:left;background:white;color:var(--ink);font-family:'DM Sans',sans-serif;width:100%;transition:all .18s}
+.quiz-opt:hover:not([disabled]){border-color:var(--b7);background:var(--b10)}
+.quiz-opt.opt-ok{border-color:var(--green);background:#edfbf3;color:var(--green-d);font-weight:600}
+.quiz-opt.opt-ko{border-color:var(--red);background:var(--red-l);color:var(--red);font-weight:600}
+.quiz-opt.opt-reveal{border-color:var(--green);background:#edfbf3;color:var(--green-d)}
+.score-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:20px;font-weight:700;font-size:.9rem}
+.pill-pos{background:#edfbf3;color:var(--green-d)}
+.pill-neg{background:var(--red-l);color:var(--red)}
+.pill-neu{background:var(--b10);color:var(--b4)}
+.rw-item{background:white;border-radius:14px;padding:15px;box-shadow:var(--sh);border:1px solid #e8f0fc;display:flex;align-items:flex-start;gap:12px}
+.rw-icon{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--b6),var(--b4));display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0}
+.rw-info{flex:1;min-width:0}
+.rw-name{font-family:'Playfair Display',serif;font-weight:700;font-size:.9rem;margin-bottom:3px}
+.rw-desc{font-size:.77rem;color:var(--muted);line-height:1.4;margin-bottom:8px}
+.rw-cost{display:inline-flex;align-items:center;gap:4px;font-size:.78rem;font-weight:700;color:var(--b4);background:var(--b10);padding:3px 9px;border-radius:10px}
+.ar-card{border-radius:14px;padding:15px;box-shadow:var(--sh)}
+.ar-card.gold{background:linear-gradient(135deg,#fff9ea,#fef3cc);border:1px solid #f0dfa0}
+.ar-card.purple{background:linear-gradient(135deg,#f8f0ff,#ede9fe);border:1.5px solid #d4c0f8}
+.ar-card.grey{background:#f8faff;border:1px solid #e0eaf8;opacity:.75}
+.ar-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px}
+.ar-title{font-family:'Playfair Display',serif;font-weight:700;font-size:.9rem}
+.ar-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:10px;font-size:.72rem;font-weight:700;white-space:nowrap}
+.badge-wait{background:#fff3cd;color:#856404}
+.badge-ok{background:#d4edda;color:#1a6a30}
+.badge-conf{background:#ede9fe;color:#5b21b6}
+.badge-exp{background:#f8d7da;color:#721c24}
+.countdown{font-size:.8rem;font-weight:600;margin-top:4px}
+.confirm-box{background:#ede9fe;border-radius:10px;padding:10px 12px;margin-top:10px}
+.confirm-box p{font-size:.79rem;color:#5b21b6;font-weight:600;margin-bottom:10px}
+.mandatory-alert{background:linear-gradient(135deg,#fff0ee,#fde8e6);border:1.5px solid #f5c0bc;border-radius:14px;padding:14px 16px}
+.mandatory-alert h4{font-family:'Playfair Display',serif;color:var(--red);font-size:.9rem;margin-bottom:4px}
+.mandatory-alert p{font-size:.78rem;color:#8b2020;line-height:1.45}
+
+/* ── FLASH QUESTION ── */
+.fq-wrap{background:linear-gradient(135deg,#0e1933,#1e3060);border-radius:22px;padding:22px 20px;color:white;position:relative;overflow:hidden}
+.fq-wrap::after{content:'';position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:rgba(255,255,255,.05);border-radius:50%}
+.fq-label{font-size:.68rem;opacity:.7;text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:8px}
+.fq-timer{position:absolute;top:18px;right:18px;background:rgba(255,255,255,.12);border-radius:20px;padding:4px 10px;font-size:.72rem;font-weight:700}
+.fq-timer.urgent{background:rgba(231,76,60,.4)}
+.fq-question{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;line-height:1.45;margin-bottom:16px;position:relative}
+.fq-opts{display:flex;flex-direction:column;gap:7px}
+.fq-opt{padding:11px 14px;border:1.5px solid rgba(255,255,255,.15);border-radius:11px;cursor:pointer;font-size:.85rem;font-weight:500;text-align:left;background:rgba(255,255,255,.06);color:white;font-family:'DM Sans',sans-serif;width:100%;transition:all .18s}
+.fq-opt:hover:not([disabled]){background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35)}
+.fq-opt.fq-ok{background:rgba(46,204,113,.25);border-color:var(--green);font-weight:600}
+.fq-opt.fq-ko{background:rgba(231,76,60,.25);border-color:var(--red);font-weight:600}
+.fq-opt.fq-reveal{background:rgba(46,204,113,.15);border-color:var(--green)}
+.fq-result-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-weight:700;font-size:.85rem;margin-top:10px}
+.fq-pos{background:rgba(46,204,113,.25);color:#7effc0}
+.fq-neg{background:rgba(231,76,60,.25);color:#ffaaaa}
+
+/* Reward nudge inside flash result */
+.reward-nudge{background:linear-gradient(135deg,#1a1040,#2a1860);border:1.5px solid rgba(139,92,246,.4);border-radius:14px;padding:16px;margin-top:14px;text-align:center}
+.reward-nudge h4{font-family:'Playfair Display',serif;font-size:.95rem;color:#c4b5fd;margin-bottom:6px}
+.reward-nudge p{font-size:.78rem;color:rgba(196,181,253,.75);margin-bottom:12px;line-height:1.45}
+.reward-nudge-btns{display:flex;gap:8px;justify-content:center}
+
+/* ── MINI-GAMES ── */
+.mg-wrap{background:linear-gradient(135deg,#0e1933,#1e3060);border-radius:22px;padding:22px 20px;color:white;position:relative;overflow:hidden}
+.mg-wrap::after{content:'';position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:rgba(255,255,255,.05);border-radius:50%}
+.mg-label{font-size:.68rem;opacity:.7;text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:8px}
+.mg-title{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;margin-bottom:16px;position:relative}
+.mg-result{text-align:center;margin-top:16px}
+.mg-result-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:20px;font-weight:700;font-size:.9rem}
+.mg-pos{background:rgba(46,204,113,.25);color:#7effc0}
+.mg-zero{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6)}
+
+/* Wheel */
+.wheel-container{position:relative;width:240px;height:240px;margin:0 auto 16px}
+.wheel-svg{width:100%;height:100%;transition:transform 3s cubic-bezier(.17,.67,.12,.99)}
+.wheel-pointer{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:1.6rem;z-index:2;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
+.wheel-spin-btn{display:block;margin:0 auto;padding:12px 32px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--gold),var(--gold-d));color:white;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(232,192,74,.4)}
+
+/* Scratch Card */
+.scratch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:240px;margin:0 auto 16px}
+.scratch-cell{width:100%;aspect-ratio:1;border-radius:12px;border:none;cursor:pointer;font-size:1.5rem;font-family:'DM Sans',sans-serif;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .3s}
+.scratch-cell.covered{background:linear-gradient(135deg,#3a5ca8,#5278cc);color:transparent;box-shadow:inset 0 2px 8px rgba(0,0,0,.2)}
+.scratch-cell.covered::after{content:'?';color:rgba(255,255,255,.5);font-size:1.3rem}
+.scratch-cell.revealed{background:rgba(255,255,255,.1);cursor:default}
+
+/* Slot Machine */
+.slot-container{display:flex;justify-content:center;gap:10px;margin-bottom:16px}
+.slot-reel{width:64px;height:72px;background:rgba(0,0,0,.3);border-radius:14px;border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:2.2rem;overflow:hidden}
+.slot-reel.spinning{animation:slotSpin .15s linear infinite}
+@keyframes slotSpin{0%{transform:translateY(-4px)}50%{transform:translateY(4px)}100%{transform:translateY(-4px)}}
+.slot-spin-btn{display:block;margin:0 auto;padding:12px 32px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--purple),#6d28d9);color:white;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(139,92,246,.4)}
+
+/* Lucky Dice */
+.dice-container{display:flex;justify-content:center;gap:16px;margin-bottom:16px}
+.dice{width:64px;height:64px;background:white;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:900;color:var(--b2);box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.dice.rolling{animation:diceRoll .12s linear infinite}
+@keyframes diceRoll{0%{transform:rotate(0deg) scale(1)}25%{transform:rotate(90deg) scale(.9)}50%{transform:rotate(180deg) scale(1)}75%{transform:rotate(270deg) scale(.9)}100%{transform:rotate(360deg) scale(1)}}
+.dice-roll-btn{display:block;margin:0 auto;padding:12px 32px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--green),var(--green-d));color:white;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(46,204,113,.4)}
+.overlay{position:fixed;inset:0;background:rgba(5,10,30,.7);display:flex;align-items:flex-end;justify-content:center;z-index:200;backdrop-filter:blur(4px)}
+.overlay.center{align-items:center}
+.sheet{background:white;border-radius:24px 24px 0 0;padding:24px 20px 36px;width:100%;max-width:430px;max-height:92vh;overflow-y:auto;animation:slideUp .28s cubic-bezier(.32,1,.36,1)}
+.sheet.rounded{border-radius:24px;text-align:center;padding:32px 24px 28px}
+@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+.sheet-handle{width:40px;height:4px;background:#e0eaf8;border-radius:2px;margin:0 auto 20px}
+.sheet h2{font-family:'Playfair Display',serif;font-size:1.25rem;color:var(--b2);margin-bottom:6px}
+.sheet-sub{font-size:.83rem;color:var(--muted);margin-bottom:18px;line-height:1.5}
+.sheet-actions{display:flex;gap:8px;margin-top:16px}
+.mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px}
+.mode-tab{padding:9px;border:1.5px solid #e0eaf8;border-radius:10px;cursor:pointer;font-size:.82rem;font-weight:600;background:white;color:var(--muted);text-align:center;transition:all .18s}
+.mode-tab.on{border-color:var(--b6);background:var(--b10);color:var(--b4)}
+.toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);background:var(--b2);color:white;padding:10px 20px;border-radius:12px;font-size:.82rem;font-weight:500;z-index:300;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.35);white-space:nowrap}
+.empty{text-align:center;padding:30px 16px;color:var(--muted)}
+.empty-ico{font-size:2.2rem;display:block;margin-bottom:10px}
+.empty p{font-size:.83rem;line-height:1.5}
+.ob-dots{display:flex;justify-content:center;gap:6px;margin:20px 0}
+.ob-dot{height:7px;border-radius:4px;background:var(--b9);transition:all .3s}
+.ob-dot.on{background:var(--b5);width:20px}
+.ob-dot.off{width:7px}
+.adm-wrap{height:100vh;overflow-y:auto;background:#070d1f;color:#c8d8f8;font-family:'DM Sans',sans-serif}
+.adm-top{background:#0e1933;padding:14px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #162448;position:sticky;top:0;z-index:10}
+.adm-top h1{font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--b9)}
+.adm-body{padding:18px 18px 40px;max-width:860px;margin:0 auto}
+.adm-tabs{display:flex;gap:3px;margin-bottom:20px;background:#0e1933;padding:5px;border-radius:11px;border:1px solid #162448}
+.adm-tab{flex:1;padding:9px 6px;border:none;background:none;color:#5a7090;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;transition:all .18s}
+.adm-tab.on{background:var(--b5);color:white}
+.acard{background:#0e1933;border-radius:13px;padding:18px;margin-bottom:12px;border:1px solid #162448}
+.acard h3{font-family:'Playfair Display',serif;color:var(--b8);margin-bottom:14px;font-size:.9rem}
+.agrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.af{display:flex;flex-direction:column;gap:5px}
+.af label{font-size:.69rem;color:#5a7090;font-weight:600;text-transform:uppercase;letter-spacing:.07em}
+.af input,.af select,.af textarea{background:#070d1f;border:1px solid #162448;color:#c8d8f8;border-radius:8px;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.83rem;outline:none;width:100%}
+.af input:focus,.af select:focus{border-color:var(--b7)}
+.af select option{background:#0e1933}
+.abtn{background:var(--b5);color:white;border:none;padding:10px 16px;border-radius:9px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;font-size:.81rem;display:inline-flex;align-items:center;gap:5px;transition:all .18s}
+.abtn:hover{background:var(--b6)}
+.abtn.gold{background:var(--gold-d)}.abtn.grn{background:var(--green-d)}
+.alist{display:flex;flex-direction:column;gap:7px;margin-top:12px}
+.aitem{background:#070d1f;border-radius:9px;padding:11px 14px;display:flex;justify-content:space-between;align-items:flex-start;border:1px solid #162448;gap:10px}
+.aitem h4{font-size:.83rem;font-weight:600;margin-bottom:3px;color:#c8d8f8}
+.aitem p{font-size:.72rem;color:#4a6080;line-height:1.4}
+.adel{background:#1a0e0e;border:1px solid #4a1a1a;color:#d08080;border-radius:7px;padding:5px 10px;cursor:pointer;font-size:.72rem;flex-shrink:0}
+.astats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.astat{background:#070d1f;border-radius:9px;padding:13px;border:1px solid #162448}
+.astat .v{font-family:'Playfair Display',serif;font-size:1.7rem;color:var(--b8);font-weight:700}
+.astat .l{font-size:.69rem;color:#4a6080;margin-top:2px}
+.chip{display:inline-flex;padding:2px 8px;border-radius:10px;font-size:.67rem;font-weight:700}
+.cg{background:rgba(58,92,168,.25);color:var(--b8)}
+.cs{background:rgba(14,25,51,.6);color:var(--b9)}
+.cb{background:rgba(139,92,246,.2);color:#c4b5fd}
+.reset-btn{background:#1a0e0e;color:#d08080;border:1px solid #4a1a30;border-radius:8px;padding:9px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.79rem;font-weight:600;margin-top:10px}
+.sync-pill{display:flex;align-items:center;gap:5px;margin-left:auto;font-size:.7rem;color:#4a6080}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
+@media(max-width:480px){.agrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="R"></div>
+<script>
+(function(){
+'use strict';
+
+/* ── GLOBAL EVENT DELEGATION ── */
+document.addEventListener('click', function(e) {
+  var el = e.target;
+  // Walk up to find a [data-action] element
+  while (el && el !== document) {
+    var action = el.getAttribute('data-action');
+    if (action) { handleAction(action, el, e); return; }
+    el = el.parentElement;
+  }
+});
+
+function handleAction(action, el, e) {
+  var arg = el.getAttribute('data-arg') || '';
+  var arg2 = el.getAttribute('data-arg2') || '';
+  switch(action) {
+    case 'pick-user':      selU = arg; render(); break;
+    case 'go-admin':       session = 'admin'; render(); break;
+    case 'do-login':       doLogin(); break;
+    case 'do-adm-login':   doAdmLogin(); break;
+    case 'logout':         if(session && session!=='admin') db.ref('sc_presence/'+session).remove(); clearSession(); session = null; quizSess = null; render(); break;
+    case 'adm-logout':     session = null; adminAuthed = false; sessionStorage.removeItem('adm_ok'); render(); break;
+    case 'set-tab':        tab = arg; render(); break;
+    case 'set-adm-tab':    adminTab = arg; render(); break;
+
+    case 'open-claim':     openClaim(arg); break;
+    case 'set-mode':       claimMode = arg; render(); break;
+    case 'close-overlay':  if (e.target === el) { overlay = null; render(); } break;
+    case 'cancel-overlay': overlay = null; render(); break;
+    case 'submit-claim':   submitClaim(); break;
+    case 'mark-done':      markDone(arg); break;
+    case 'confirm-done':   confirmDone(arg, arg2 === 'yes'); break;
+    case 'toggle-acc':     toggleAcc(+arg, el); break;
+    case 'ob-next':        obStep++; render(); break;
+    case 'ob-back':        obStep--; render(); break;
+    case 'ob-close':       showOB = false; render(); break;
+    case 'add-q':          addQ(); break;
+    case 'del-q':          delQ(arg); break;
+    case 'add-r':          addR(); break;
+    case 'del-r':          delR(arg); break;
+    case 'adj-pts':        adjPts(arg, +arg2); break;
+    case 'do-reset':       doReset(); break;
+    case 'copy-topic':     copyToClipboard(arg); break;
+    case 'fq-answer':      answerFlashQ(+arg); break;
+    case 'fq-dismiss':     dismissFlashQ(); break;
+    case 'fq-claim':       flashQ=null; miniGame=null; tab='shop'; render(); break;
+    case 'fq-skip-claim':  flashQ=null; miniGame=null; render(); break;
+    case 'mg-dismiss':     dismissMiniGame(); break;
+    case 'mg-wheel-spin':  doWheelSpin(); break;
+    case 'mg-scratch':     doScratchReveal(+arg); break;
+    case 'mg-scratch-finish': doScratchFinish(arg === '1'); break;
+    case 'mg-slots-spin':  doSlotsSpin(); break;
+    case 'mg-dice-roll':   doDiceRoll(); break;
+  }
+}
+
+/* ── MINI-GAME INTERACTIONS ── */
+function doWheelSpin() {
+  if (!miniGame || miniGame.played || miniGame.gameState.spinning) return;
+  var gs = miniGame.gameState;
+  gs.spinning = true;
+  var segments = [10,50,0,100,25,250,75,150];
+  var prize = calcWeightedPrize(250);
+  // Find closest segment
+  var segAngle = 360 / segments.length;
+  var closestIdx = 0, closestDiff = 999;
+  segments.forEach(function(v, i) {
+    if (Math.abs(v - prize) < closestDiff) { closestDiff = Math.abs(v - prize); closestIdx = i; }
+  });
+  prize = segments[closestIdx]; // snap to actual segment value
+  // Calculate target angle: spin several full rotations + land on segment
+  var targetSegAngle = 360 - (closestIdx * segAngle + segAngle / 2);
+  var totalAngle = 360 * (5 + Math.floor(Math.random() * 3)) + targetSegAngle;
+  gs.angle = totalAngle;
+  render();
+  setTimeout(function() {
+    gs.spinning = false;
+    finishMiniGame(prize);
+  }, 3200);
+}
+
+function doScratchReveal(idx) {
+  if (!miniGame || miniGame.played) return;
+  var gs = miniGame.gameState;
+  if (gs.done || gs.cells[idx].revealed) return;
+  gs.cells[idx].revealed = true;
+  gs.reveals++;
+  if (gs.reveals >= gs.maxReveals) gs.done = true;
+  // Check for early win: 3 matching revealed symbols
+  var counts = {};
+  gs.cells.forEach(function(c) { if (c.revealed) { counts[c.symbol] = (counts[c.symbol]||0)+1; } });
+  var earlyWin = false;
+  Object.keys(counts).forEach(function(k) { if (counts[k] >= 3) earlyWin = true; });
+  if (earlyWin) gs.done = true;
+  render();
+}
+
+function doScratchFinish(won) {
+  if (!miniGame || miniGame.played) return;
+  var prize = won ? calcWeightedPrize(250) : 0;
+  if (won && prize === 0) prize = 20; // minimum win if matched
+  // Reveal all
+  miniGame.gameState.cells.forEach(function(c) { c.revealed = true; });
+  finishMiniGame(prize);
+}
+
+function doSlotsSpin() {
+  if (!miniGame || miniGame.played || miniGame.gameState.spinning) return;
+  var gs = miniGame.gameState;
+  gs.spinning = true;
+  render();
+  // Animate reel changes
+  var ticks = 0, maxTicks = 20;
+  var interval = setInterval(function() {
+    ticks++;
+    for (var i = 0; i < 3; i++) {
+      if (ticks < maxTicks - i * 3) {
+        gs.reels[i] = gs.emojis[Math.floor(Math.random() * gs.emojis.length)];
+      }
+    }
+    // Update reels display directly for animation
+    for (var j = 0; j < 3; j++) {
+      var rel = document.getElementById('reel-' + j);
+      if (rel) rel.textContent = gs.reels[j];
+    }
+    if (ticks >= maxTicks) {
+      clearInterval(interval);
+      gs.spinning = false;
+      // Determine prize based on matches
+      var prize = 0;
+      if (gs.reels[0] === gs.reels[1] && gs.reels[1] === gs.reels[2]) {
+        prize = 250; // jackpot
+      } else if (gs.reels[0] === gs.reels[1] || gs.reels[1] === gs.reels[2] || gs.reels[0] === gs.reels[2]) {
+        prize = calcWeightedPrize(120);
+        if (prize === 0) prize = 30;
+      }
+      // 40% chance of random small win even with no matches
+      if (prize === 0 && Math.random() < 0.4) {
+        prize = Math.floor(Math.random() * 40) + 10;
+      }
+      finishMiniGame(prize);
+    }
+  }, 100);
+}
+
+function doDiceRoll() {
+  if (!miniGame || miniGame.played || miniGame.gameState.rolling) return;
+  var gs = miniGame.gameState;
+  gs.rolling = true;
+  render();
+  var ticks = 0;
+  var interval = setInterval(function() {
+    ticks++;
+    gs.d1 = Math.floor(Math.random() * 6) + 1;
+    gs.d2 = Math.floor(Math.random() * 6) + 1;
+    // Update dice display directly
+    var diceEmojis = ['','⚀','⚁','⚂','⚃','⚄','⚅'];
+    var diceEls = document.querySelectorAll('.dice');
+    if (diceEls[0]) diceEls[0].textContent = diceEmojis[gs.d1];
+    if (diceEls[1]) diceEls[1].textContent = diceEmojis[gs.d2];
+    if (ticks >= 15) {
+      clearInterval(interval);
+      gs.rolling = false;
+      var sum = gs.d1 + gs.d2;
+      var prize = sum * 20; // 2-12 × 20 = 40-240 pt
+      finishMiniGame(prize);
+    }
+  }, 100);
+}
+
+/* ── FIREBASE SETUP ── */
+var firebaseConfig = {
+  apiKey: "AIzaSyB9iufetY1k5ScWdI5fiOPNK567kPNw6ug",
+  authDomain: "secretchallenge-7aabf.firebaseapp.com",
+  databaseURL: "https://secretchallenge-7aabf-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "secretchallenge-7aabf",
+  storageBucket: "secretchallenge-7aabf.firebasestorage.app",
+  messagingSenderId: "877944784958",
+  appId: "1:877944784958:web:f62468f13fa5a23365696f"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.database();
+var DB_REF = 'sc_app';
+
+/* ── DATA ── */
+function freshUser() { return {pwd:'',pwdSet:false,pts:1000,quizToday:null,lastRewardClaim:null,penaltyChecked:null}; }
+var BLANK = {users:{giulia:freshUser(),stefano:freshUser()},questions:[],rewards:[],requests:[]};
+
+/* ── EMBEDDED QUESTION BANK (from CSV) ── */
+var QUESTION_BANK = [{"id": "1", "text": "Qual è la capitale d'Italia?", "opts": ["Roma", "Milano", "Napoli", "Torino"], "correct": 0, "diff": 1, "ambito": "Geografia"}, {"id": "2", "text": "Qual è la capitale della Francia?", "opts": ["Parigi", "Lione", "Marsiglia", "Nizza"], "correct": 0, "diff": 1, "ambito": "Geografia"}, {"id": "3", "text": "Qual è il pianeta più vicino al Sole?", "opts": ["Venere", "Mercurio", "Marte", "Giove"], "correct": 1, "diff": 1, "ambito": "Scienza"}, {"id": "4", "text": "Chi ha scritto \"Romeo e Giulietta\"?", "opts": ["Dante", "Shakespeare", "Boccaccio", "Manzoni"], "correct": 1, "diff": 2, "ambito": "Letteratura"}, {"id": "5", "text": "Quanto fa 2+2?", "opts": ["3", "4", "5", "6"], "correct": 1, "diff": 1, "ambito": "Matematica"}, {"id": "6", "text": "Qual è il colore del cielo sereno?", "opts": ["Blu", "Verde", "Rosso", "Giallo"], "correct": 0, "diff": 1, "ambito": "Scienza"}, {"id": "7", "text": "Chi era il primo presidente USA?", "opts": ["Lincoln", "Washington", "Jefferson", "Adams"], "correct": 1, "diff": 2, "ambito": "Storia"}, {"id": "8", "text": "Qual è l’oceano più grande?", "opts": ["Atlantico", "Indiano", "Pacifico", "Artico"], "correct": 2, "diff": 2, "ambito": "Geografia"}, {"id": "9", "text": "Quanti giorni ha una settimana?", "opts": ["5", "6", "7", "8"], "correct": 2, "diff": 1, "ambito": "Varie"}, {"id": "10", "text": "Simbolo chimico dell’acqua?", "opts": ["H2O", "O2", "CO2", "NaCl"], "correct": 0, "diff": 1, "ambito": "Scienza"}, {"id": "11", "text": "Chi ha dipinto la Gioconda?", "opts": ["Van Gogh", "Leonardo", "Picasso", "Raffaello"], "correct": 1, "diff": 2, "ambito": "Arte"}, {"id": "12", "text": "Quanto fa 10x10?", "opts": ["50", "100", "10", "20"], "correct": 1, "diff": 1, "ambito": "Matematica"}, {"id": "13", "text": "Chi ha scoperto l’America?", "opts": ["Colombo", "Magellano", "Cook", "Vespucci"], "correct": 0, "diff": 2, "ambito": "Storia"}, {"id": "14", "text": "Continente più grande?", "opts": ["Africa", "Asia", "Europa", "America"], "correct": 1, "diff": 2, "ambito": "Geografia"}, {"id": "15", "text": "Numero lati triangolo?", "opts": ["2", "3", "4", "5"], "correct": 1, "diff": 1, "ambito": "Matematica"}, {"id": "16", "text": "Chi ha teorizzato la relatività?", "opts": ["Newton", "Einstein", "Galileo", "Bohr"], "correct": 1, "diff": 4, "ambito": "Scienza"}, {"id": "17", "text": "Capitale Germania?", "opts": ["Berlino", "Monaco", "Amburgo", "Colonia"], "correct": 0, "diff": 2, "ambito": "Geografia"}, {"id": "18", "text": "Pianeta più grande?", "opts": ["Saturno", "Terra", "Giove", "Urano"], "correct": 2, "diff": 2, "ambito": "Scienza"}, {"id": "19", "text": "Radice quadrata di 16?", "opts": ["2", "4", "6", "8"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "20", "text": "Gas principale atmosfera?", "opts": ["Ossigeno", "Azoto", "CO2", "Idrogeno"], "correct": 1, "diff": 3, "ambito": "Scienza"}, {"id": "21", "text": "Capitale Spagna?", "opts": ["Madrid", "Barcellona", "Valencia", "Siviglia"], "correct": 0, "diff": 2, "ambito": "Geografia"}, {"id": "22", "text": "Simbolo oro?", "opts": ["Ag", "Au", "Fe", "O"], "correct": 1, "diff": 3, "ambito": "Scienza"}, {"id": "23", "text": "Autore \"I Promessi Sposi\"?", "opts": ["Manzoni", "Dante", "Pirandello", "Leopardi"], "correct": 0, "diff": 2, "ambito": "Letteratura"}, {"id": "24", "text": "5x6=?", "opts": ["11", "30", "25", "20"], "correct": 1, "diff": 1, "ambito": "Matematica"}, {"id": "25", "text": "Paese più popoloso?", "opts": ["India", "Cina", "USA", "Indonesia"], "correct": 1, "diff": 3, "ambito": "Geografia"}, {"id": "26", "text": "Chi era Galileo?", "opts": ["Artista", "Scienziato", "Re", "Poeta"], "correct": 1, "diff": 3, "ambito": "Scienza"}, {"id": "27", "text": "Capitale Cina?", "opts": ["Pechino", "Shanghai", "Hong Kong", "Nanchino"], "correct": 0, "diff": 2, "ambito": "Geografia"}, {"id": "28", "text": "Pianeta con anelli?", "opts": ["Marte", "Giove", "Saturno", "Venere"], "correct": 2, "diff": 2, "ambito": "Scienza"}, {"id": "29", "text": "12/3=?", "opts": ["2", "3", "4", "5"], "correct": 2, "diff": 1, "ambito": "Matematica"}, {"id": "30", "text": "Vulcano famoso Italia?", "opts": ["Etna", "Vesuvio", "Stromboli", "Fuji"], "correct": 1, "diff": 2, "ambito": "Geografia"}, {"id": "31", "text": "Teoria evoluzione?", "opts": ["Darwin", "Newton", "Einstein", "Curie"], "correct": 0, "diff": 4, "ambito": "Scienza"}, {"id": "32", "text": "Capitale Russia?", "opts": ["Mosca", "San Pietroburgo", "Kiev", "Minsk"], "correct": 0, "diff": 2, "ambito": "Geografia"}, {"id": "33", "text": "Numero pianeti sistema solare?", "opts": ["7", "8", "9", "10"], "correct": 1, "diff": 3, "ambito": "Scienza"}, {"id": "34", "text": "7x8=?", "opts": ["54", "56", "58", "60"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "35", "text": "Capitale India?", "opts": ["Delhi", "Mumbai", "Kolkata", "Chennai"], "correct": 0, "diff": 3, "ambito": "Geografia"}, {"id": "36", "text": "Gas che respiriamo?", "opts": ["Ossigeno", "Azoto", "CO2", "Elio"], "correct": 0, "diff": 1, "ambito": "Scienza"}, {"id": "37", "text": "100-45=?", "opts": ["45", "55", "65", "35"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "38", "text": "Capitale Messico?", "opts": ["Monterrey", "Cancun", "Città del Messico", "Guadalajara"], "correct": 2, "diff": 3, "ambito": "Geografia"}, {"id": "39", "text": "Simbolo sodio?", "opts": ["So", "Na", "Sn", "Sd"], "correct": 1, "diff": 4, "ambito": "Scienza"}, {"id": "40", "text": "6^2=?", "opts": ["12", "18", "36", "24"], "correct": 2, "diff": 3, "ambito": "Matematica"}, {"id": "41", "text": "Capitale Egitto?", "opts": ["Il Cairo", "Alessandria", "Giza", "Luxor"], "correct": 0, "diff": 3, "ambito": "Geografia"}, {"id": "42", "text": "Nome galassia?", "opts": ["Andromeda", "Via Lattea", "Orione", "Centauro"], "correct": 1, "diff": 3, "ambito": "Scienza"}, {"id": "43", "text": "50/5=?", "opts": ["5", "10", "15", "20"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "44", "text": "Capitale Grecia?", "opts": ["Atene", "Sparta", "Salonicco", "Creta"], "correct": 0, "diff": 3, "ambito": "Geografia"}, {"id": "45", "text": "Scoperta gravità?", "opts": ["Newton", "Einstein", "Galileo", "Tesla"], "correct": 0, "diff": 3, "ambito": "Scienza"}, {"id": "46", "text": "3x9=?", "opts": ["18", "21", "27", "24"], "correct": 2, "diff": 1, "ambito": "Matematica"}, {"id": "47", "text": "144/12=?", "opts": ["10", "11", "12", "13"], "correct": 2, "diff": 2, "ambito": "Matematica"}, {"id": "48", "text": "11x11=?", "opts": ["111", "121", "131", "141"], "correct": 1, "diff": 3, "ambito": "Matematica"}, {"id": "49", "text": "81/9=?", "opts": ["7", "8", "9", "10"], "correct": 2, "diff": 2, "ambito": "Matematica"}, {"id": "50", "text": "8^2=?", "opts": ["16", "32", "64", "48"], "correct": 2, "diff": 3, "ambito": "Matematica"}, {"id": "51", "text": "20x5=?", "opts": ["50", "75", "100", "120"], "correct": 2, "diff": 2, "ambito": "Matematica"}, {"id": "52", "text": "18+27=?", "opts": ["35", "45", "55", "40"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "53", "text": "100/4=?", "opts": ["20", "25", "30", "35"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "54", "text": "14x3=?", "opts": ["42", "36", "48", "40"], "correct": 0, "diff": 2, "ambito": "Matematica"}, {"id": "55", "text": "60/3=?", "opts": ["15", "20", "25", "30"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "56", "text": "13+19=?", "opts": ["30", "31", "32", "33"], "correct": 2, "diff": 2, "ambito": "Matematica"}, {"id": "57", "text": "25x4=?", "opts": ["80", "90", "100", "110"], "correct": 2, "diff": 2, "ambito": "Matematica"}, {"id": "58", "text": "90/10=?", "opts": ["8", "9", "10", "11"], "correct": 1, "diff": 2, "ambito": "Matematica"}, {"id": "59", "text": "7^3=?", "opts": ["343", "49", "21", "512"], "correct": 0, "diff": 4, "ambito": "Matematica"}, {"id": "60", "text": "121/11=?", "opts": ["9", "10", "11", "12"], "correct": 2, "diff": 3, "ambito": "Matematica"}, {"id": "61", "text": "19+23=?", "opts": ["40", "41", "42", "43"], "correct": 2, "diff": 2, "ambito": "Matematica"}, {"id": "62", "text": "200/5=?", "opts": ["20", "30", "40", "50"], "correct": 2, "diff": 3, "ambito": "Matematica"}, {"id": "63", "text": "15x7=?", "opts": ["95", "100", "105", "110"], "correct": 2, "diff": 3, "ambito": "Matematica"}, {"id": "64", "text": "256/16=?", "opts": ["14", "15", "16", "18"], "correct": 2, "diff": 3, "ambito": "Matematica"}, {"id": "65", "text": "3^4=?", "opts": ["27", "64", "81", "12"], "correct": 2, "diff": 4, "ambito": "Matematica"}, {"id": "66", "text": "Chi ha scritto \"1984\"?", "opts": ["Orwell", "Huxley", "Tolkien", "Rowling"], "correct": 0, "diff": 3, "ambito": "Letteratura"}, {"id": "67", "text": "Autore \"Divina Commedia\"?", "opts": ["Dante", "Petrarca", "Boccaccio", "Leopardi"], "correct": 0, "diff": 2, "ambito": "Letteratura"}, {"id": "68", "text": "Autore \"Odissea\"?", "opts": ["Omero", "Virgilio", "Ovidio", "Platone"], "correct": 0, "diff": 3, "ambito": "Letteratura"}, {"id": "69", "text": "Autore \"Don Chisciotte\"?", "opts": ["Cervantes", "Borges", "Neruda", "Allende"], "correct": 0, "diff": 4, "ambito": "Letteratura"}, {"id": "70", "text": "Autore \"Guerra e Pace\"?", "opts": ["Tolstoj", "Dostoevskij", "Pushkin", "Gogol"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "71", "text": "Autore \"Moby Dick\"?", "opts": ["Melville", "Twain", "Hemingway", "Fitzgerald"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "72", "text": "Autore \"Dracula\"?", "opts": ["Stoker", "Shelley", "Poe", "Wilde"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "73", "text": "Autore \"Frankenstein\"?", "opts": ["Shelley", "Austen", "Brontë", "Stoker"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "74", "text": "Autore \"Ulisse\"?", "opts": ["Joyce", "Beckett", "Eliot", "Yeats"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "75", "text": "Autore \"Il Processo\"?", "opts": ["Kafka", "Goethe", "Mann", "Hesse"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "76", "text": "Autore \"Lolita\"?", "opts": ["Nabokov", "Bulgakov", "Pasternak", "Solzenicyn"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "77", "text": "Autore \"Il Gattopardo\"?", "opts": ["Tomasi di Lampedusa", "Calvino", "Eco", "Pavese"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "78", "text": "Autore \"Se questo è un uomo\"?", "opts": ["Levi", "Sciascia", "Fenoglio", "Moravia"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "79", "text": "Autore \"La coscienza di Zeno\"?", "opts": ["Svevo", "Pirandello", "Verga", "Deledda"], "correct": 0, "diff": 5, "ambito": "Letteratura"}, {"id": "80", "text": "Autore \"Madame Bovary\"?", "opts": ["Flaubert", "Balzac", "Zola", "Hugo"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "81", "text": "Autore \"Dorian Gray\"?", "opts": ["Wilde", "Shaw", "Dickens", "Austen"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "82", "text": "Autore \"Il deserto dei Tartari\"?", "opts": ["Buzzati", "Calvino", "Primo Levi", "Saba"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "83", "text": "Autore \"La nausea\"?", "opts": ["Sartre", "Camus", "Beauvoir", "Merleau-Ponty"], "correct": 0, "diff": 7, "ambito": "Letteratura"}, {"id": "84", "text": "Autore \"Cent’anni di solitudine\"?", "opts": ["Marquez", "Borges", "Cortazar", "Neruda"], "correct": 0, "diff": 6, "ambito": "Letteratura"}, {"id": "85", "text": "Autore \"Orgoglio e pregiudizio\"?", "opts": ["Austen", "Brontë", "Eliot", "Alcott"], "correct": 0, "diff": 5, "ambito": "Letteratura"}];
+
+/* Select 10 questions balanced by difficulty.
+   Strategy: divide bank into LOW (1-3), MED (4-6), HIGH (7-10),
+   pick ~4 LOW + 4 MED + 2 HIGH (adjusting if a bucket is small),
+   then shuffle the final 10. */
+function selectDailyQuestions() {
+  var low  = QUESTION_BANK.filter(function(q){ return q.diff <= 3; });
+  var med  = QUESTION_BANK.filter(function(q){ return q.diff >= 4 && q.diff <= 6; });
+  var high = QUESTION_BANK.filter(function(q){ return q.diff >= 7; });
+
+  function pick(arr, n) {
+    var shuffled = arr.slice().sort(function(){ return Math.random() - 0.5; });
+    return shuffled.slice(0, Math.min(n, shuffled.length));
+  }
+
+  // Targets: 4 low, 4 med, 2 high — fill gaps from other buckets
+  var targets = [4, 4, 2];
+  var buckets = [low, med, high];
+  var chosen = [];
+  var remaining = 10;
+
+  for (var i = 0; i < 3; i++) {
+    var got = pick(buckets[i], targets[i]);
+    chosen = chosen.concat(got);
+    remaining -= got.length;
+  }
+
+  // If we still need more (e.g. high bucket small), fill from any remaining
+  if (remaining > 0) {
+    var usedIds = {};
+    chosen.forEach(function(q){ usedIds[q.id] = true; });
+    var leftover = QUESTION_BANK.filter(function(q){ return !usedIds[q.id]; });
+    leftover.sort(function(){ return Math.random() - 0.5; });
+    chosen = chosen.concat(leftover.slice(0, remaining));
+  }
+
+  // Final shuffle
+  chosen.sort(function(){ return Math.random() - 0.5; });
+  return chosen.slice(0, 10);
+}
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+/* ── STATE ── */
+var S = clone(BLANK);
+var fbReady = false; // true once first Firebase snapshot received
+var session = null, tab = 'home', overlay = null;
+var toast = null, toastT = null;
+var adminAuthed = sessionStorage.getItem('adm_ok') === '1';
+var adminTab = 'quiz', adminUser = '', adminPwd = '';
+var selU = null, showOB = false, obStep = 0;
+var quizSess = null; // kept for compatibility, unused
+var claimMode = 'deadline';
+var expandedInfo = {};
+var onlineUsers = {};
+
+/* ── FLASH QUESTION STATE ── */
+var flashQ = null;
+/* flashQ shape: {
+     q: {question object},
+     slotKey: 'YYYY-M-D-H' (hour slot),
+     answered: false,
+     ansIdx: null,
+     showNudge: false,   // show reward nudge after answer
+     timerLeft: 3600     // seconds remaining in this hour
+   } */
+var flashTimer = null;
+
+/* ── FIREBASE SAVE / SYNC ── */
+/* Write guard: suppress self-triggered Firebase echoes */
+var _writing = false;
+var _writeTimer = null;
+
+function save(s) {
+  var payload = {
+    users: s.users,
+    questions: arrToObj(s.questions),
+    rewards: arrToObj(s.rewards),
+    requests: arrToObj(s.requests)
+  };
+  _writing = true;
+  if (_writeTimer) clearTimeout(_writeTimer);
+  _writeTimer = setTimeout(function(){ _writing = false; }, 3000);
+  db.ref(DB_REF).set(payload);
+}
+
+/* Returns true if user is focused on an input field */
+function userIsTyping() {
+  var el = document.activeElement;
+  if (!el) return false;
+  var t = el.tagName;
+  return t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT';
+}
+
+/* Debounced remote render — waits until safe to update */
+var _remoteTimer = null;
+function scheduleRemoteRender() {
+  if (_remoteTimer) clearTimeout(_remoteTimer);
+  _remoteTimer = setTimeout(function() {
+    if (!overlay && !userIsTyping()) {
+      render();
+    } else {
+      scheduleRemoteRender(); // retry in 1.5s
+    }
+  }, 1500);
+}
+
+function arrToObj(arr) {
+  if (!arr || !arr.length) return {};
+  var obj = {};
+  arr.forEach(function(item) { if (item && item.id) obj[item.id] = item; });
+  return obj;
+}
+
+function objToArr(obj) {
+  if (!obj) return [];
+  return Object.values(obj);
+}
+
+/* ── PRESENCE (online users) ── */
+function announcePresence() {
+  if (!session || session === 'admin') return;
+  var presRef = db.ref('sc_presence/' + session);
+  presRef.set({online: true, t: Date.now()});
+  presRef.onDisconnect().remove();
+}
+
+/* ── HELPERS ── */
+function todayKey() { var d = new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function daysAgo(iso) { if (!iso) return 0; return Math.round((Date.now() - new Date(iso)) / 86400000); }
+function fmtDt(s) { if (!s) return ''; try { return new Date(s).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); } catch(e) { return s; } }
+function fmtTime(s) { if (!s) return ''; try { return new Date(s).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}); } catch(e) { return s; } }
+
+/* ── NTFY NOTIFICATIONS ── */
+var APP_URL = 'https://speed07top-art.github.io/-secret-challenge/';
+var SESSION_KEY = 'sc_session_v1'; // {user, expires}
+var SESSION_HOURS = 48;
+
+function saveSession(user) {
+  var expires = Date.now() + SESSION_HOURS * 3600 * 1000;
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify({user: user, expires: expires})); } catch(e) {}
+}
+
+function loadSession() {
+  try {
+    var raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    var s = JSON.parse(raw);
+    if (!s || !s.user || !s.expires) return null;
+    if (Date.now() > s.expires) { localStorage.removeItem(SESSION_KEY); return null; }
+    return s.user;
+  } catch(e) { return null; }
+}
+
+function clearSession() {
+  try { localStorage.removeItem(SESSION_KEY); } catch(e) {}
+}
+var NTFY_BASE = 'https://ntfy.sh/';
+
+function genTopic(user) {
+  var rand = Math.random().toString(36).slice(2,10);
+  return 'secretchallenge-' + user + '-' + rand;
+}
+
+function ensureTopic(user) {
+  if (!S.users[user].ntfyTopic) {
+    S.users[user].ntfyTopic = genTopic(user);
+    save(S);
+  }
+  return S.users[user].ntfyTopic;
+}
+
+function ntfySend(topic, title, message, tags) {
+  if (!topic) return;
+  var payload = { topic: topic, title: title, message: message, click: APP_URL };
+  if (tags) payload.tags = tags;
+  fetch(NTFY_BASE, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).catch(function(e) { console.warn('ntfy error:', e); });
+}
+
+function notifyPartnerNewReward(rewardName, deadline) {
+  var pt = session === 'giulia' ? 'stefano' : 'giulia';
+  var topic = S.users[pt] && S.users[pt].ntfyTopic;
+  if (!topic) return;
+  var myName = session === 'giulia' ? '🌸 Giulia' : '⚡ Stefano';
+  var msg = myName + ' ha richiesto: ' + rewardName;
+  if (deadline) msg += '\nEntro: ' + fmtDt(deadline);
+  ntfySend(topic, '🎁 Nuovo premio da eseguire!', msg, ['gift']);
+}
+
+/* ── ACTIVITY ENGINE (Flash Questions + Mini-Games) ── */
+
+var ALL_ACTIVITY_HOURS = [15, 16, 17, 18, 19, 20, 21];
+var QUIZ_HOURS = [15, 18, 20]; // hours with flash questions
+var GAME_SCHEDULE = {
+  16: {type:'wheel',   icon:'🎰', name:'Gira la Ruota'},
+  17: {type:'scratch',  icon:'🎫', name:'Gratta e Vinci'},
+  19: {type:'slots',    icon:'🎰', name:'Slot Machine'},
+  21: {type:'dice',     icon:'🎲', name:'Dado Fortunato'}
+};
+var GAME_HOURS = [16, 17, 19, 21];
+
+function flashSlotKey() {
+  var d = new Date();
+  return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate()+'-'+d.getHours();
+}
+
+function isActivityHour() {
+  var h = new Date().getHours();
+  return ALL_ACTIVITY_HOURS.indexOf(h) >= 0;
+}
+function isQuizHour() {
+  return QUIZ_HOURS.indexOf(new Date().getHours()) >= 0;
+}
+function isGameHour() {
+  return GAME_HOURS.indexOf(new Date().getHours()) >= 0;
+}
+function currentGameType() {
+  var h = new Date().getHours();
+  return GAME_SCHEDULE[h] || null;
+}
+
+function secondsUntilNextHour() {
+  var now = new Date();
+  return 3600 - now.getMinutes() * 60 - now.getSeconds();
+}
+
+function pickFlashQuestion() {
+  if (!QUESTION_BANK || !QUESTION_BANK.length) return null;
+  // Pick a random question, prefer ones not seen today
+  var today = todayKey();
+  var seenKey = 'fq_seen_' + today;
+  var seen = [];
+  try { seen = JSON.parse(sessionStorage.getItem(seenKey) || '[]'); } catch(e) {}
+  var pool = QUESTION_BANK.filter(function(q) { return seen.indexOf(q.id) < 0; });
+  if (!pool.length) pool = QUESTION_BANK; // all seen — reset
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function markFlashQuestionSeen(qid) {
+  var today = todayKey();
+  var seenKey = 'fq_seen_' + today;
+  var seen = [];
+  try { seen = JSON.parse(sessionStorage.getItem(seenKey) || '[]'); } catch(e) {}
+  if (seen.indexOf(qid) < 0) seen.push(qid);
+  try { sessionStorage.setItem(seenKey, JSON.stringify(seen)); } catch(e) {}
+}
+
+/* ── MINI-GAME STATE ── */
+var miniGame = null;
+/* miniGame shape: {
+     type: 'wheel'|'scratch'|'slots'|'dice',
+     slotKey: string,
+     played: false,
+     prize: 0,
+     gameState: {} // type-specific state
+   } */
+
+function checkFlashQuestion() {
+  if (!session || session === 'admin') return;
+  if (!isActivityHour()) { flashQ = null; miniGame = null; return; }
+
+  var slotKey = flashSlotKey();
+  var doneKey = 'fq_done_' + slotKey;
+
+  // Already answered or dismissed this hour slot
+  if (sessionStorage.getItem(doneKey)) return;
+  // Already active
+  if (flashQ && flashQ.slotKey === slotKey) return;
+  if (miniGame && miniGame.slotKey === slotKey) return;
+
+  if (isQuizHour()) {
+    // Flash question
+    var q = pickFlashQuestion();
+    if (!q) return;
+
+    flashQ = {
+      q: q,
+      slotKey: slotKey,
+      answered: false,
+      ansIdx: null,
+      showNudge: false,
+      timerLeft: secondsUntilNextHour()
+    };
+
+    // Send notification
+    sendActivityNotification('⚡ Domanda Flash delle ' + new Date().getHours() + ':00!', 'Una domanda ti aspetta in app. Rispondi subito: +100 pt se corretta!');
+
+    // Start countdown timer
+    if (flashTimer) clearInterval(flashTimer);
+    flashTimer = setInterval(function() {
+      if (!flashQ) { clearInterval(flashTimer); return; }
+      flashQ.timerLeft--;
+      if (flashQ.timerLeft <= 0) {
+        clearInterval(flashTimer);
+        sessionStorage.setItem('fq_done_' + flashQ.slotKey, 'skip');
+        flashQ = null;
+        render();
+      } else {
+        var el = document.getElementById('fq-timer');
+        if (el) {
+          var m = Math.floor(flashQ.timerLeft / 60);
+          var s = flashQ.timerLeft % 60;
+          el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+          if (flashQ.timerLeft < 120) el.classList.add('urgent');
+        }
+      }
+    }, 1000);
+    render();
+
+  } else if (isGameHour()) {
+    // Mini-game
+    var gt = currentGameType();
+    if (!gt) return;
+    miniGame = {
+      type: gt.type,
+      icon: gt.icon,
+      name: gt.name,
+      slotKey: slotKey,
+      played: false,
+      prize: 0,
+      gameState: initGameState(gt.type)
+    };
+
+    // Send notification
+    sendActivityNotification(gt.icon + ' ' + gt.name + ' disponibile!', 'Un mini-gioco ti aspetta: puoi vincere fino a 250 pt!');
+
+    render();
+  }
+}
+
+function sendActivityNotification(title, message) {
+  if (!session || session === 'admin') return;
+  var topic = S.users[session] && S.users[session].ntfyTopic;
+  if (!topic) return;
+  ntfySend(topic, title, message, ['game_die']);
+}
+
+function answerFlashQ(optIdx) {
+  if (!flashQ || flashQ.answered) return;
+  var ok = optIdx === flashQ.q.correct;
+  flashQ.answered = true;
+  flashQ.ansIdx = optIdx;
+  flashQ.ok = ok;
+
+  // Award/deduct points
+  var pts = ok ? 100 : -50;
+  S.users[session].pts = Math.max(0, (S.users[session].pts || 0) + pts);
+  save(S);
+
+  // Mark slot as done
+  sessionStorage.setItem('fq_done_' + flashQ.slotKey, 'answered');
+  markFlashQuestionSeen(flashQ.q.id);
+  if (flashTimer) clearInterval(flashTimer);
+
+  render();
+
+  // After short delay, show the shop popup
+  showShopNudgeAfterDelay();
+}
+
+function dismissFlashQ() {
+  if (!flashQ) return;
+  if (!flashQ.answered) {
+    sessionStorage.setItem('fq_done_' + flashQ.slotKey, 'skip');
+  }
+  if (flashTimer) clearInterval(flashTimer);
+  flashQ = null;
+  render();
+}
+
+function showShopNudgeAfterDelay() {
+  setTimeout(function() {
+    var myPtsNow = S.users[session] ? S.users[session].pts || 0 : 0;
+    var affordableRws = (S.rewards || []).filter(function(r) {
+      return (r.partner === session || r.partner === 'both') && r.cost <= myPtsNow;
+    });
+    if (affordableRws.length > 0) {
+      overlay = {type: 'reward_nudge', pts: myPtsNow, count: affordableRws.length};
+      render();
+    }
+  }, 1200);
+}
+
+/* ── MINI-GAME LOGIC ── */
+function initGameState(type) {
+  if (type === 'wheel') return {angle: 0, spinning: false};
+  if (type === 'scratch') {
+    var symbols = ['💎','🌟','🍀','🔥','👑','💰'];
+    var winSym = symbols[Math.floor(Math.random() * symbols.length)];
+    var cells = [];
+    // Place 3 winning symbols
+    var winPositions = shuffle9()[0];
+    for (var i = 0; i < 9; i++) cells.push({symbol: symbols[Math.floor(Math.random() * symbols.length)], revealed: false});
+    // Decide win (30% chance)
+    if (Math.random() < 0.3) {
+      var positions = shuffle9().slice(0, 3);
+      positions.forEach(function(p) { cells[p].symbol = winSym; });
+    }
+    return {cells: cells, reveals: 0, maxReveals: 5, done: false};
+  }
+  if (type === 'slots') {
+    var emojis = ['🍒','🍋','🔔','💎','⭐','🍀'];
+    return {reels: [emojis[0], emojis[1], emojis[2]], spinning: false, emojis: emojis};
+  }
+  if (type === 'dice') return {d1: 1, d2: 1, rolling: false};
+  return {};
+}
+
+function shuffle9() {
+  var a = [0,1,2,3,4,5,6,7,8];
+  for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+  return a;
+}
+
+function calcWeightedPrize(max) {
+  // Weighted: most prizes are low, few are high
+  var r = Math.random();
+  if (r < 0.15) return 0;         // 15% chance of 0
+  if (r < 0.45) return Math.floor(Math.random() * 30) + 10;   // 30% → 10-40
+  if (r < 0.70) return Math.floor(Math.random() * 50) + 40;   // 25% → 40-90
+  if (r < 0.88) return Math.floor(Math.random() * 60) + 90;   // 18% → 90-150
+  if (r < 0.97) return Math.floor(Math.random() * 50) + 150;  // 9% → 150-200
+  return Math.floor(Math.random() * 50) + 200;                // 3% → 200-250
+}
+
+function finishMiniGame(prize) {
+  if (!miniGame || miniGame.played) return;
+  miniGame.played = true;
+  miniGame.prize = prize;
+  S.users[session].pts = Math.max(0, (S.users[session].pts || 0) + prize);
+  save(S);
+  sessionStorage.setItem('fq_done_' + miniGame.slotKey, 'answered');
+  render();
+  showShopNudgeAfterDelay();
+}
+
+function dismissMiniGame() {
+  if (!miniGame) return;
+  if (!miniGame.played) {
+    sessionStorage.setItem('fq_done_' + miniGame.slotKey, 'skip');
+  }
+  miniGame = null;
+  render();
+}
+
+function renderFlashQuestion() {
+  if (!flashQ) return '';
+  var fq = flashQ, q = fq.q;
+  var m = Math.floor(fq.timerLeft / 60);
+  var s = fq.timerLeft % 60;
+  var timerStr = m + ':' + (s < 10 ? '0' : '') + s;
+  var urgent = fq.timerLeft < 120;
+
+  var h = '<div class="fq-wrap">';
+  h += '<div class="fq-label">⚡ Domanda Flash</div>';
+  if (!fq.answered) {
+    h += '<div class="fq-timer' + (urgent ? ' urgent' : '') + '" id="fq-timer">' + timerStr + '</div>';
+  }
+  h += '<div class="fq-question">' + esc(q.text) + '</div>';
+
+  if (!fq.answered) {
+    h += '<div class="fq-opts">';
+    q.opts.forEach(function(o, i) {
+      h += '<button class="fq-opt" data-action="fq-answer" data-arg="' + i + '">' + esc(o) + '</button>';
+    });
+    h += '</div>';
+    h += '<div style="margin-top:12px;text-align:right">';
+    h += '<button data-action="fq-dismiss" style="background:none;border:none;font-size:.72rem;color:rgba(255,255,255,.4);cursor:pointer;font-family:sans-serif">Salta</button>';
+    h += '</div>';
+  } else {
+    h += '<div class="fq-opts">';
+    q.opts.forEach(function(o, i) {
+      var cls = 'fq-opt';
+      if (i === q.correct) cls += ' fq-ok';
+      else if (i === fq.ansIdx && !fq.ok) cls += ' fq-ko';
+      h += '<button class="' + cls + '" disabled>' + esc(o) + '</button>';
+    });
+    h += '</div>';
+    h += '<div style="margin-top:10px">';
+    h += '<div class="fq-result-pill ' + (fq.ok ? 'fq-pos' : 'fq-neg') + '">';
+    h += fq.ok ? '✅ Corretto! +100 pt' : '❌ Sbagliato! -50 pt';
+    h += '</div></div>';
+    h += '<div style="margin-top:10px;text-align:right">';
+    h += '<button data-action="fq-dismiss" style="background:none;border:none;font-size:.75rem;color:rgba(255,255,255,.5);cursor:pointer;font-family:sans-serif">Chiudi</button>';
+    h += '</div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+/* ── MINI-GAME RENDERERS ── */
+function renderMiniGame() {
+  if (!miniGame) return '';
+  var mg = miniGame;
+  var h = '<div class="mg-wrap">';
+  h += '<div class="mg-label">' + mg.icon + ' Mini-Gioco</div>';
+  h += '<div class="mg-title">' + esc(mg.name) + '</div>';
+
+  if (!mg.played) {
+    if (mg.type === 'wheel') h += renderWheelGame();
+    else if (mg.type === 'scratch') h += renderScratchGame();
+    else if (mg.type === 'slots') h += renderSlotsGame();
+    else if (mg.type === 'dice') h += renderDiceGame();
+    h += '<div style="margin-top:12px;text-align:right">';
+    h += '<button data-action="mg-dismiss" style="background:none;border:none;font-size:.72rem;color:rgba(255,255,255,.4);cursor:pointer;font-family:sans-serif">Salta</button>';
+    h += '</div>';
+  } else {
+    h += '<div class="mg-result">';
+    if (mg.prize > 0) {
+      h += '<div class="mg-result-pill mg-pos">🎉 Hai vinto +' + mg.prize + ' pt!</div>';
+    } else {
+      h += '<div class="mg-result-pill mg-zero">😅 Nessun premio questa volta</div>';
+    }
+    h += '</div>';
+    h += '<div style="margin-top:12px;text-align:right">';
+    h += '<button data-action="mg-dismiss" style="background:none;border:none;font-size:.75rem;color:rgba(255,255,255,.5);cursor:pointer;font-family:sans-serif">Chiudi</button>';
+    h += '</div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+/* WHEEL */
+function renderWheelGame() {
+  var gs = miniGame.gameState;
+  var segments = [
+    {label:'10',  color:'#e74c3c', val:10},
+    {label:'50',  color:'#3498db', val:50},
+    {label:'0',   color:'#95a5a6', val:0},
+    {label:'100', color:'#2ecc71', val:100},
+    {label:'25',  color:'#e67e22', val:25},
+    {label:'250', color:'#f1c40f', val:250},
+    {label:'75',  color:'#9b59b6', val:75},
+    {label:'150', color:'#1abc9c', val:150}
+  ];
+  var n = segments.length, anglePerSeg = 360 / n;
+  var h = '<div class="wheel-container">';
+  h += '<div class="wheel-pointer">▼</div>';
+  h += '<svg class="wheel-svg" id="wheel-svg" viewBox="0 0 200 200" style="transform:rotate(' + (gs.angle || 0) + 'deg)">';
+  for (var i = 0; i < n; i++) {
+    var startA = i * anglePerSeg - 90;
+    var endA = startA + anglePerSeg;
+    var sr = startA * Math.PI / 180, er = endA * Math.PI / 180;
+    var x1 = 100 + 95 * Math.cos(sr), y1 = 100 + 95 * Math.sin(sr);
+    var x2 = 100 + 95 * Math.cos(er), y2 = 100 + 95 * Math.sin(er);
+    var large = anglePerSeg > 180 ? 1 : 0;
+    h += '<path d="M100,100 L'+x1+','+y1+' A95,95 0 '+large+',1 '+x2+','+y2+' Z" fill="'+segments[i].color+'"/>';
+    var midA = (startA + anglePerSeg/2) * Math.PI / 180;
+    var tx = 100 + 60 * Math.cos(midA), ty = 100 + 60 * Math.sin(midA);
+    h += '<text x="'+tx+'" y="'+ty+'" text-anchor="middle" dominant-baseline="central" fill="white" font-size="12" font-weight="700" font-family="sans-serif">'+segments[i].label+'</text>';
+  }
+  h += '</svg></div>';
+  if (!gs.spinning) {
+    h += '<button class="wheel-spin-btn" data-action="mg-wheel-spin">Gira! 🎰</button>';
+  } else {
+    h += '<div style="text-align:center;color:rgba(255,255,255,.6);font-size:.82rem">La ruota sta girando...</div>';
+  }
+  return h;
+}
+
+/* SCRATCH CARD */
+function renderScratchGame() {
+  var gs = miniGame.gameState;
+  var h = '<p style="font-size:.78rem;color:rgba(255,255,255,.6);margin-bottom:12px;text-align:center">Tocca fino a 5 celle. 3 simboli uguali = premio!</p>';
+  h += '<div class="scratch-grid">';
+  gs.cells.forEach(function(cell, i) {
+    if (cell.revealed || gs.done) {
+      h += '<div class="scratch-cell revealed">' + cell.symbol + '</div>';
+    } else {
+      h += '<button class="scratch-cell covered" data-action="mg-scratch" data-arg="' + i + '"></button>';
+    }
+  });
+  h += '</div>';
+  if (gs.done && !miniGame.played) {
+    // Check for win
+    var counts = {};
+    gs.cells.forEach(function(c) { if (c.revealed) { counts[c.symbol] = (counts[c.symbol]||0)+1; } });
+    var won = false;
+    Object.keys(counts).forEach(function(k) { if (counts[k] >= 3) won = true; });
+    h += '<div style="text-align:center;margin-top:8px">';
+    h += '<button class="wheel-spin-btn" data-action="mg-scratch-finish" data-arg="' + (won?'1':'0') + '">' + (won ? '🎉 Scopri il premio!' : 'Scopri il risultato') + '</button>';
+    h += '</div>';
+  }
+  return h;
+}
+
+/* SLOT MACHINE */
+function renderSlotsGame() {
+  var gs = miniGame.gameState;
+  var h = '<div class="slot-container">';
+  for (var i = 0; i < 3; i++) {
+    h += '<div class="slot-reel' + (gs.spinning ? ' spinning' : '') + '" id="reel-' + i + '">' + gs.reels[i] + '</div>';
+  }
+  h += '</div>';
+  if (!gs.spinning) {
+    h += '<button class="slot-spin-btn" data-action="mg-slots-spin">Tira la leva! 🎰</button>';
+  } else {
+    h += '<div style="text-align:center;color:rgba(255,255,255,.6);font-size:.82rem">I rulli girano...</div>';
+  }
+  return h;
+}
+
+/* LUCKY DICE */
+function renderDiceGame() {
+  var gs = miniGame.gameState;
+  var diceEmojis = ['','⚀','⚁','⚂','⚃','⚄','⚅'];
+  var h = '<p style="font-size:.78rem;color:rgba(255,255,255,.6);margin-bottom:12px;text-align:center">Lancia i dadi! Somma × 20 = punti vinti</p>';
+  h += '<div class="dice-container">';
+  h += '<div class="dice' + (gs.rolling ? ' rolling' : '') + '">' + diceEmojis[gs.d1] + '</div>';
+  h += '<div class="dice' + (gs.rolling ? ' rolling' : '') + '">' + diceEmojis[gs.d2] + '</div>';
+  h += '</div>';
+  if (!gs.rolling) {
+    h += '<button class="dice-roll-btn" data-action="mg-dice-roll">Lancia! 🎲</button>';
+  } else {
+    h += '<div style="text-align:center;color:rgba(255,255,255,.6);font-size:.82rem">I dadi rotolano...</div>';
+  }
+  return h;
+}
+
+function notifyRewardDone(req) {
+  var topic = S.users[req.by] && S.users[req.by].ntfyTopic;
+  if (!topic) return;
+  var executor = req.by === 'giulia' ? '⚡ Stefano' : '🌸 Giulia';
+  ntfySend(topic, '✅ Premio eseguito — conferma!', executor + ' ha eseguito: ' + req.name + '\nConfermi?', ['white_check_mark']);
+}
+
+function checkPenaltyWarning() {
+  if (!session || session === 'admin') return;
+  var u = S.users[session];
+  if (!u) return;
+
+  // ── Premio inactivity warning (2 days) ──
+  if (u.lastRewardClaim) {
+    var days = daysAgo(u.lastRewardClaim);
+    var warnKey = 'pw_warned_' + todayKey();
+    if (days >= 2 && days < 3 && !sessionStorage.getItem(warnKey)) {
+      sessionStorage.setItem(warnKey, '1');
+      var topic = u.ntfyTopic;
+      if (topic) {
+        ntfySend(topic, '⚠️ Penalità in arrivo!', 'Sono ' + days + ' giorni senza richiedere un premio. Entro domani perdi 500 pt!', ['warning']);
+      }
+    }
+  }
+
+  // ── Quiz deadline reminder: warn at 13:00 if not done ──
+  var now = new Date();
+  var today = todayKey();
+  if (now.getHours() >= 13) {
+    var qRemindKey = 'quiz_reminded_' + today;
+    if (!sessionStorage.getItem(qRemindKey)) {
+      sessionStorage.setItem(qRemindKey, '1');
+      var topic = u.ntfyTopic;
+      if (topic) {
+        ntfySend(topic, '🧠 Ricordati del quiz!', 'Sono già le ' + now.getHours() + ':00 e non hai ancora completato il quiz di oggi.', ['brain']);
+      }
+    }
+  }
+}
+function pname(u) { return u === 'giulia' ? 'Giulia' : 'Stefano'; }
+function partner() { return session === 'giulia' ? 'stefano' : 'giulia'; }
+function myPts() { return S.users[session] ? (S.users[session].pts || 0) : 0; }
+function ptOf(u) { return S.users[u] ? (S.users[u].pts || 0) : 0; }
+function countdown(dl) {
+  var diff = new Date(dl) - Date.now();
+  if (diff <= 0) return 'Scaduto';
+  var h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000);
+  if (h >= 24) { var d = Math.floor(h/24); return d+'g '+(h%24)+'h'; }
+  return h > 0 ? h+'h '+m+'m' : m+' min';
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function copyToClipboard(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function(){ showToast('✅ Copiato!'); }).catch(function(){ showToast('Copia: ' + text, 5000); });
+  } else {
+    showToast('Topic: ' + text, 6000);
+  }
+}
+function showToast(msg, dur) {
+  if (toastT) clearTimeout(toastT);
+  toast = msg; render();
+  toastT = setTimeout(function() { toast = null; render(); }, dur || 3200);
+}
+
+/* ── TICK ── */
+function checkTick() {
+  if (!session || session === 'admin') return;
+  var u = S.users[session], today = todayKey(), changed = false;
+
+  // ── Premio inactivity penalty (3 days) ──
+  if (u.penaltyChecked !== today && u.lastRewardClaim) {
+    if (daysAgo(u.lastRewardClaim) >= 3) {
+      S.users[session].pts = Math.max(0, (u.pts||0) - 500);
+      S.users[session].penaltyChecked = today;
+      S.users[session].lastRewardClaim = new Date().toISOString();
+      changed = true;
+      showToast('Penalità: -500 pt per inattività premi!', 5000);
+    }
+  }
+
+
+  // ── Expire overdue reward requests ──
+  S.requests.forEach(function(rr, i) {
+    if (rr.status === 'pending' && rr.mode === 'deadline' && rr.deadline && new Date(rr.deadline) < new Date()) {
+      S.requests[i].status = 'expired'; changed = true;
+    }
+  });
+
+  if (changed) save(S);
+}
+
+/* ── ACTIONS ── */
+function doLogin() {
+  var u = selU; if (!u) return;
+  var pw = (document.getElementById('ipwd') || {}).value || '';
+  var pw2 = (document.getElementById('ipwd2') || {}).value || '';
+  var err = document.getElementById('aerr');
+  if (!pw) { if (err) err.textContent = 'Inserisci la password'; return; }
+  if (!S.users[u].pwdSet) {
+    if (pw.length < 4) { if (err) err.textContent = 'Minimo 4 caratteri'; return; }
+    if (pw !== pw2) { if (err) err.textContent = 'Le password non corrispondono'; return; }
+    S.users[u].pwd = pw; S.users[u].pwdSet = true;
+    S.users[u].pts = 1000; S.users[u].lastRewardClaim = new Date().toISOString();
+    save(S); session = u; saveSession(u); tab = 'home'; selU = null; showOB = true; obStep = 0;
+    ensureTopic(u);
+    checkTick(); checkFlashQuestion(); announcePresence(); render();
+  } else {
+    if (pw === S.users[u].pwd) { session = u; saveSession(u); tab = 'home'; selU = null; ensureTopic(u); checkTick(); checkPenaltyWarning(); checkFlashQuestion(); announcePresence(); render(); }
+    else { if (err) err.textContent = 'Password errata'; }
+  }
+}
+
+
+
+function openClaim(rid) {
+  var r = S.rewards.filter(function(x) { return x.id === rid; })[0];
+  if (!r) return;
+  claimMode = 'deadline';
+  overlay = {type: 'claim', reward: r};
+  render();
+  setTimeout(window.updateClaimTotal, 10);
+}
+
+function submitClaim() {
+  if (!overlay || !overlay.reward) return;
+  var r = overlay.reward;
+  var claimDLEl = document.getElementById('claimDL');
+  var dlMode = claimDLEl ? claimDLEl.value : '';
+  if (!dlMode) {
+    showToast('Devi selezionare un\'ora di consegna!');
+    return;
+  }
+  
+  var extraCost = 0;
+  var premiumText = [];
+  if (dlMode === 'subito') {
+    extraCost += 100;
+    premiumText.push("Ordine Prioritario (Subito)");
+  } else if (dlMode === '1') {
+    extraCost += 50;
+    premiumText.push("Ordine Prioritario (Entro 1h)");
+  } else if (dlMode !== '0') {
+    premiumText.push("Consegna entro "+dlMode+"h");
+  }
+  
+  var cbx = document.querySelectorAll('#premiumOptions input[type="checkbox"]:checked');
+  for (var i=0; i<cbx.length; i++) {
+    extraCost += parseInt(cbx[i].value, 10);
+    var optText = cbx[i].getAttribute('data-opt');
+    if (cbx[i].id === 'cbBenda') {
+      var rBenda = document.querySelector('input[name="optBenda"]:checked');
+      if (rBenda) optText += " (" + rBenda.value + ")";
+    } else if (cbx[i].id === 'cbManette') {
+      var rManette = document.querySelector('input[name="optManette"]:checked');
+      if (rManette) optText += " (" + rManette.value + ")";
+    } else if (cbx[i].id === 'cbVieni') {
+      var txtVieni = document.getElementById('txtVieni');
+      if (txtVieni && txtVieni.value.trim() !== '') optText += " (" + txtVieni.value.trim() + ")";
+    }
+    premiumText.push(optText);
+  }
+  
+  var totalCost = r.cost + extraCost;
+  var pts = myPts();
+  if (pts < totalCost) { showToast('Punti insufficienti! Te ne servono ' + totalCost); return; }
+  
+  if (!confirm('Dettaglio Ordine:\nProdotto: '+r.name+'\nCosto Finale: '+totalCost+' pt\n\nConfermi l\'acquisto di questo ordine?')) {
+    return;
+  }
+  
+  var finalNote = '';
+  if (premiumText.length > 0) finalNote = "[PREMIUM: " + premiumText.join(', ') + "]";
+
+  var actualDl = '';
+  if (dlMode !== '0') {
+    var d = new Date();
+    if (dlMode === 'subito') d.setMinutes(d.getMinutes() + 30);
+    else d.setHours(d.getHours() + parseInt(dlMode, 10));
+    actualDl = d.toISOString();
+  }
+  
+  S.users[session].pts = pts - totalCost;
+  S.users[session].lastRewardClaim = new Date().toISOString();
+  S.requests.push({
+    id: Date.now()+'', by: session,
+    name: r.name, emoji: r.emoji || '🎁',
+    requestedAt: new Date().toISOString(),
+    mode: 'deadline', deadline: actualDl, note: finalNote, status: 'pending'
+  });
+  save(S); overlay = null;
+  notifyPartnerNewReward(r.name, actualDl);
+  showToast('Ordine acquistato! Il corriere lo evaderà presto.');
+}
+
+function markDone(rrId) {
+  var i = S.requests.findIndex(function(r) { return r.id === rrId; });
+  if (i < 0) return;
+  S.requests[i].status = 'done_confirm';
+  S.requests[i].doneAt = new Date().toISOString();
+  save(S);
+  notifyRewardDone(S.requests[i]);
+  showToast('Segnato! In attesa di conferma da ' + pname(S.requests[i].by) + '…', 4000);
+  render();
+}
+
+function confirmDone(rrId, yes) {
+  var i = S.requests.findIndex(function(r) { return r.id === rrId; });
+  if (i < 0) return;
+  if (yes) {
+    S.requests[i].status = 'done'; S.requests[i].confirmedAt = new Date().toISOString();
+    showToast('Premio confermato!');
+  } else {
+    S.requests[i].status = 'pending'; delete S.requests[i].doneAt;
+    showToast('Rimandato — il partner dovrà ripetere!', 4000);
+  }
+  save(S); render();
+}
+
+function doAdmLogin() {
+  var u = (document.getElementById('au') || {}).value || '';
+  var p = (document.getElementById('ap') || {}).value || '';
+  if (u === 'admin' && p === 'Beggione12') { adminAuthed = true; sessionStorage.setItem('adm_ok','1'); render(); }
+  else { var e = document.getElementById('admerr'); if (e) e.textContent = 'Credenziali errate'; }
+}
+function addQ() {
+  var text = ((document.getElementById('qT')||{}).value||'').trim();
+  var opts = [0,1,2,3].map(function(i) { return ((document.getElementById('qO'+i)||{}).value||'').trim(); });
+  var correct = +((document.getElementById('qC')||{}).value||0);
+  if (!text || opts.some(function(o){return !o;})) { showToast('Compila domanda e tutte le opzioni'); return; }
+  S.questions.push({id:Date.now()+'', text:text, opts:opts, correct:correct});
+  save(S); showToast('Domanda aggiunta!'); render();
+}
+function delQ(id) { S.questions = S.questions.filter(function(q){return q.id!==id;}); save(S); render(); }
+function addR() {
+  var partner = (document.getElementById('rPt')||{}).value||'giulia';
+  var cost = +((document.getElementById('rC')||{}).value||100);
+  var emoji = (document.getElementById('rE')||{}).value||'🎁';
+  var name = ((document.getElementById('rN')||{}).value||'').trim();
+  var desc = ((document.getElementById('rD')||{}).value||'').trim();
+  if (!name || !cost) { showToast('Compila nome e costo'); return; }
+  S.rewards.push({id:Date.now()+'', partner:partner, name:name, desc:desc, emoji:emoji, cost:cost});
+  save(S); showToast('Premio aggiunto!'); render();
+}
+function delR(id) { S.rewards = S.rewards.filter(function(r){return r.id!==id;}); save(S); render(); }
+function adjPts(p, d) { S.users[p].pts = Math.max(0, (S.users[p].pts||0) + d); save(S); showToast((d>0?'+':'')+d+' pt a '+pname(p)); render(); }
+function doReset() {
+  if (confirm('Reset completo? Irreversibile!')) {
+    S = clone(BLANK);
+    save(S);
+    showToast('Reset completato');
+    render();
+  }
+}
+
+/* ── RENDER ROOT ── */
+function render() {
+  var root = document.getElementById('R');
+  if (!root) return;
+  if (!session) { root.innerHTML = renderAuth(); return; }
+  if (session === 'admin') { root.innerHTML = renderAdmin(); return; }
+
+  root.innerHTML = renderApp();
+}
+
+/* ── AUTH ── */
+function renderAuth() {
+  var u = selU ? S.users[selU] : null;
+  var isFirst = u && !u.pwdSet;
+  var h = '<div class="auth-wrap"><div class="auth-card">';
+  h += '<div class="auth-logo"><span class="auth-gem">🔷</span><h1>Secret Challenge</h1><p>Le tue sfide quotidiane segrete</p></div>';
+  h += '<div class="field"><span class="lbl">Chi sei?</span><div class="user-grid">';
+  h += '<button class="ubtn'+(selU==='giulia'?' on':'')+'" data-action="pick-user" data-arg="giulia">🌸 Giulia</button>';
+  h += '<button class="ubtn'+(selU==='stefano'?' on':'')+'" data-action="pick-user" data-arg="stefano">⚡ Stefano</button>';
+  h += '</div></div>';
+  if (selU) {
+    if (isFirst) h += '<div class="note-box">👋 Primo accesso '+esc(pname(selU))+'! Ricevi <strong>1000 punti</strong> di benvenuto 🎉</div>';
+    h += '<div class="field"><label class="lbl">Password</label><input type="password" id="ipwd" placeholder="'+(isFirst?'Scegli una password':'Inserisci password')+'"/></div>';
+    if (isFirst) h += '<div class="field"><label class="lbl">Conferma password</label><input type="password" id="ipwd2" placeholder="Ripeti la password"/></div>';
+    h += '<div id="aerr" class="err"></div>';
+    h += '<div class="field"><button class="btn btn-p btn-full" data-action="do-login">'+(isFirst?'Imposta e accedi →':'Accedi →')+'</button></div>';
+  }
+  h += '<div style="text-align:right;margin-top:10px"><button data-action="go-admin" style="background:none;border:none;font-size:.72rem;color:var(--muted);cursor:pointer;font-family:sans-serif;padding:4px">Settings</button></div>';
+  h += '</div></div>';
+  return h;
+}
+
+/* ── ONBOARDING ── */
+var OB = [
+  {icon:'🔷', title:'Benvenuto/a in Secret Challenge!', body:'Qui trovi il tuo saldo punti, le attività e le richieste del partner. Inizi con <strong>1000 punti</strong>.'},
+  {icon:'⚡', title:'Domande Flash e Mini-Giochi', body:'Ogni giorno dalle 15 alle 21 hai <strong>7 attività</strong>: 3 domande flash (+100/-50 pt) e 4 mini-giochi (fino a 250 pt). Appaiono in Home ogni ora!'},
+  {icon:'🛍', title:'Lo Shop', body:'Nel tab <em>Shop</em> scegli un premio, spendi i punti e dici al partner entro quando o a che ora vuoi riceverlo.'},
+  {icon:'📨', title:'Esegui i premi del partner', body:'Nel tab <em>Esegui</em> vedi le richieste. Quando finisci, segnalo: il partner dovrà <strong>confermare</strong>.'},
+  {icon:'⚠️', title:'Regola dei 3 giorni', body:'Devi richiedere <strong>almeno un premio ogni 3 giorni</strong>. Se dimentichi, perdi automaticamente <strong>500 punti</strong>.'},
+  {icon:'🚀', title:'Sei pronto/a!', body:'Completa le attività di oggi e richiedi il tuo primo premio. Buona fortuna!'}
+];
+function renderOnboarding() {
+  var s = OB[obStep], isLast = obStep === OB.length - 1;
+  var dots = OB.map(function(_, i) {
+    return '<div class="ob-dot '+(i===obStep?'on':'off')+'"></div>';
+  }).join('');
+  var h = '<div class="overlay center" data-action="close-overlay">';
+  h += '<div class="sheet rounded">';
+  h += '<div style="font-size:3.5rem;margin-bottom:14px">'+s.icon+'</div>';
+  h += '<h2 style="font-size:1.25rem;color:var(--b2);margin-bottom:8px">'+esc(s.title)+'</h2>';
+  h += '<p style="font-size:.85rem;color:var(--muted);line-height:1.65;margin-bottom:6px">'+s.body+'</p>';
+  h += '<div class="ob-dots">'+dots+'</div>';
+  h += '<div style="display:flex;gap:10px;justify-content:center">';
+  if (obStep > 0) h += '<button class="btn btn-o btn-sm" data-action="ob-back">← Indietro</button>';
+  if (isLast) h += '<button class="btn btn-p" style="min-width:120px" data-action="ob-close">Inizia! 🚀</button>';
+  else h += '<button class="btn btn-p" style="min-width:120px" data-action="ob-next">Avanti →</button>';
+  h += '</div>';
+  if (!isLast) h += '<div style="margin-top:12px"><button data-action="ob-close" style="background:none;border:none;font-size:.75rem;color:var(--muted);cursor:pointer;font-family:sans-serif">Salta la guida</button></div>';
+  h += '</div></div>';
+  return h;
+}
+
+
+
+/* ── MAIN APP ── */
+function renderApp() {
+  var me = session, pt = partner();
+  var u = S.users[me], pts = myPts(), ptPts = ptOf(pt);
+  var ptOnline = onlineUsers[pt] && (Date.now() - onlineUsers[pt] < 12000);
+  var dAgo = u.lastRewardClaim ? daysAgo(u.lastRewardClaim) : 0;
+  var myReqs = S.requests.filter(function(r){return r.by===me;});
+  var toExec = S.requests.filter(function(r){return r.by!==me && r.status==='pending';});
+  var toConf = S.requests.filter(function(r){return r.by===me && r.status==='done_confirm';});
+  var myRws = S.rewards.filter(function(r){return r.partner===me||r.partner==='both';}).sort(function(a,b){return (a.cost||0) - (b.cost||0);});
+  var hasBadge = toExec.length > 0 || toConf.length > 0;
+  var page = '';
+
+  if (tab === 'home') {
+    // Flash question or mini-game sits at top if active
+    if (flashQ) page += renderFlashQuestion();
+    else if (miniGame) page += renderMiniGame();
+    page += renderHero(pts, ptPts, pname(pt), ptOnline, false, u, dAgo);
+    if (dAgo >= 3) page += renderMandatoryAlert();
+    if (toConf.length > 0) {
+      page += '<div class="sec-label">🔔 Conferma richiesta ('+toConf.length+')</div>';
+      toConf.forEach(function(rr) { page += renderMyReqCard(rr); });
+    }
+    if (toExec.length > 0) {
+      page += '<div class="sec-label">📨 Da eseguire ('+toExec.length+')</div>';
+      toExec.forEach(function(rr) { page += renderExecCard(rr, false); });
+    }
+    page += '<div class="sec-label">📋 Attività recente</div>';
+    var recent = myReqs.filter(function(r){return r.status!=='done_confirm';}).slice().reverse().slice(0,3);
+    if (!recent.length) page += '<div class="empty"><span class="empty-ico">🔷</span><p>Nessuna attività ancora.<br>Vai allo Shop per iniziare!</p></div>';
+    else recent.forEach(function(rr) { page += renderMyReqCard(rr); });
+    page += renderPointsCard();
+  }
+
+
+
+  else if (tab === 'shop') {
+    page += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
+    page += '<div class="sec-label" style="margin-bottom:0">🛍 Vetrina Prodotti</div>';
+    page += '<div class="pts-badge" style="font-size:.78rem">🔷 '+pts+' pt</div></div>';
+    if (!myRws.length) page += '<div class="empty"><span class="empty-ico">🛍️</span><p>Nessun prodotto in inventario.<br>Il fornitore li aggiungerà presto!</p></div>';
+    else myRws.forEach(function(r) { page += renderShopItem(r, pts); });
+    if (dAgo >= 3) page += renderMandatoryAlert();
+    var pendingMine = myReqs.filter(function(r){return r.status==='pending';});
+    if (pendingMine.length) {
+      page += '<div class="sec-label" style="margin-top:4px">⏳ I miei ordini in viaggio</div>';
+      pendingMine.forEach(function(rr) { page += renderMyReqCard(rr); });
+    }
+  }
+
+  else if (tab === 'execute') {
+    page += '<div class="sec-label">📥 Nuovi ordini da evadere per '+esc(pname(pt))+'</div>';
+    if (!toExec.length) page += '<div class="empty"><span class="empty-ico">📦</span><p>Nessuna spedizione pendente.<br>'+esc(pname(pt))+' non ha effettuato ordini.</p></div>';
+    else toExec.forEach(function(rr) { page += renderExecCard(rr, true); });
+    var hist = S.requests.filter(function(r){return r.by!==me && r.status!=='pending';}).slice().reverse().slice(0,5);
+    if (hist.length) {
+      page += '<div class="sec-label" style="margin-top:4px">📋 Storico Spedizioni</div>';
+      hist.forEach(function(rr) {
+        var bc = rr.status==='done'?'badge-ok':rr.status==='done_confirm'?'badge-conf':'badge-exp';
+        var bt = rr.status==='done'?'✅ Consegnato':rr.status==='done_confirm'?'🔔 In attesa':'⏰ Scaduto / Annullato';
+        page += '<div class="ar-card grey"><div class="ar-header"><div class="ar-title">📦 Ordine #'+rr.id.substring(rr.id.length-5)+' — '+esc(rr.name)+'</div><span class="ar-badge '+bc+'">'+bt+'</span></div>';
+        page += '<div style="font-size:.72rem;color:var(--muted)">Effettuato il '+fmtDt(rr.requestedAt)+'</div></div>';
+      });
+    }
+  }
+  
+  else if (tab === 'benessere') {
+    page += renderBenessereTab(me, pt);
+  }
+
+  var ovHtml = overlay ? renderOverlay() : (showOB ? renderOnboarding() : '');
+  var h = '<div class="app">';
+  h += '<div class="topbar"><span class="topbar-name">'+esc(pname(me))+'</span>';
+  h += '<div class="pts-badge">🔷 '+pts+' pt</div>';
+  h += '<button class="icon-btn" data-action="logout">'+svgLogout()+'</button></div>';
+  h += '<div class="page">'+page+'</div>';
+  h += '<div class="bnav">';
+  h += '<button class="ni'+(tab==='home'?' on':'')+'" data-action="set-tab" data-arg="home">'+svgHome()+'<span>Home</span></button>';
+  h += '<button class="ni'+(tab==='shop'?' on':'')+'" data-action="set-tab" data-arg="shop">'+svgShop()+'<span>Shop</span></button>';
+  h += '<button class="ni'+(tab==='execute'?' on':'')+'" data-action="set-tab" data-arg="execute" style="position:relative">'+svgGift()+'<span>Ordini</span>'+(hasBadge?'<div class="ni-dot"></div>':'')+'</button>';
+  h += '<button class="ni'+(tab==='benessere'?' on':'')+'" data-action="set-tab" data-arg="benessere">'+svgHeart()+'<span>Benessere</span></button>';
+  h += '</div>'+ovHtml+(toast?'<div class="toast">'+toast+'</div>':'')+'</div>';
+  return h;
+}
+
+/* ── COMPONENTS ── */
+function renderHero(pts, ptPts, ptName, ptOnline, flashAnsweredToday, u, dAgo) {
+  var danger = dAgo >= 3;
+  var actCount = getActivityCountToday();
+  var h = '<div class="balance-hero">';
+  h += '<div class="bal-label">Il tuo saldo</div>';
+  h += '<div class="bal-amount">🔷 '+pts+'</div>';
+  h += '<div class="bal-sub">'+esc(ptName)+': '+ptPts+' pt &nbsp;·&nbsp; '+(ptOnline?'🟢 online':'⬤ offline')+'</div>';
+  h += '<div class="bal-grid">';
+  h += '<div class="bal-stat"><div class="bal-stat-val">'+actCount+'/7</div><div class="bal-stat-lbl">Attività oggi</div></div>';
+  h += '<div class="bal-stat'+(danger?' danger':'')+'"><div class="bal-stat-val">'+(danger?'⚠️':dAgo+'g')+'</div><div class="bal-stat-lbl">'+(danger?'Penalità oggi!':'Senza premi')+'</div></div>';
+  h += '</div></div>';
+  return h;
+}
+
+function getActivityCountToday() {
+  var count = 0;
+  ALL_ACTIVITY_HOURS.forEach(function(h) {
+    var slotKey = new Date().getFullYear()+'-'+new Date().getMonth()+'-'+new Date().getDate()+'-'+h;
+    if (sessionStorage.getItem('fq_done_' + slotKey) === 'answered') count++;
+  });
+  return count;
+}
+
+function getLifetimeIntimacyCount() {
+  return S.requests.filter(function(r) { return r.status === 'done'; }).length;
+}
+
+function getWeeklyIntimacyStats(me) {
+  var stats = { me: 0, pt: 0, total: 0 };
+  var now = new Date();
+  S.requests.forEach(function(r) {
+    if (r.status === 'done' || r.status === 'done_confirm') {
+      var dStr = r.confirmedAt || r.doneAt || r.ts;
+      if (dStr) {
+        var diffDays = (now - new Date(dStr)) / (1000 * 60 * 60 * 24);
+        if (diffDays <= 7) {
+          if (r.by === me) stats.me++;
+          else stats.pt++;
+          stats.total++;
+        }
+      }
+    }
+  });
+  return stats;
+}
+
+function renderBenessereTab(me, pt) {
+  var wStats = getWeeklyIntimacyStats(me);
+  var wCount = wStats.total;
+  var myCount = wStats.me;
+  var ptCount = wStats.pt;
+  var totalCount = getLifetimeIntimacyCount();
+
+  var evalTitle = ''; var evalText = ''; var evalAction = ''; var evalColor = '';
+  
+  if (wCount === 0) {
+    evalColor = '#ff8888';
+    evalTitle = '❄️ Clima Freddo (0 ordini)';
+    evalText = 'Questa settimana non avete ancora goduto dei benefici dell\'intimità. Rischio di calo fisiologico di ossitocina. La routine sta prendendo il sopravvento?';
+    evalAction = '👉 Agisci ora: Vai allo Shop e acquista un ordine per voi due!';
+  } else if (wCount === 1) {
+    evalColor = '#ffcc66';
+    evalTitle = '✨ Buon Inizio (1 ordine)';
+    evalText = 'Siete sulla strada giusta, ma c\'è un enorme potenziale inespresso. La scienza suggerisce che la costanza è la chiave per ridurre lo stress lavorativo e personale.';
+    evalAction = '👉 Consiglio: Provate a raddoppiare questa settimana per massimizzare le endorfine!';
+  } else if (wCount >= 2 && wCount <= 3) {
+    evalColor = '#88ffb0';
+    evalTitle = '❤️ Ritmo Ideale ('+wCount+' ordini)';
+    evalText = 'Ottimo lavoro! 2-3 volte a settimana è considerata la frequenza d\'oro per rafforzare le difese immunitarie e mantenere altissima l\'affinità emotiva.';
+    evalAction = '👉 Continuate così: Il vostro legame si sta arricchendo a ogni nuovo ordine!';
+  } else {
+    evalColor = '#ff88e0';
+    evalTitle = '🔥 Fuoco e Fiamme ('+wCount+' ordini)';
+    evalText = 'Siete in uno stato di grazia assoluta! Livelli record di dopamina, stress totalmente azzerato e una connessione empatica letteralmente fuori scala.';
+    evalAction = '👉 Perfetto: State vivendo al massimo delle potenzialità fisiche e mentali.';
+  }
+
+  var h = '<div class="head" style="margin-bottom:15px"><h2>Benessere Sensoriale</h2><p>La salute passa anche dalla felicità di coppia</p></div>';
+
+  h += '<div style="margin-bottom:20px;background:linear-gradient(135deg,#8a2846,#4a152e);border-radius:22px;padding:26px 20px;color:white;position:relative;overflow:hidden;flex-shrink:0;box-shadow:0 8px 16px rgba(138,40,70,0.15)">';
+  h += '<div style="font-size:.7rem;opacity:.7;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:4px">Contatore Amore Assoluto</div>';
+  h += '<div style="font-family:\'Playfair Display\',serif;font-size:2.8rem;font-weight:700;color:#ffb6c1;line-height:1.1;margin-bottom:8px">'+totalCount+' <span style="font-size:1.2rem;font-weight:400;color:white;font-family:\'DM Sans\',sans-serif">ordini totali</span></div>';
+  h += '<div style="font-size:.75rem;opacity:.8;margin-top:5px;line-height:1.4">Ogni ordine completato è un investimento reale nella vostra salute fisica e mentale. Continuate a collezionare momenti!</div>';
+  h += '</div>';
+
+  var compTitle = '⚖️ Sfida di Coppia (Ultimi 7 Giorni)';
+  var compSubtitle = '';
+  if (myCount > ptCount) compSubtitle = '🏆 Stai guidando tu questa settimana! Stai portando enormi benefici alla coppia.';
+  else if (ptCount > myCount) compSubtitle = '🔥 '+esc(pname(pt))+' è in vantaggio! Corri ad acquistare un ordine per recuperare.';
+  else if (myCount > 0 && myCount === ptCount) compSubtitle = '🤝 Siete in perfetto pareggio! Che sintonia spettacolare.';
+  else compSubtitle = '😴 Nessuno dei due ha ancora ordinato nulla. Chi farà il primo passo?';
+
+  var maxBar = Math.max(myCount, ptCount, 1);
+  var myPct = Math.round((myCount / maxBar) * 100);
+  var ptPct = Math.round((ptCount / maxBar) * 100);
+
+  h += '<div class="sec-label" style="margin-top:5px">'+compTitle+'</div>';
+  h += '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.02);border:1px solid #e0eaf8">';
+  h += '<div style="font-size:.75rem;color:var(--muted);margin-bottom:15px;text-align:center;line-height:1.4"><em>"'+compSubtitle+'"</em></div>';
+  
+  h += '<div style="margin-bottom:12px">';
+  h += '<div style="display:flex;justify-content:space-between;font-size:.8rem;color:var(--b3);font-weight:700;margin-bottom:4px"><span>Tu ('+esc(pname(me))+')</span><span>'+myCount+' ordini</span></div>';
+  h += '<div style="background:var(--b10);height:10px;border-radius:5px;overflow:hidden"><div style="background:var(--purple);height:100%;width:'+myPct+'%;border-radius:5px;transition:width 0.5s"></div></div>';
+  h += '</div>';
+
+  h += '<div>';
+  h += '<div style="display:flex;justify-content:space-between;font-size:.8rem;color:var(--b3);font-weight:700;margin-bottom:4px"><span>Partner ('+esc(pname(pt))+')</span><span>'+ptCount+' ordini</span></div>';
+  h += '<div style="background:var(--b10);height:10px;border-radius:5px;overflow:hidden"><div style="background:#ff99bb;height:100%;width:'+ptPct+'%;border-radius:5px;transition:width 0.5s"></div></div>';
+  h += '</div>';
+  h += '</div>';
+
+  h += '<div class="sec-label">📊 Valutazione Settimanale Congiunta</div>';
+  h += '<div style="padding:16px;border-radius:12px;margin-bottom:20px;background:rgba(30,15,25,0.6);border:1px solid '+evalColor+'33;">';
+  h += '<h3 style="color:'+evalColor+';font-size:1.05rem;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px">'+evalTitle+'</h3>';
+  h += '<p style="font-size:.8rem;line-height:1.4;margin-bottom:10px;color:#d0b0c0;text-align:center">'+evalText+'</p>';
+  h += '<p style="font-size:.75rem;font-weight:600;color:'+evalColor+';text-align:center">'+evalAction+'</p>';
+  h += '</div>';
+
+  var insightTitle = '';
+  var i1, i2, i3;
+  if (myCount >= 1) {
+    insightTitle = 'Vantaggi per la Tua Salute (Stai andando alla grande!)';
+    i1 = { t: '🛡️ Scudo Immunitario Attivo', d: 'Acquistando regolarmente, stai innalzando i tuoi livelli corporei di immunoglobina A (IgA) fino al +30%. Le tue barriere contro i virus stagionali sono fortissime grazie alla tua costanza.' };
+    i2 = { t: '🧠 Stress Sotto Controllo', d: 'Stai letteralmente inondando il tuo cervello di ossitocina e prolattina. Il tuo cortisolo si sta abbassando in modo fisiologico, garantendoti maggiore lucidità sul lavoro e un sonno profondamente ristoratore.' };
+    i3 = { t: '💍 Connessione Emotiva Assicurata', d: 'Con questo numero di ordini, stai forgiando chimicamente il legame di coppia. Recenti studi clinici confermano che stai riducendo a zero il rischio di allentamenti emotivi!' };
+  } else {
+    insightTitle = 'Occasioni Mancate (Cosa stai perdendo)';
+    i1 = { t: '📉 Difese Immunitarie Inespresse', d: 'Stai rinunciando a un boost immunitario gratuito. Senza ordini regolari, perdi la possibilità di innalzare l\'immunoglobina A (IgA), lasciando il tuo corpo fisicamente più esposto ai malanni stagionali.' };
+    i2 = { t: '🤯 Accumulo Silente di Cortisolo', d: 'Le tensioni quotidiane non vengono scaricate adeguatamente: il cortisolo si sta accumulando. Se non agisci, potresti avvertire cali di umore, nervosismo ingiustificato e riscontrare un sonno di bassa qualità e meno riposante.' };
+    i3 = { t: '⚠️ Rischio Freddezza Affettiva', d: 'La scienza lo conferma inesorabilmente: non fare ordini intimi e rallentare i contatti allenta gradualmente la comunicazione empatica. Usa lo Shop oggi per rompere la routine ed evitare che la coppia si raffreddi!' };
+  }
+
+  h += '<div class="sec-label">🔍 '+insightTitle+'</div>';
+
+  h += '<div style="background:rgba(255,150,180,0.05);border:1px solid rgba(255,150,180,0.15);border-radius:12px;padding:15px;margin-bottom:12px">';
+  h += '<div style="color:#ff99bb;font-size:.85rem;font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:6px">'+i1.t+'</div>';
+  h += '<div style="font-size:.78rem;color:#c8d8f8;line-height:1.5">'+i1.d+'</div>';
+  h += '</div>';
+
+  h += '<div style="background:rgba(255,150,180,0.05);border:1px solid rgba(255,150,180,0.15);border-radius:12px;padding:15px;margin-bottom:12px">';
+  h += '<div style="color:#ff99bb;font-size:.85rem;font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:6px">'+i2.t+'</div>';
+  h += '<div style="font-size:.78rem;color:#c8d8f8;line-height:1.5">'+i2.d+'</div>';
+  h += '</div>';
+
+  h += '<div style="background:rgba(255,150,180,0.05);border:1px solid rgba(255,150,180,0.15);border-radius:12px;padding:15px;margin-bottom:20px">';
+  h += '<div style="color:#ff99bb;font-size:.85rem;font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:6px">'+i3.t+'</div>';
+  h += '<div style="font-size:.78rem;color:#c8d8f8;line-height:1.5">'+i3.d+'</div>';
+  h += '</div>';
+
+  return h;
+}
+
+function renderMandatoryAlert() {
+  return '<div class="mandatory-alert"><h4>⚠️ Fai un nuovo ordine!</h4><p>Sono passati 3+ giorni dall\'ultimo acquisto. Se non spendi i tuoi punti oggi, perdi 500 punti per inattività commerciale.<br>Vai allo <strong>Shop</strong>.</p></div>';
+}
+
+var POINTS_INFO = [
+  {icon:'⚡', label:'Domanda Flash — risposta corretta', val:'+100 pt', valColor:'var(--green)', body:'Alle 15:00, 18:00 e 20:00 ricevi una domanda di cultura generale. Se rispondi correttamente guadagni 100 punti.', red:false},
+  {icon:'❌', label:'Domanda Flash — risposta sbagliata', val:'-50 pt', valColor:'var(--red)', body:'Se sbagli la domanda flash perdi 50 punti. Nessuna penalità se non rispondi — la domanda scade alla fine dell\u2019ora.', red:false},
+  {icon:'🎲', label:'Mini-Giochi (Ruota, Gratta, Slot, Dado)', val:'0-250 pt', valColor:'var(--purple)', body:'Alle 16:00, 17:00, 19:00 e 21:00 appare un mini-gioco diverso. Puoi vincere da 0 a 250 punti per gioco!', red:false},
+  {icon:'⚠️', label:'Inattività premi (3 giorni)', val:'-500 pt', valColor:'var(--red)', body:'Devi riscattare almeno un premio ogni 3 giorni. Se non lo fai perdi 500 punti automaticamente. I premi si riscattano sempre — non aspettare!', red:true},
+  {icon:'🛍', label:'Acquista un Ordine', val:'- costo', valColor:'var(--b5)', body:'Nello Shop puoi fare compere! Scegli un\'esperienza, pagala coi tuoi punti e indica al partner entro quando o a che ora vuoi che venga "consegnata". Dopo aver guadagnato punti, fai shopping: non tenerli fermi!', red:false}
+];
+
+/* Pure DOM toggle — no render(), no scroll jump */
+function toggleAcc(idx, triggerEl) {
+  var card = triggerEl;
+  while (card && !card.classList.contains('card')) card = card.parentElement;
+  if (!card) return;
+  var rows = card.querySelectorAll('.acc-row');
+  rows.forEach(function(row, i) {
+    if (i === idx) {
+      row.classList.toggle('open');
+    } else {
+      row.classList.remove('open'); // close others
+    }
+  });
+}
+
+function renderPointsCard() {
+  var h = '<div class="card"><div class="card-title">📊 Come funzionano i punti</div>';
+  h += '<p style="font-size:.75rem;color:var(--muted);margin-bottom:12px">Tocca una voce per i dettagli.</p>';
+  POINTS_INFO.forEach(function(r, i) {
+    h += '<div class="acc-row">';
+    h += '<div class="acc-header" data-action="toggle-acc" data-arg="'+i+'">';
+    h += '<span style="font-size:.82rem;color:var(--ink)">'+r.icon+' '+esc(r.label)+'</span>';
+    h += '<div class="acc-right"><span class="acc-val" style="color:'+r.valColor+'">'+r.val+'</span><span class="acc-arrow">▾</span></div>';
+    h += '</div>';
+    h += '<div class="acc-body '+(r.red?'red':'blue')+'">'+esc(r.body)+'</div>';
+    h += '</div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+function renderShopItem(r, pts) {
+  var canAfford = pts >= r.cost;
+  var h = '<div class="rw-item" style="border:1px solid #e0eaf8">';
+  h += '<div class="rw-icon" style="background:var(--b10);font-size:1.8rem;border-radius:12px">'+(r.emoji||'🛍️')+'</div>';
+  h += '<div class="rw-info"><div class="rw-name" style="font-size:1.05rem;color:var(--b3)">'+esc(r.name)+'</div>';
+  if (r.desc) h += '<div class="rw-desc" style="color:var(--muted);min-height:30px">'+esc(r.desc)+'</div>';
+  h += '<div class="rw-cost" style="color:var(--purple);font-weight:800;margin-top:4px">🔷 '+r.cost+' pt</div>';
+  h += '<div style="margin-top:10px">';
+  if (canAfford) h += '<button class="btn btn-p btn-sm" style="width:100%;border-radius:8px;font-weight:700" data-action="open-claim" data-arg="'+esc(r.id)+'">Acquista Ora 🛒</button>';
+  else h += '<button class="btn btn-o btn-sm" disabled style="width:100%;border-radius:8px;opacity:.5;cursor:not-allowed">Fondi insufficienti</button>';
+  h += '</div></div></div>';
+  return h;
+}
+
+function renderMyReqCard(rr) {
+  var s = rr.status;
+  var bc = s==='pending'?'badge-wait':s==='done'?'badge-ok':s==='done_confirm'?'badge-conf':'badge-exp';
+  var bt = s==='pending'?'⏳ In Lavorazione':s==='done'?'✅ Consegnato':s==='done_confirm'?'🔔 Conferma Ricezione':'⏰ Scaduto / Annullato';
+  var cc = s==='done_confirm'?'ar-card purple':s==='done'||s==='expired'?'ar-card grey':'ar-card gold';
+  var h = '<div class="'+cc+'" style="border:1px solid rgba(0,0,0,0.05)">';
+  h += '<div class="ar-header"><div class="ar-title" style="font-weight:700">📦 Ordine '+(rr.emoji||'')+' '+esc(rr.name)+'</div><span class="ar-badge '+bc+'">'+bt+'</span></div>';
+  if (s === 'pending') {
+    if (rr.mode==='deadline' && rr.deadline) h += '<div class="countdown" style="color:#8b5e00">⏱ Consegna stimata tra '+countdown(rr.deadline)+'</div>';
+    else if (rr.mode==='time' && rr.deadline) h += '<div class="countdown" style="color:#8b5e00">🕐 Consegna schedulata alle '+fmtTime(rr.deadline)+'</div>';
+  }
+  if (rr.note) h += '<div style="font-size:.75rem;color:#8b6000;margin-top:5px;font-style:italic">Note spedizione: "'+esc(rr.note)+'"</div>';
+  h += '<div style="font-size:.72rem;color:var(--muted);margin-top:4px">Data acquisto: '+fmtDt(rr.requestedAt)+'</div>';
+  if (s === 'done_confirm') {
+    h += '<div class="confirm-box" style="margin-top:10px;background:#fff;border-radius:8px;padding:10px;border:1px solid #e2d5f0"><p style="font-weight:600;margin-bottom:8px;font-size:.8rem;color:var(--purple)">Il partner ha segnalato l\'ordine come consegnato. Confermi la ricezione?</p>';
+    h += '<div style="display:flex;gap:8px">';
+    h += '<button class="btn btn-d btn-sm" style="flex:1" data-action="confirm-done" data-arg="'+esc(rr.id)+'" data-arg2="no">❌ Non ancora</button>';
+    h += '<button class="btn btn-s btn-sm" style="flex:1" data-action="confirm-done" data-arg="'+esc(rr.id)+'" data-arg2="yes">✅ Ritiro Confermato</button>';
+    h += '</div></div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+function renderExecCard(rr, showBtn) {
+  var h = '<div class="ar-card purple" style="border:1px solid #d8b4e2;background:#faf5fc">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;border-bottom:1px dashed #d8b4e2;padding-bottom:8px">';
+  h += '<h4 style="font-family:\'DM Sans\',sans-serif;color:var(--purple);font-size:.9rem;font-weight:700">📦 Ordine #'+rr.id.substring(rr.length>5?rr.length-5:0)+'</h4>';
+  h += '<span style="font-size:.65rem;color:#885bb5;font-weight:600;text-transform:uppercase;background:#eaddf2;padding:2px 6px;border-radius:4px">Da Spedire</span>';
+  h += '</div>';
+  h += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">';
+  h += '<div style="font-size:2rem;background:#fff;padding:8px;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,0.05)">'+(rr.emoji||'🛍️')+'</div>';
+  h += '<div><div style="font-weight:700;color:var(--b3);font-size:1.05rem">'+esc(rr.name)+'</div><div style="font-size:.7rem;color:var(--muted)">Cliente: '+esc(pname(rr.by))+'</div></div>';
+  h += '</div>';
+  var timeLabel = rr.mode==='time' ? 'Orario di Consegna:' : 'Consegna Entro il:';
+  var timeVal = rr.mode==='time' ? fmtTime(rr.deadline) : fmtDt(rr.deadline);
+  h += '<div style="background:#fff;padding:10px;border-radius:8px;margin-bottom:10px">';
+  if (rr.deadline) {
+    h += '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:.75rem;color:var(--muted)">'+timeLabel+'</span><strong style="font-size:.75rem;color:var(--purple)">'+timeVal+'</strong></div>';
+    h += '<div style="display:flex;justify-content:space-between"><span style="font-size:.75rem;color:var(--muted)">Tempo Rimanente:</span><strong style="font-size:.75rem;color:#d32f2f">⏱ '+countdown(rr.deadline)+'</strong></div>';
+  } else {
+    h += '<div style="font-size:.75rem;color:var(--muted)">Entro 30 minuti</div>';
+  }
+  h += '</div>';
+  if (rr.note) h += '<div style="font-size:.75rem;color:#6040a0;margin-bottom:12px;padding:8px;background:rgba(139,94,0,0.05);border-left:3px solid #d8b4e2;font-style:italic">Note Ordine: "'+esc(rr.note)+'"</div>';
+  if (showBtn) h += '<button class="btn btn-p btn-sm" style="width:100%;font-weight:700;letter-spacing:.05em" data-action="mark-done" data-arg="'+esc(rr.id)+'">📦 Contrassegna come Consegnato</button>';
+  h += '</div>';
+  return h;
+}
+
+window.updateClaimTotal = function() {
+  var sub = document.getElementById('sheetSub');
+  if (!sub) return;
+  var base = parseInt(sub.getAttribute('data-base'), 10) || 0;
+  var extra = 0;
+  var sel = document.getElementById('claimDL');
+  if (sel && sel.value === 'subito') extra += 100;
+  if (sel && sel.value === '1') extra += 50;
+
+  var cbBenda = document.getElementById('cbBenda');
+  var boxBenda = document.getElementById('boxBenda');
+  if (cbBenda && boxBenda) boxBenda.style.display = cbBenda.checked ? 'block' : 'none';
+
+  var cbManette = document.getElementById('cbManette');
+  var boxManette = document.getElementById('boxManette');
+  if (cbManette && boxManette) boxManette.style.display = cbManette.checked ? 'block' : 'none';
+
+  var cbVieni = document.getElementById('cbVieni');
+  var boxVieni = document.getElementById('boxVieni');
+  if (cbVieni && boxVieni) boxVieni.style.display = cbVieni.checked ? 'block' : 'none';
+
+  var cbx = document.querySelectorAll('#premiumOptions input[type="checkbox"]:checked');
+  for (var i=0; i<cbx.length; i++) extra += parseInt(cbx[i].value, 10);
+  document.getElementById('claimTotal').innerHTML = '🔷 ' + (base + extra) + ' pt';
+};
+
+function renderOverlay() {
+  if (!overlay) return '';
+  if (overlay.type === 'reward_nudge') return renderRewardNudgeOverlay();
+  if (overlay.type !== 'claim') return '';
+  var r = overlay.reward;
+  var h = '<div class="overlay" data-action="close-overlay">';
+  h += '<div class="sheet"><div class="sheet-handle"></div>';
+  h += '<h2>Piazza un Ordine</h2>';
+  h += '<p class="sheet-sub" id="sheetSub" data-base="'+r.cost+'">'+(r.emoji||'🛍️')+' <strong>'+esc(r.name)+'</strong> &nbsp;·&nbsp; Base: 🔷 '+r.cost+' pt</p>';
+  h += '<div class="field"><label class="lbl">Dettagli di consegna</label>';
+  h += '<select id="claimDL" onchange="updateClaimTotal()" style="width:100%;padding:10px;border-radius:8px;border:1px solid #d2c4e1;background:#fff;margin-top:5px;font-family:inherit;font-size:.9rem">';
+  h += '<option value="" disabled selected>Seleziona ora di consegna</option>';
+  h += '<option value="subito">Subito (Ord. Prioritario, +100 pt)</option>';
+  h += '<option value="1">Entro 1 ora (Ord. Prioritario, +50 pt)</option>';
+  h += '<option value="2">Entro 2 ore</option>';
+  h += '<option value="3">Entro 3 ore</option>';
+  h += '<option value="4">Entro 4 ore</option>';
+  h += '<option value="5">Entro 5 ore</option>';
+  h += '</select></div>';
+  h += '<div class="field"><label class="lbl">Opzioni Premium</label><div style="display:flex;flex-direction:column;gap:8px" id="premiumOptions">';
+  var usrName = pname(session);
+  var lblStyle = 'display:flex;align-items:center;justify-content:flex-start;gap:12px;font-size:.85rem;background:#fff;border:1.5px solid #d0daf0;border-radius:11px;padding:12px 14px;cursor:pointer;color:var(--ink);font-weight:500;transition:border .2s;margin:0';
+  var cbStyle = 'width:auto;margin:0;accent-color:var(--purple);transform:scale(1.1)';
+  var subBoxWrapper = 'display:none;margin-top:4px;margin-bottom:12px;padding:12px 14px;background:#f8faff;border:1.5px solid #e0eaf8;border-radius:11px;box-shadow:inset 0 2px 4px rgba(0,0,0,0.02)';
+  var subTitleStyle = 'font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:10px';
+  var subRowStyle = 'display:flex;align-items:center;gap:12px;font-size:.85rem;cursor:pointer;font-weight:600;color:var(--b3);padding:6px 0';
+  
+  h += '<label style="'+lblStyle+'"><input id="cbBenda" type="checkbox" value="50" data-opt="Utilizzo benda" onchange="updateClaimTotal()" style="'+cbStyle+'"> Utilizzo benda (+50 pt)</label>';
+  h += '<div id="boxBenda" style="'+subBoxWrapper+'">';
+  h += '<div style="'+subTitleStyle+'">Chi indossa la benda?</div>';
+  h += '<label style="'+subRowStyle+'"><input type="radio" name="optBenda" value="Tu" checked style="'+cbStyle+'"> Tu</label>';
+  h += '<label style="'+subRowStyle+'"><input type="radio" name="optBenda" value="Il partner" style="'+cbStyle+'"> Il partner</label>';
+  h += '</div>';
+
+  h += '<label style="'+lblStyle+'"><input id="cbManette" type="checkbox" value="50" data-opt="Utilizzo manette" onchange="updateClaimTotal()" style="'+cbStyle+'"> Utilizzo manette (+50 pt)</label>';
+  h += '<div id="boxManette" style="'+subBoxWrapper+'">';
+  h += '<div style="'+subTitleStyle+'">Chi indossa le manette?</div>';
+  h += '<label style="'+subRowStyle+'"><input type="radio" name="optManette" value="Tu" checked style="'+cbStyle+'"> Tu</label>';
+  h += '<label style="'+subRowStyle+'"><input type="radio" name="optManette" value="Il partner" style="'+cbStyle+'"> Il partner</label>';
+  h += '</div>';
+
+  h += '<label style="'+lblStyle+'"><input type="checkbox" value="50" data-opt="Posizione a tua scelta" onchange="updateClaimTotal()" style="'+cbStyle+'"> Posizione a tua scelta (+50 pt)</label>';
+  h += '<label style="'+lblStyle+'"><input type="checkbox" value="100" data-opt="Fai venire il partner insieme a te" onchange="updateClaimTotal()" style="'+cbStyle+'"> Fai venire il partner insieme a te (+100 pt)</label>';
+  
+  if (usrName === 'Stefano') {
+    h += '<label style="'+lblStyle+'"><input id="cbVieni" type="checkbox" value="50" data-opt="Vieni" onchange="updateClaimTotal()" style="'+cbStyle+'"> Vieni dove vuoi tu (+50 pt)</label>';
+    h += '<div id="boxVieni" style="display:none;margin-top:4px;margin-bottom:12px">';
+    h += '<input type="text" id="txtVieni" placeholder="Specifica dove..." style="width:100%;padding:12px 14px;border-radius:11px;border:1.5px solid #d0daf0;font-size:.85rem;font-family:inherit;background:#fff;color:var(--ink);transition:border .2s;outline:none">';
+    h += '</div>';
+  }
+  h += '</div></div>';
+  h += '<div style="background:#f4ebfa;padding:12px;border-radius:8px;margin-top:15px;margin-bottom:15px;display:flex;justify-content:space-between;align-items:center;border:1px dashed #c4b5fd">';
+  h += '<span style="font-size:.9rem;font-weight:700;color:var(--purple)">Totale Ordine:</span>';
+  h += '<span id="claimTotal" style="font-size:1.2rem;font-weight:800;color:var(--purple)">🔷 '+r.cost+' pt</span>';
+  h += '</div>';
+  h += '<div class="sheet-actions">';
+  h += '<button class="btn btn-o btn-sm" data-action="cancel-overlay">Indietro</button>';
+  h += '<button class="btn btn-gold" data-action="submit-claim">Conferma Ordine 🛒</button>';
+  h += '</div></div></div>';
+  return h;
+}
+
+/* Extra overlay type: reward nudge after flash question */
+function renderRewardNudgeOverlay() {
+  var o = overlay;
+  var h = '<div class="overlay center" data-action="close-overlay">';
+  h += '<div class="sheet rounded" style="background:linear-gradient(135deg,#0e1933,#1a1050)">';
+  h += '<div style="font-size:3rem;margin-bottom:12px">🛍️</div>';
+  h += '<h2 style="color:#c4b5fd;font-size:1.2rem;margin-bottom:8px">Promozione terminata. Effettuare acquisti?</h2>';
+  h += '<p style="font-size:.84rem;color:rgba(196,181,253,.75);margin-bottom:20px;line-height:1.55">';
+  h += 'Hai accumulato <strong style="color:#c4b5fd">🔷 '+o.pts+' pt</strong> nel portafoglio e ci sono '+o.count+' '+(o.count===1?'ordine sbloccato':'ordini sbloccati')+'.<br>Passa allo shop!';
+  h += '</p>';
+  h += '<div style="display:flex;gap:10px;justify-content:center">';
+  h += '<button class="btn btn-o btn-sm" data-action="fq-skip-claim" style="color:rgba(255,255,255,.4);border-color:rgba(255,255,255,.15)">Non ora</button>';
+  h += '<button class="btn btn-gold" data-action="fq-claim">Vai ai premi 🎁</button>';
+  h += '</div></div></div>';
+  return h;
+}
+
+/* ── ADMIN ── */
+function renderAdmin() {
+  if (!adminAuthed) {
+    var h = '<div class="auth-wrap"><div class="auth-card">';
+    h += '<div class="auth-logo"><span class="auth-gem">⚙️</span><h1>Settings</h1><p>Pannello di amministrazione</p></div>';
+    h += '<div class="field"><label class="lbl">Username</label><input type="text" id="au"/></div>';
+    h += '<div class="field"><label class="lbl">Password</label><input type="password" id="ap"/></div>';
+    h += '<div id="admerr" class="err"></div>';
+    h += '<button class="btn btn-p btn-full" data-action="do-adm-login">Accedi →</button>';
+    h += '<div style="text-align:center;margin-top:12px"><button data-action="logout" style="background:none;border:none;font-size:.75rem;color:var(--muted);cursor:pointer;font-family:sans-serif">← Torna al login</button></div>';
+    h += '</div></div>';
+    return h;
+  }
+  var qs = S.questions, rs = S.rewards, reqs = S.requests;
+  var onlineList = Object.keys(onlineUsers).filter(function(u){ return Date.now()-onlineUsers[u]<12000; });
+  var body = '';
+
+  if (adminTab === 'quiz') {
+    body += '<div class="acard"><h3>➕ Nuova domanda</h3>';
+    body += '<div class="af" style="margin-bottom:11px"><label>Domanda</label><textarea id="qT" placeholder="Es. Qual è la capitale della Francia?"></textarea></div>';
+    body += '<div class="agrid" style="margin-bottom:11px">';
+    for (var i=0; i<4; i++) body += '<div class="af"><label>Opzione '+(i+1)+'</label><input id="qO'+i+'" placeholder="Risposta '+(i+1)+'"/></div>';
+    body += '</div><div class="af" style="margin-bottom:14px"><label>Risposta corretta</label><select id="qC">';
+    for (var j=0; j<4; j++) body += '<option value="'+j+'">Opzione '+(j+1)+'</option>';
+    body += '</select></div><button class="abtn grn" data-action="add-q">+ Aggiungi domanda</button></div>';
+    body += '<div class="acard"><h3>📚 Domande ('+qs.length+')</h3><div class="alist">';
+    if (!qs.length) body += '<div style="color:#4a6080;font-size:.8rem">Nessuna domanda.</div>';
+    else qs.forEach(function(q) {
+      body += '<div class="aitem"><div><h4>'+esc(q.text)+'</h4><p>'+q.opts.map(function(o,i){return (i===q.correct?'✅':'○')+' '+esc(o);}).join(' · ')+'</p></div>';
+      body += '<button class="adel" data-action="del-q" data-arg="'+esc(q.id)+'">🗑</button></div>';
+    });
+    body += '</div></div>';
+  }
+
+  else if (adminTab === 'rewards') {
+    body += '<div class="acard"><h3>➕ Nuovo premio</h3><div class="agrid">';
+    body += '<div class="af"><label>Per</label><select id="rPt"><option value="giulia">🌸 Giulia</option><option value="stefano">⚡ Stefano</option><option value="both">👫 Entrambi</option></select></div>';
+    body += '<div class="af"><label>Costo (pt)</label><input type="number" id="rC" value="100" min="1"/></div>';
+    body += '<div class="af"><label>Emoji</label><input id="rE" value="🎁"/></div>';
+    body += '<div class="af"><label>Nome</label><input id="rN" placeholder="Es. Cena romantica"/></div>';
+    body += '<div class="af" style="grid-column:span 2"><label>Descrizione</label><input id="rD" placeholder="Cosa include..."/></div>';
+    body += '</div><div style="margin-top:13px"><button class="abtn gold" data-action="add-r">+ Aggiungi premio</button></div></div>';
+    body += '<div class="acard"><h3>🎁 Premi ('+rs.length+')</h3><div class="alist">';
+    if (!rs.length) body += '<div style="color:#4a6080;font-size:.8rem">Nessun premio.</div>';
+    else rs.forEach(function(r) {
+      body += '<div class="aitem"><div><h4>'+(r.emoji||'🎁')+' '+esc(r.name)+'</h4><p><span class="chip '+(r.partner==='both'?'cb':r.partner==='giulia'?'cg':'cs')+'">'+r.partner+'</span> · 🔷 '+r.cost+' pt'+(r.desc?' · '+esc(r.desc):'')+'</p></div>';
+      body += '<button class="adel" data-action="del-r" data-arg="'+esc(r.id)+'">🗑</button></div>';
+    });
+    body += '</div></div>';
+  }
+
+  else if (adminTab === 'stats') {
+    var gPts = ptOf('giulia'), sPts = ptOf('stefano');
+    var gQ = S.users.giulia.quizToday && S.users.giulia.quizToday.date===todayKey() ? 'Fatto' : '—';
+    var sQ = S.users.stefano.quizToday && S.users.stefano.quizToday.date===todayKey() ? 'Fatto' : '—';
+    body += '<div class="acard"><h3>📊 Bilanci</h3><div class="astats">';
+    body += '<div class="astat"><div class="v">🔷 '+gPts+'</div><div class="l">Punti Giulia</div></div>';
+    body += '<div class="astat"><div class="v">🔷 '+sPts+'</div><div class="l">Punti Stefano</div></div>';
+    body += '<div class="astat"><div class="v">'+gQ+'</div><div class="l">Quiz Giulia oggi</div></div>';
+    body += '<div class="astat"><div class="v">'+sQ+'</div><div class="l">Quiz Stefano oggi</div></div>';
+    body += '<div class="astat"><div class="v">'+qs.length+'</div><div class="l">Domande quiz</div></div>';
+    body += '<div class="astat"><div class="v">'+reqs.filter(function(r){return r.status==='pending';}).length+'</div><div class="l">Premi in attesa</div></div>';
+    body += '</div></div>';
+    body += '<div class="acard"><h3>✏️ Modifica punti</h3>';
+    ['giulia','stefano'].forEach(function(p) {
+      body += '<div style="display:flex;align-items:center;gap:7px;margin-bottom:9px;flex-wrap:wrap">';
+      body += '<span style="width:90px;font-size:.82rem;font-weight:600;color:var(--b8)">'+pname(p)+' ('+ptOf(p)+')</span>';
+      [[100,'+100'],[-100,'-100'],[500,'+500'],[-500,'-500']].forEach(function(pair) {
+        body += '<button class="abtn" style="padding:6px 10px" data-action="adj-pts" data-arg="'+p+'" data-arg2="'+pair[0]+'">'+pair[1]+'</button>';
+      });
+      body += '</div>';
+    });
+    body += '</div>';
+    body += '<div class="acard"><h3>📨 Ultime richieste</h3><div class="alist">';
+    reqs.slice().reverse().slice(0,8).forEach(function(rr) {
+      body += '<div class="aitem"><div><h4>'+(rr.emoji||'🎁')+' '+esc(rr.name)+'</h4><p><span class="chip '+(rr.by==='giulia'?'cg':'cs')+'">'+pname(rr.by)+'</span> · '+fmtDt(rr.requestedAt)+' · '+rr.status+'</p></div></div>';
+    });
+    if (!reqs.length) body += '<div style="color:#4a6080;font-size:.8rem">Nessuna richiesta.</div>';
+    body += '</div></div>';
+    body += '<div class="acard"><h3 style="color:#d08080">⚠️ Zona pericolosa</h3><p style="color:#4a6080;font-size:.8rem;margin-bottom:9px">Reset completo. Irreversibile.</p>';
+    body += '<button class="reset-btn" data-action="do-reset">Reset completo</button></div>';
+
+    // ntfy topics
+    body += '<div class="acard"><h3>📲 Topic ntfy (notifiche push)</h3>';
+    body += '<p style="color:#4a6080;font-size:.78rem;margin-bottom:14px">Ogni utente deve iscriversi al proprio topic nell\'app <strong>ntfy</strong> (iOS/Android). Tocca per copiare.</p>';
+    ['giulia','stefano'].forEach(function(p) {
+      var topic = S.users[p] && S.users[p].ntfyTopic;
+      var icon = p === 'giulia' ? '🌸' : '⚡';
+      if (topic) {
+        body += '<div style="margin-bottom:10px">';
+        body += '<div style="font-size:.72rem;color:#5a7090;font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em">'+icon+' '+pname(p)+'</div>';
+        body += '<div style="display:flex;gap:8px;align-items:center">';
+        body += '<code style="background:#070d1f;border:1px solid #162448;color:#7aa0e8;border-radius:7px;padding:8px 11px;font-size:.75rem;flex:1;word-break:break-all">'+esc(topic)+'</code>';
+        body += '<button class="abtn" style="padding:8px 12px;flex-shrink:0" data-action="copy-topic" data-arg="'+esc(topic)+'">📋 Copia</button>';
+        body += '</div>';
+        body += '<div style="margin-top:5px;font-size:.72rem;color:#3a6080">ntfy.sh/'+esc(topic)+'</div>';
+        body += '</div>';
+      } else {
+        body += '<div style="color:#4a6080;font-size:.78rem;margin-bottom:8px">'+icon+' '+pname(p)+': topic non ancora generato (utente deve fare il primo accesso)</div>';
+      }
+    });
+    body += '<div style="margin-top:12px;padding:10px 12px;background:#070d1f;border-radius:8px;border:1px solid #162448">';
+    body += '<div style="font-size:.72rem;color:#5a7090;font-weight:600;margin-bottom:6px">📅 Reminder quiz (cron-job.org)</div>';
+    body += '<p style="font-size:.72rem;color:#4a6080;line-height:1.5">Crea 2 job su <strong style="color:#7aa0e8">cron-job.org</strong> con questi parametri:<br>• Method: POST &nbsp;·&nbsp; Schedule: ogni giorno ore 10:00<br>• URL: <code style="color:#7aa0e8">https://ntfy.sh/[topic-utente]</code><br>• Header <code style="color:#7aa0e8">Title</code>: 🧠 Quiz del giorno!<br>• Body: Hai il quiz da completare oggi!</p>';
+    body += '</div></div>';
+  }
+
+  var h = '<div class="adm-wrap">';
+  h += '<div class="adm-top">';
+  h += svgSettings();
+  h += '<h1>Settings</h1>';
+  h += '<div class="sync-pill"><span class="sdot"></span>Live'+(onlineList.length?(' · '+onlineList.map(function(u){return u==='giulia'?'🌸':'⚡';}).join('')):'')+'</div>';
+  h += '<button data-action="adm-logout" style="background:none;border:none;color:#5a7090;cursor:pointer;font-size:.75rem;font-family:sans-serif;margin-left:8px">← Esci</button></div>';
+  h += '<div class="adm-body">';
+  h += '<div class="adm-tabs">';
+  h += '<button class="adm-tab'+(adminTab==='quiz'?' on':'')+'" data-action="set-adm-tab" data-arg="quiz">🧠 Quiz</button>';
+  h += '<button class="adm-tab'+(adminTab==='rewards'?' on':'')+'" data-action="set-adm-tab" data-arg="rewards">🎁 Premi</button>';
+  h += '<button class="adm-tab'+(adminTab==='stats'?' on':'')+'" data-action="set-adm-tab" data-arg="stats">📊 Stats</button>';
+  h += '</div>'+body+'</div>';
+  if (toast) h += '<div class="toast" style="position:fixed;bottom:20px">'+toast+'</div>';
+  h += '</div>';
+  return h;
+}
+
+/* ── SVG ── */
+function svgHome(){ return '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10" fill="none" stroke="currentColor" stroke-width="2"/></svg>'; }
+function svgQuiz(){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3"/></svg>'; }
+function svgShop(){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>'; }
+function svgGift(){ return '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 12v10H4V12M22 7H2v5h20V7zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>'; }
+function svgX(){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'; }
+function svgLogout(){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>'; }
+function svgSettings(){ return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--b8)"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>'; }
+
+/* ── INIT ── */
+if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+  try { Notification.requestPermission(); } catch(e) {}
+}
+
+// Restore 48h session from localStorage
+var _savedSession = loadSession();
+if (_savedSession) { session = _savedSession; }
+
+// Show loading screen until Firebase responds
+document.getElementById('R').innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#070d1f,#0e1933);flex-direction:column;gap:16px"><div style="font-size:3rem">🔷</div><div style="color:#b0c8f8;font-family:sans-serif;font-size:.9rem">Connessione in corso...</div></div>';
+
+/* ── FIREBASE LISTENERS (after all functions defined) ── */
+db.ref(DB_REF).on('value', function(snapshot) {
+  var data = snapshot.val();
+  if (data) {
+    S = {
+      users: data.users || clone(BLANK).users,
+      questions: objToArr(data.questions),
+      rewards: objToArr(data.rewards),
+      requests: objToArr(data.requests)
+    };
+  }
+  if (!fbReady) {
+    fbReady = true;
+    render(); // first load — always safe
+    return;
+  }
+  // Ignore echoes from our own writes
+  if (_writing) return;
+  // Remote update from partner device — schedule a safe re-render
+  scheduleRemoteRender();
+});
+
+db.ref('sc_presence').on('value', function(snap) {
+  onlineUsers = {};
+  var data = snap.val() || {};
+  Object.keys(data).forEach(function(u) {
+    if (data[u] && data[u].online) onlineUsers[u] = data[u].t;
+  });
+  // Update only the presence text node — no full re-render
+  if (session && session !== 'admin' && fbReady) {
+    var heroSub = document.querySelector('.bal-sub');
+    if (heroSub) {
+      var pt = session === 'giulia' ? 'stefano' : 'giulia';
+      var ptPts = ptOf(pt);
+      var ptOnline = onlineUsers[pt] && (Date.now() - onlineUsers[pt] < 12000);
+      heroSub.textContent = pname(pt) + ': ' + ptPts + ' pt  ·  ' + (ptOnline ? '🟢 online' : '⬤ offline');
+    }
+  }
+});
+
+setInterval(function() {
+  announcePresence();
+  checkTick();
+  checkPenaltyWarning();
+  checkFlashQuestion();
+}, 10000);
+
+function svgHeart(){ return '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>'; }
+
+})();
+</script>
+</body>
+</html>
