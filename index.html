@@ -147,6 +147,43 @@ textarea{resize:vertical;min-height:70px}
 .reward-nudge h4{font-family:'Playfair Display',serif;font-size:.95rem;color:#c4b5fd;margin-bottom:6px}
 .reward-nudge p{font-size:.78rem;color:rgba(196,181,253,.75);margin-bottom:12px;line-height:1.45}
 .reward-nudge-btns{display:flex;gap:8px;justify-content:center}
+
+/* ── MINI-GAMES ── */
+.mg-wrap{background:linear-gradient(135deg,#0e1933,#1e3060);border-radius:22px;padding:22px 20px;color:white;position:relative;overflow:hidden}
+.mg-wrap::after{content:'';position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:rgba(255,255,255,.05);border-radius:50%}
+.mg-label{font-size:.68rem;opacity:.7;text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:8px}
+.mg-title{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;margin-bottom:16px;position:relative}
+.mg-result{text-align:center;margin-top:16px}
+.mg-result-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:20px;font-weight:700;font-size:.9rem}
+.mg-pos{background:rgba(46,204,113,.25);color:#7effc0}
+.mg-zero{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6)}
+
+/* Wheel */
+.wheel-container{position:relative;width:240px;height:240px;margin:0 auto 16px}
+.wheel-svg{width:100%;height:100%;transition:transform 3s cubic-bezier(.17,.67,.12,.99)}
+.wheel-pointer{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:1.6rem;z-index:2;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
+.wheel-spin-btn{display:block;margin:0 auto;padding:12px 32px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--gold),var(--gold-d));color:white;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(232,192,74,.4)}
+
+/* Scratch Card */
+.scratch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:240px;margin:0 auto 16px}
+.scratch-cell{width:100%;aspect-ratio:1;border-radius:12px;border:none;cursor:pointer;font-size:1.5rem;font-family:'DM Sans',sans-serif;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .3s}
+.scratch-cell.covered{background:linear-gradient(135deg,#3a5ca8,#5278cc);color:transparent;box-shadow:inset 0 2px 8px rgba(0,0,0,.2)}
+.scratch-cell.covered::after{content:'?';color:rgba(255,255,255,.5);font-size:1.3rem}
+.scratch-cell.revealed{background:rgba(255,255,255,.1);cursor:default}
+
+/* Slot Machine */
+.slot-container{display:flex;justify-content:center;gap:10px;margin-bottom:16px}
+.slot-reel{width:64px;height:72px;background:rgba(0,0,0,.3);border-radius:14px;border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:2.2rem;overflow:hidden}
+.slot-reel.spinning{animation:slotSpin .15s linear infinite}
+@keyframes slotSpin{0%{transform:translateY(-4px)}50%{transform:translateY(4px)}100%{transform:translateY(-4px)}}
+.slot-spin-btn{display:block;margin:0 auto;padding:12px 32px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--purple),#6d28d9);color:white;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(139,92,246,.4)}
+
+/* Lucky Dice */
+.dice-container{display:flex;justify-content:center;gap:16px;margin-bottom:16px}
+.dice{width:64px;height:64px;background:white;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:900;color:var(--b2);box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.dice.rolling{animation:diceRoll .12s linear infinite}
+@keyframes diceRoll{0%{transform:rotate(0deg) scale(1)}25%{transform:rotate(90deg) scale(.9)}50%{transform:rotate(180deg) scale(1)}75%{transform:rotate(270deg) scale(.9)}100%{transform:rotate(360deg) scale(1)}}
+.dice-roll-btn{display:block;margin:0 auto;padding:12px 32px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--green),var(--green-d));color:white;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(46,204,113,.4)}
 .overlay{position:fixed;inset:0;background:rgba(5,10,30,.7);display:flex;align-items:flex-end;justify-content:center;z-index:200;backdrop-filter:blur(4px)}
 .overlay.center{align-items:center}
 .sheet{background:white;border-radius:24px 24px 0 0;padding:24px 20px 36px;width:100%;max-width:430px;max-height:92vh;overflow-y:auto;animation:slideUp .28s cubic-bezier(.32,1,.36,1)}
@@ -254,9 +291,129 @@ function handleAction(action, el, e) {
     case 'copy-topic':     copyToClipboard(arg); break;
     case 'fq-answer':      answerFlashQ(+arg); break;
     case 'fq-dismiss':     dismissFlashQ(); break;
-    case 'fq-claim':       flashQ=null; tab='shop'; render(); break;
-    case 'fq-skip-claim':  flashQ=null; render(); break;
+    case 'fq-claim':       flashQ=null; miniGame=null; tab='shop'; render(); break;
+    case 'fq-skip-claim':  flashQ=null; miniGame=null; render(); break;
+    case 'mg-dismiss':     dismissMiniGame(); break;
+    case 'mg-wheel-spin':  doWheelSpin(); break;
+    case 'mg-scratch':     doScratchReveal(+arg); break;
+    case 'mg-scratch-finish': doScratchFinish(arg === '1'); break;
+    case 'mg-slots-spin':  doSlotsSpin(); break;
+    case 'mg-dice-roll':   doDiceRoll(); break;
   }
+}
+
+/* ── MINI-GAME INTERACTIONS ── */
+function doWheelSpin() {
+  if (!miniGame || miniGame.played || miniGame.gameState.spinning) return;
+  var gs = miniGame.gameState;
+  gs.spinning = true;
+  var segments = [10,50,0,100,25,250,75,150];
+  var prize = calcWeightedPrize(250);
+  // Find closest segment
+  var segAngle = 360 / segments.length;
+  var closestIdx = 0, closestDiff = 999;
+  segments.forEach(function(v, i) {
+    if (Math.abs(v - prize) < closestDiff) { closestDiff = Math.abs(v - prize); closestIdx = i; }
+  });
+  prize = segments[closestIdx]; // snap to actual segment value
+  // Calculate target angle: spin several full rotations + land on segment
+  var targetSegAngle = 360 - (closestIdx * segAngle + segAngle / 2);
+  var totalAngle = 360 * (5 + Math.floor(Math.random() * 3)) + targetSegAngle;
+  gs.angle = totalAngle;
+  render();
+  setTimeout(function() {
+    gs.spinning = false;
+    finishMiniGame(prize);
+  }, 3200);
+}
+
+function doScratchReveal(idx) {
+  if (!miniGame || miniGame.played) return;
+  var gs = miniGame.gameState;
+  if (gs.done || gs.cells[idx].revealed) return;
+  gs.cells[idx].revealed = true;
+  gs.reveals++;
+  if (gs.reveals >= gs.maxReveals) gs.done = true;
+  // Check for early win: 3 matching revealed symbols
+  var counts = {};
+  gs.cells.forEach(function(c) { if (c.revealed) { counts[c.symbol] = (counts[c.symbol]||0)+1; } });
+  var earlyWin = false;
+  Object.keys(counts).forEach(function(k) { if (counts[k] >= 3) earlyWin = true; });
+  if (earlyWin) gs.done = true;
+  render();
+}
+
+function doScratchFinish(won) {
+  if (!miniGame || miniGame.played) return;
+  var prize = won ? calcWeightedPrize(250) : 0;
+  if (won && prize === 0) prize = 20; // minimum win if matched
+  // Reveal all
+  miniGame.gameState.cells.forEach(function(c) { c.revealed = true; });
+  finishMiniGame(prize);
+}
+
+function doSlotsSpin() {
+  if (!miniGame || miniGame.played || miniGame.gameState.spinning) return;
+  var gs = miniGame.gameState;
+  gs.spinning = true;
+  render();
+  // Animate reel changes
+  var ticks = 0, maxTicks = 20;
+  var interval = setInterval(function() {
+    ticks++;
+    for (var i = 0; i < 3; i++) {
+      if (ticks < maxTicks - i * 3) {
+        gs.reels[i] = gs.emojis[Math.floor(Math.random() * gs.emojis.length)];
+      }
+    }
+    // Update reels display directly for animation
+    for (var j = 0; j < 3; j++) {
+      var rel = document.getElementById('reel-' + j);
+      if (rel) rel.textContent = gs.reels[j];
+    }
+    if (ticks >= maxTicks) {
+      clearInterval(interval);
+      gs.spinning = false;
+      // Determine prize based on matches
+      var prize = 0;
+      if (gs.reels[0] === gs.reels[1] && gs.reels[1] === gs.reels[2]) {
+        prize = 250; // jackpot
+      } else if (gs.reels[0] === gs.reels[1] || gs.reels[1] === gs.reels[2] || gs.reels[0] === gs.reels[2]) {
+        prize = calcWeightedPrize(120);
+        if (prize === 0) prize = 30;
+      }
+      // 40% chance of random small win even with no matches
+      if (prize === 0 && Math.random() < 0.4) {
+        prize = Math.floor(Math.random() * 40) + 10;
+      }
+      finishMiniGame(prize);
+    }
+  }, 100);
+}
+
+function doDiceRoll() {
+  if (!miniGame || miniGame.played || miniGame.gameState.rolling) return;
+  var gs = miniGame.gameState;
+  gs.rolling = true;
+  render();
+  var ticks = 0;
+  var interval = setInterval(function() {
+    ticks++;
+    gs.d1 = Math.floor(Math.random() * 6) + 1;
+    gs.d2 = Math.floor(Math.random() * 6) + 1;
+    // Update dice display directly
+    var diceEmojis = ['','⚀','⚁','⚂','⚃','⚄','⚅'];
+    var diceEls = document.querySelectorAll('.dice');
+    if (diceEls[0]) diceEls[0].textContent = diceEmojis[gs.d1];
+    if (diceEls[1]) diceEls[1].textContent = diceEmojis[gs.d2];
+    if (ticks >= 15) {
+      clearInterval(interval);
+      gs.rolling = false;
+      var sum = gs.d1 + gs.d2;
+      var prize = sum * 20; // 2-12 × 20 = 40-240 pt
+      finishMiniGame(prize);
+    }
+  }, 100);
 }
 
 /* ── FIREBASE SETUP ── */
@@ -471,18 +628,36 @@ function notifyPartnerNewReward(rewardName, deadline) {
   ntfySend(topic, '🎁 Nuovo premio da eseguire!', msg, ['gift']);
 }
 
-/* ── FLASH QUESTION ENGINE ── */
+/* ── ACTIVITY ENGINE (Flash Questions + Mini-Games) ── */
 
-var FLASH_HOURS = [15, 16, 17, 18, 19, 20, 21]; // hours when flash Q fires
+var ALL_ACTIVITY_HOURS = [15, 16, 17, 18, 19, 20, 21];
+var QUIZ_HOURS = [15, 18, 20]; // hours with flash questions
+var GAME_SCHEDULE = {
+  16: {type:'wheel',   icon:'🎰', name:'Gira la Ruota'},
+  17: {type:'scratch',  icon:'🎫', name:'Gratta e Vinci'},
+  19: {type:'slots',    icon:'🎰', name:'Slot Machine'},
+  21: {type:'dice',     icon:'🎲', name:'Dado Fortunato'}
+};
+var GAME_HOURS = [16, 17, 19, 21];
 
 function flashSlotKey() {
   var d = new Date();
   return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate()+'-'+d.getHours();
 }
 
-function isFlashHour() {
+function isActivityHour() {
   var h = new Date().getHours();
-  return FLASH_HOURS.indexOf(h) >= 0;
+  return ALL_ACTIVITY_HOURS.indexOf(h) >= 0;
+}
+function isQuizHour() {
+  return QUIZ_HOURS.indexOf(new Date().getHours()) >= 0;
+}
+function isGameHour() {
+  return GAME_HOURS.indexOf(new Date().getHours()) >= 0;
+}
+function currentGameType() {
+  var h = new Date().getHours();
+  return GAME_SCHEDULE[h] || null;
 }
 
 function secondsUntilNextHour() {
@@ -511,9 +686,19 @@ function markFlashQuestionSeen(qid) {
   try { sessionStorage.setItem(seenKey, JSON.stringify(seen)); } catch(e) {}
 }
 
+/* ── MINI-GAME STATE ── */
+var miniGame = null;
+/* miniGame shape: {
+     type: 'wheel'|'scratch'|'slots'|'dice',
+     slotKey: string,
+     played: false,
+     prize: 0,
+     gameState: {} // type-specific state
+   } */
+
 function checkFlashQuestion() {
   if (!session || session === 'admin') return;
-  if (!isFlashHour()) { flashQ = null; return; }
+  if (!isActivityHour()) { flashQ = null; miniGame = null; return; }
 
   var slotKey = flashSlotKey();
   var doneKey = 'fq_done_' + slotKey;
@@ -522,53 +707,73 @@ function checkFlashQuestion() {
   if (sessionStorage.getItem(doneKey)) return;
   // Already active
   if (flashQ && flashQ.slotKey === slotKey) return;
+  if (miniGame && miniGame.slotKey === slotKey) return;
 
-  // New flash question for this hour
-  var q = pickFlashQuestion();
-  if (!q) return;
+  if (isQuizHour()) {
+    // Flash question
+    var q = pickFlashQuestion();
+    if (!q) return;
 
-  flashQ = {
-    q: q,
-    slotKey: slotKey,
-    answered: false,
-    ansIdx: null,
-    showNudge: false,
-    timerLeft: secondsUntilNextHour()
-  };
+    flashQ = {
+      q: q,
+      slotKey: slotKey,
+      answered: false,
+      ansIdx: null,
+      showNudge: false,
+      timerLeft: secondsUntilNextHour()
+    };
 
-  // Start countdown timer
-  if (flashTimer) clearInterval(flashTimer);
-  flashTimer = setInterval(function() {
-    if (!flashQ) { clearInterval(flashTimer); return; }
-    flashQ.timerLeft--;
-    if (flashQ.timerLeft <= 0) {
-      // Time's up — no penalty, but send ntfy reminder
-      clearInterval(flashTimer);
-      var dk = 'fq_done_' + flashQ.slotKey;
-      sessionStorage.setItem(dk, 'skip');
-      // Notify user they missed this slot
-      var missedTopic = S.users[session] && S.users[session].ntfyTopic;
-      if (missedTopic) {
-        var missedHour = new Date().getHours();
-        var nextH = FLASH_HOURS.filter(function(h){ return h > missedHour; })[0];
-        var nextMsg = nextH ? 'Prossima domanda alle '+nextH+':00!' : 'Per oggi non ci sono altre domande flash.';
-        ntfySend(missedTopic, '⚡ Hai perso la domanda delle '+missedHour+':00', 'Nessuna penalità, ma hai perso punti! ' + nextMsg, ['zap']);
+    // Send notification
+    sendActivityNotification('⚡ Domanda Flash delle ' + new Date().getHours() + ':00!', 'Una domanda ti aspetta in app. Rispondi subito: +100 pt se corretta!');
+
+    // Start countdown timer
+    if (flashTimer) clearInterval(flashTimer);
+    flashTimer = setInterval(function() {
+      if (!flashQ) { clearInterval(flashTimer); return; }
+      flashQ.timerLeft--;
+      if (flashQ.timerLeft <= 0) {
+        clearInterval(flashTimer);
+        sessionStorage.setItem('fq_done_' + flashQ.slotKey, 'skip');
+        flashQ = null;
+        render();
+      } else {
+        var el = document.getElementById('fq-timer');
+        if (el) {
+          var m = Math.floor(flashQ.timerLeft / 60);
+          var s = flashQ.timerLeft % 60;
+          el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+          if (flashQ.timerLeft < 120) el.classList.add('urgent');
+        }
       }
-      flashQ = null;
-      render();
-    } else {
-      // Update timer display only (no full re-render)
-      var el = document.getElementById('fq-timer');
-      if (el) {
-        var m = Math.floor(flashQ.timerLeft / 60);
-        var s = flashQ.timerLeft % 60;
-        el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
-        if (flashQ.timerLeft < 120) el.classList.add('urgent');
-      }
-    }
-  }, 1000);
+    }, 1000);
+    render();
 
-  render();
+  } else if (isGameHour()) {
+    // Mini-game
+    var gt = currentGameType();
+    if (!gt) return;
+    miniGame = {
+      type: gt.type,
+      icon: gt.icon,
+      name: gt.name,
+      slotKey: slotKey,
+      played: false,
+      prize: 0,
+      gameState: initGameState(gt.type)
+    };
+
+    // Send notification
+    sendActivityNotification(gt.icon + ' ' + gt.name + ' disponibile!', 'Un mini-gioco ti aspetta: puoi vincere fino a 250 pt!');
+
+    render();
+  }
+}
+
+function sendActivityNotification(title, message) {
+  if (!session || session === 'admin') return;
+  var topic = S.users[session] && S.users[session].ntfyTopic;
+  if (!topic) return;
+  ntfySend(topic, title, message, ['game_die']);
 }
 
 function answerFlashQ(optIdx) {
@@ -588,25 +793,10 @@ function answerFlashQ(optIdx) {
   markFlashQuestionSeen(flashQ.q.id);
   if (flashTimer) clearInterval(flashTimer);
 
-  // After answer: show reward popup if user can afford any reward
-  var myPtsNow = S.users[session].pts || 0;
-  var affordableRws = (S.rewards || []).filter(function(r) {
-    return (r.partner === session || r.partner === 'both') && r.cost <= myPtsNow;
-  });
-  flashQ.showNudge = affordableRws.length > 0;
-  flashQ.affordableCount = affordableRws.length;
-
   render();
 
-  // After short delay, show the reward popup
-  if (affordableRws.length > 0) {
-    setTimeout(function() {
-      if (flashQ && flashQ.answered) {
-        overlay = {type: 'reward_nudge', pts: myPtsNow, count: affordableRws.length};
-        render();
-      }
-    }, 1200);
-  }
+  // After short delay, show the shop popup
+  showShopNudgeAfterDelay();
 }
 
 function dismissFlashQ() {
@@ -619,17 +809,79 @@ function dismissFlashQ() {
   render();
 }
 
-function sendFlashQNotification() {
-  if (!session || session === 'admin') return;
-  var u = S.users[session];
-  var topic = u && u.ntfyTopic;
-  if (!topic) return;
-  var h = new Date().getHours();
-  ntfySend(topic,
-    '⚡ Domanda Flash delle ' + h + ':00!',
-    'Una domanda ti aspetta in app. Rispondi subito: +100 pt se corretta!',
-    ['zap']
-  );
+function showShopNudgeAfterDelay() {
+  setTimeout(function() {
+    var myPtsNow = S.users[session] ? S.users[session].pts || 0 : 0;
+    var affordableRws = (S.rewards || []).filter(function(r) {
+      return (r.partner === session || r.partner === 'both') && r.cost <= myPtsNow;
+    });
+    if (affordableRws.length > 0) {
+      overlay = {type: 'reward_nudge', pts: myPtsNow, count: affordableRws.length};
+      render();
+    }
+  }, 1200);
+}
+
+/* ── MINI-GAME LOGIC ── */
+function initGameState(type) {
+  if (type === 'wheel') return {angle: 0, spinning: false};
+  if (type === 'scratch') {
+    var symbols = ['💎','🌟','🍀','🔥','👑','💰'];
+    var winSym = symbols[Math.floor(Math.random() * symbols.length)];
+    var cells = [];
+    // Place 3 winning symbols
+    var winPositions = shuffle9()[0];
+    for (var i = 0; i < 9; i++) cells.push({symbol: symbols[Math.floor(Math.random() * symbols.length)], revealed: false});
+    // Decide win (30% chance)
+    if (Math.random() < 0.3) {
+      var positions = shuffle9().slice(0, 3);
+      positions.forEach(function(p) { cells[p].symbol = winSym; });
+    }
+    return {cells: cells, reveals: 0, maxReveals: 5, done: false};
+  }
+  if (type === 'slots') {
+    var emojis = ['🍒','🍋','🔔','💎','⭐','🍀'];
+    return {reels: [emojis[0], emojis[1], emojis[2]], spinning: false, emojis: emojis};
+  }
+  if (type === 'dice') return {d1: 1, d2: 1, rolling: false};
+  return {};
+}
+
+function shuffle9() {
+  var a = [0,1,2,3,4,5,6,7,8];
+  for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+  return a;
+}
+
+function calcWeightedPrize(max) {
+  // Weighted: most prizes are low, few are high
+  var r = Math.random();
+  if (r < 0.15) return 0;         // 15% chance of 0
+  if (r < 0.45) return Math.floor(Math.random() * 30) + 10;   // 30% → 10-40
+  if (r < 0.70) return Math.floor(Math.random() * 50) + 40;   // 25% → 40-90
+  if (r < 0.88) return Math.floor(Math.random() * 60) + 90;   // 18% → 90-150
+  if (r < 0.97) return Math.floor(Math.random() * 50) + 150;  // 9% → 150-200
+  return Math.floor(Math.random() * 50) + 200;                // 3% → 200-250
+}
+
+function finishMiniGame(prize) {
+  if (!miniGame || miniGame.played) return;
+  miniGame.played = true;
+  miniGame.prize = prize;
+  S.users[session].pts = Math.max(0, (S.users[session].pts || 0) + prize);
+  save(S);
+  sessionStorage.setItem('fq_done_' + miniGame.slotKey, 'answered');
+  render();
+  showShopNudgeAfterDelay();
+}
+
+function dismissMiniGame() {
+  if (!miniGame) return;
+  if (!miniGame.played) {
+    sessionStorage.setItem('fq_done_' + miniGame.slotKey, 'skip');
+  }
+  miniGame = null;
+  render();
 }
 
 function renderFlashQuestion() {
@@ -657,7 +909,6 @@ function renderFlashQuestion() {
     h += '<button data-action="fq-dismiss" style="background:none;border:none;font-size:.72rem;color:rgba(255,255,255,.4);cursor:pointer;font-family:sans-serif">Salta</button>';
     h += '</div>';
   } else {
-    // Show answers with feedback
     h += '<div class="fq-opts">';
     q.opts.forEach(function(o, i) {
       var cls = 'fq-opt';
@@ -670,12 +921,140 @@ function renderFlashQuestion() {
     h += '<div class="fq-result-pill ' + (fq.ok ? 'fq-pos' : 'fq-neg') + '">';
     h += fq.ok ? '✅ Corretto! +100 pt' : '❌ Sbagliato! -50 pt';
     h += '</div></div>';
-
     h += '<div style="margin-top:10px;text-align:right">';
     h += '<button data-action="fq-dismiss" style="background:none;border:none;font-size:.75rem;color:rgba(255,255,255,.5);cursor:pointer;font-family:sans-serif">Chiudi</button>';
     h += '</div>';
   }
   h += '</div>';
+  return h;
+}
+
+/* ── MINI-GAME RENDERERS ── */
+function renderMiniGame() {
+  if (!miniGame) return '';
+  var mg = miniGame;
+  var h = '<div class="mg-wrap">';
+  h += '<div class="mg-label">' + mg.icon + ' Mini-Gioco</div>';
+  h += '<div class="mg-title">' + esc(mg.name) + '</div>';
+
+  if (!mg.played) {
+    if (mg.type === 'wheel') h += renderWheelGame();
+    else if (mg.type === 'scratch') h += renderScratchGame();
+    else if (mg.type === 'slots') h += renderSlotsGame();
+    else if (mg.type === 'dice') h += renderDiceGame();
+    h += '<div style="margin-top:12px;text-align:right">';
+    h += '<button data-action="mg-dismiss" style="background:none;border:none;font-size:.72rem;color:rgba(255,255,255,.4);cursor:pointer;font-family:sans-serif">Salta</button>';
+    h += '</div>';
+  } else {
+    h += '<div class="mg-result">';
+    if (mg.prize > 0) {
+      h += '<div class="mg-result-pill mg-pos">🎉 Hai vinto +' + mg.prize + ' pt!</div>';
+    } else {
+      h += '<div class="mg-result-pill mg-zero">😅 Nessun premio questa volta</div>';
+    }
+    h += '</div>';
+    h += '<div style="margin-top:12px;text-align:right">';
+    h += '<button data-action="mg-dismiss" style="background:none;border:none;font-size:.75rem;color:rgba(255,255,255,.5);cursor:pointer;font-family:sans-serif">Chiudi</button>';
+    h += '</div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+/* WHEEL */
+function renderWheelGame() {
+  var gs = miniGame.gameState;
+  var segments = [
+    {label:'10',  color:'#e74c3c', val:10},
+    {label:'50',  color:'#3498db', val:50},
+    {label:'0',   color:'#95a5a6', val:0},
+    {label:'100', color:'#2ecc71', val:100},
+    {label:'25',  color:'#e67e22', val:25},
+    {label:'250', color:'#f1c40f', val:250},
+    {label:'75',  color:'#9b59b6', val:75},
+    {label:'150', color:'#1abc9c', val:150}
+  ];
+  var n = segments.length, anglePerSeg = 360 / n;
+  var h = '<div class="wheel-container">';
+  h += '<div class="wheel-pointer">▼</div>';
+  h += '<svg class="wheel-svg" id="wheel-svg" viewBox="0 0 200 200" style="transform:rotate(' + (gs.angle || 0) + 'deg)">';
+  for (var i = 0; i < n; i++) {
+    var startA = i * anglePerSeg - 90;
+    var endA = startA + anglePerSeg;
+    var sr = startA * Math.PI / 180, er = endA * Math.PI / 180;
+    var x1 = 100 + 95 * Math.cos(sr), y1 = 100 + 95 * Math.sin(sr);
+    var x2 = 100 + 95 * Math.cos(er), y2 = 100 + 95 * Math.sin(er);
+    var large = anglePerSeg > 180 ? 1 : 0;
+    h += '<path d="M100,100 L'+x1+','+y1+' A95,95 0 '+large+',1 '+x2+','+y2+' Z" fill="'+segments[i].color+'"/>';
+    var midA = (startA + anglePerSeg/2) * Math.PI / 180;
+    var tx = 100 + 60 * Math.cos(midA), ty = 100 + 60 * Math.sin(midA);
+    h += '<text x="'+tx+'" y="'+ty+'" text-anchor="middle" dominant-baseline="central" fill="white" font-size="12" font-weight="700" font-family="sans-serif">'+segments[i].label+'</text>';
+  }
+  h += '</svg></div>';
+  if (!gs.spinning) {
+    h += '<button class="wheel-spin-btn" data-action="mg-wheel-spin">Gira! 🎰</button>';
+  } else {
+    h += '<div style="text-align:center;color:rgba(255,255,255,.6);font-size:.82rem">La ruota sta girando...</div>';
+  }
+  return h;
+}
+
+/* SCRATCH CARD */
+function renderScratchGame() {
+  var gs = miniGame.gameState;
+  var h = '<p style="font-size:.78rem;color:rgba(255,255,255,.6);margin-bottom:12px;text-align:center">Tocca fino a 5 celle. 3 simboli uguali = premio!</p>';
+  h += '<div class="scratch-grid">';
+  gs.cells.forEach(function(cell, i) {
+    if (cell.revealed || gs.done) {
+      h += '<div class="scratch-cell revealed">' + cell.symbol + '</div>';
+    } else {
+      h += '<button class="scratch-cell covered" data-action="mg-scratch" data-arg="' + i + '"></button>';
+    }
+  });
+  h += '</div>';
+  if (gs.done && !miniGame.played) {
+    // Check for win
+    var counts = {};
+    gs.cells.forEach(function(c) { if (c.revealed) { counts[c.symbol] = (counts[c.symbol]||0)+1; } });
+    var won = false;
+    Object.keys(counts).forEach(function(k) { if (counts[k] >= 3) won = true; });
+    h += '<div style="text-align:center;margin-top:8px">';
+    h += '<button class="wheel-spin-btn" data-action="mg-scratch-finish" data-arg="' + (won?'1':'0') + '">' + (won ? '🎉 Scopri il premio!' : 'Scopri il risultato') + '</button>';
+    h += '</div>';
+  }
+  return h;
+}
+
+/* SLOT MACHINE */
+function renderSlotsGame() {
+  var gs = miniGame.gameState;
+  var h = '<div class="slot-container">';
+  for (var i = 0; i < 3; i++) {
+    h += '<div class="slot-reel' + (gs.spinning ? ' spinning' : '') + '" id="reel-' + i + '">' + gs.reels[i] + '</div>';
+  }
+  h += '</div>';
+  if (!gs.spinning) {
+    h += '<button class="slot-spin-btn" data-action="mg-slots-spin">Tira la leva! 🎰</button>';
+  } else {
+    h += '<div style="text-align:center;color:rgba(255,255,255,.6);font-size:.82rem">I rulli girano...</div>';
+  }
+  return h;
+}
+
+/* LUCKY DICE */
+function renderDiceGame() {
+  var gs = miniGame.gameState;
+  var diceEmojis = ['','⚀','⚁','⚂','⚃','⚄','⚅'];
+  var h = '<p style="font-size:.78rem;color:rgba(255,255,255,.6);margin-bottom:12px;text-align:center">Lancia i dadi! Somma × 20 = punti vinti</p>';
+  h += '<div class="dice-container">';
+  h += '<div class="dice' + (gs.rolling ? ' rolling' : '') + '">' + diceEmojis[gs.d1] + '</div>';
+  h += '<div class="dice' + (gs.rolling ? ' rolling' : '') + '">' + diceEmojis[gs.d2] + '</div>';
+  h += '</div>';
+  if (!gs.rolling) {
+    h += '<button class="dice-roll-btn" data-action="mg-dice-roll">Lancia! 🎲</button>';
+  } else {
+    h += '<div style="text-align:center;color:rgba(255,255,255,.6);font-size:.82rem">I dadi rotolano...</div>';
+  }
   return h;
 }
 
@@ -917,11 +1296,11 @@ function renderAuth() {
 /* ── ONBOARDING ── */
 var OB = [
   {icon:'🔷', title:'Benvenuto/a in Secret Challenge!', body:'Qui trovi il tuo saldo punti, le attività e le richieste del partner. Inizi con <strong>1000 punti</strong>.'},
-  {icon:'⚡', title:'Domande Flash', body:'Ogni ora dalle 15:00 alle 21:00 appare una domanda flash in Home. +100 pt se corretta, -50 se sbagliata. Puoi saltarla senza penalità. Sono 7 occasioni ogni giorno!'},
-  {icon:'🎁', title:'Riscatta un premio', body:'Nel tab <em>Riscatta</em> scegli un premio, spendi i punti e dici al partner entro quando o a che ora vuoi riceverlo.'},
+  {icon:'⚡', title:'Domande Flash e Mini-Giochi', body:'Ogni giorno dalle 15 alle 21 hai <strong>7 attività</strong>: 3 domande flash (+100/-50 pt) e 4 mini-giochi (fino a 250 pt). Appaiono in Home ogni ora!'},
+  {icon:'🛍', title:'Lo Shop', body:'Nel tab <em>Shop</em> scegli un premio, spendi i punti e dici al partner entro quando o a che ora vuoi riceverlo.'},
   {icon:'📨', title:'Esegui i premi del partner', body:'Nel tab <em>Esegui</em> vedi le richieste. Quando finisci, segnalo: il partner dovrà <strong>confermare</strong>.'},
   {icon:'⚠️', title:'Regola dei 3 giorni', body:'Devi richiedere <strong>almeno un premio ogni 3 giorni</strong>. Se dimentichi, perdi automaticamente <strong>500 punti</strong>.'},
-  {icon:'🚀', title:'Sei pronto/a!', body:'Completa il quiz di oggi e richiedi il tuo primo premio. Buona fortuna!'}
+  {icon:'🚀', title:'Sei pronto/a!', body:'Completa le attività di oggi e richiedi il tuo primo premio. Buona fortuna!'}
 ];
 function renderOnboarding() {
   var s = OB[obStep], isLast = obStep === OB.length - 1;
@@ -960,8 +1339,9 @@ function renderApp() {
   var page = '';
 
   if (tab === 'home') {
-    // Flash question sits at top if active
+    // Flash question or mini-game sits at top if active
     if (flashQ) page += renderFlashQuestion();
+    else if (miniGame) page += renderMiniGame();
     page += renderHero(pts, ptPts, pname(pt), ptOnline, false, u, dAgo);
     if (dAgo >= 3) page += renderMandatoryAlert();
     if (toConf.length > 0) {
@@ -974,7 +1354,7 @@ function renderApp() {
     }
     page += '<div class="sec-label">📋 Attività recente</div>';
     var recent = myReqs.filter(function(r){return r.status!=='done_confirm';}).slice().reverse().slice(0,3);
-    if (!recent.length) page += '<div class="empty"><span class="empty-ico">🔷</span><p>Nessuna attività ancora.<br>Vai su Riscatta per iniziare!</p></div>';
+    if (!recent.length) page += '<div class="empty"><span class="empty-ico">🔷</span><p>Nessuna attività ancora.<br>Vai allo Shop per iniziare!</p></div>';
     else recent.forEach(function(rr) { page += renderMyReqCard(rr); });
     page += renderPointsCard();
   }
@@ -1019,7 +1399,7 @@ function renderApp() {
   h += '<div class="page">'+page+'</div>';
   h += '<div class="bnav">';
   h += '<button class="ni'+(tab==='home'?' on':'')+'" data-action="set-tab" data-arg="home">'+svgHome()+'<span>Home</span></button>';
-  h += '<button class="ni'+(tab==='shop'?' on':'')+'" data-action="set-tab" data-arg="shop">'+svgShop()+'<span>Riscatta</span></button>';
+  h += '<button class="ni'+(tab==='shop'?' on':'')+'" data-action="set-tab" data-arg="shop">'+svgShop()+'<span>Shop</span></button>';
   h += '<button class="ni'+(tab==='execute'?' on':'')+'" data-action="set-tab" data-arg="execute" style="position:relative">'+svgGift()+'<span>Esegui</span>'+(hasBadge?'<div class="ni-dot"></div>':'')+'</button>';
   h += '</div>'+ovHtml+(toast?'<div class="toast">'+toast+'</div>':'')+'</div>';
   return h;
@@ -1028,23 +1408,21 @@ function renderApp() {
 /* ── COMPONENTS ── */
 function renderHero(pts, ptPts, ptName, ptOnline, flashAnsweredToday, u, dAgo) {
   var danger = dAgo >= 3;
-  // Flash Q stat: how many answered today
-  var flashCount = getFlashCountToday();
+  var actCount = getActivityCountToday();
   var h = '<div class="balance-hero">';
   h += '<div class="bal-label">Il tuo saldo</div>';
   h += '<div class="bal-amount">🔷 '+pts+'</div>';
   h += '<div class="bal-sub">'+esc(ptName)+': '+ptPts+' pt &nbsp;·&nbsp; '+(ptOnline?'🟢 online':'⬤ offline')+'</div>';
   h += '<div class="bal-grid">';
-  h += '<div class="bal-stat"><div class="bal-stat-val">'+flashCount+'/7</div><div class="bal-stat-lbl">Flash oggi</div></div>';
+  h += '<div class="bal-stat"><div class="bal-stat-val">'+actCount+'/7</div><div class="bal-stat-lbl">Attività oggi</div></div>';
   h += '<div class="bal-stat'+(danger?' danger':'')+'"><div class="bal-stat-val">'+(danger?'⚠️':dAgo+'g')+'</div><div class="bal-stat-lbl">'+(danger?'Penalità oggi!':'Senza premi')+'</div></div>';
   h += '</div></div>';
   return h;
 }
 
-function getFlashCountToday() {
-  var today = todayKey();
+function getActivityCountToday() {
   var count = 0;
-  FLASH_HOURS.forEach(function(h) {
+  ALL_ACTIVITY_HOURS.forEach(function(h) {
     var slotKey = new Date().getFullYear()+'-'+new Date().getMonth()+'-'+new Date().getDate()+'-'+h;
     if (sessionStorage.getItem('fq_done_' + slotKey) === 'answered') count++;
   });
@@ -1052,14 +1430,15 @@ function getFlashCountToday() {
 }
 
 function renderMandatoryAlert() {
-  return '<div class="mandatory-alert"><h4>⚠️ Richiedi un premio!</h4><p>Sono passati 3+ giorni dall\'ultimo premio. Se non lo richiedi oggi perdi 500 punti.<br>Vai al tab <strong>Riscatta</strong>.</p></div>';
+  return '<div class="mandatory-alert"><h4>⚠️ Richiedi un premio!</h4><p>Sono passati 3+ giorni dall\'ultimo premio. Se non lo richiedi oggi perdi 500 punti.<br>Vai allo <strong>Shop</strong>.</p></div>';
 }
 
 var POINTS_INFO = [
-  {icon:'⚡', label:'Domanda Flash — risposta corretta', val:'+100 pt', valColor:'var(--green)', body:'Ogni ora dalle 15:00 alle 21:00 ricevi una domanda di cultura generale. Se rispondi correttamente guadagni 100 punti. Sono 7 opportunità al giorno!', red:false},
+  {icon:'⚡', label:'Domanda Flash — risposta corretta', val:'+100 pt', valColor:'var(--green)', body:'Alle 15:00, 18:00 e 20:00 ricevi una domanda di cultura generale. Se rispondi correttamente guadagni 100 punti.', red:false},
   {icon:'❌', label:'Domanda Flash — risposta sbagliata', val:'-50 pt', valColor:'var(--red)', body:'Se sbagli la domanda flash perdi 50 punti. Nessuna penalità se non rispondi — la domanda scade alla fine dell\u2019ora.', red:false},
+  {icon:'🎲', label:'Mini-Giochi (Ruota, Gratta, Slot, Dado)', val:'0-250 pt', valColor:'var(--purple)', body:'Alle 16:00, 17:00, 19:00 e 21:00 appare un mini-gioco diverso. Puoi vincere da 0 a 250 punti per gioco!', red:false},
   {icon:'⚠️', label:'Inattività premi (3 giorni)', val:'-500 pt', valColor:'var(--red)', body:'Devi riscattare almeno un premio ogni 3 giorni. Se non lo fai perdi 500 punti automaticamente. I premi si riscattano sempre — non aspettare!', red:true},
-  {icon:'🎁', label:'Riscatta un premio', val:'- costo', valColor:'var(--b5)', body:'Nel tab Riscatta scegli un premio, spendi i punti e indica al partner entro quando o a che ora vuoi riceverlo. Dopo ogni domanda flash ti viene chiesto se vuoi riscattarne uno.', red:false}
+  {icon:'🎁', label:'Riscatta un premio', val:'- costo', valColor:'var(--b5)', body:'Nello Shop scegli un premio, spendi i punti e indica al partner entro quando o a che ora vuoi riceverlo. Dopo ogni attività ti viene chiesto se vuoi riscattarne uno.', red:false}
 ];
 
 /* Pure DOM toggle — no render(), no scroll jump */
