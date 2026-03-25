@@ -1278,7 +1278,11 @@ function confirmDone(rrId, yes) {
   var req = S.requests[i];
   if (yes) {
     req.status = 'done'; req.confirmedAt = new Date().toISOString();
-    if (req.deadline && req.doneAt && new Date(req.doneAt) > new Date(req.deadline)) {
+    if (req.unfulfilledPenaltyApplied || req.latePenaltyApplied) {
+      // Penale già applicata in precedenza — conferma senza ulteriori calcoli
+      showToast('✅ Ricezione confermata!');
+    } else if (req.deadline && Date.now() > new Date(req.deadline).getTime()) {
+      // Scaduto ma confermato ora — penale ritardo al partner
       var rCost = req.cost || 100;
       var cRefund = Math.floor(rCost * 0.3);
       var ePenalty = Math.floor(rCost * 0.5);
@@ -1287,13 +1291,18 @@ function confirmDone(rrId, yes) {
       S.users[executor].pts = Math.max(0, (S.users[executor].pts || 0) - ePenalty);
       req.latePenaltyApplied = true;
       req.refundAmt = cRefund; req.penaltyAmt = ePenalty;
-      showToast('Ordine completato in ritardo! Rimborsati ' + cRefund + 'pt (Penale partner: -' + ePenalty + 'pt)', 5000);
+      showToast('Ordine confermato in ritardo! Rimborsati ' + cRefund + ' pt (Penale partner: -' + ePenalty + ' pt)', 5000);
     } else {
-      showToast('Ordine completato nei tempi!');
+      showToast('✅ Ordine completato nei tempi!');
     }
   } else {
+    // "Non ancora" — riporta a pending solo se non expired
+    if (req.status === 'expired') {
+      showToast('Ok, l\'ordine rimane scaduto.', 3000);
+      overlay = null; render(); return;
+    }
     req.status = 'pending'; delete req.doneAt;
-    showToast('Rimandato — il partner dovrà ripetere!', 4000);
+    showToast('Rimandato — il partner dovrà consegnare di nuovo!', 4000);
   }
   save(S); render();
 }
@@ -2074,12 +2083,28 @@ function renderMyReqCard(rr) {
   if (plainNote) h += '<div style="font-size:.75rem;color:#8b6000;margin-top:5px;font-style:italic">Note: "'+esc(plainNote)+'"</div>';
   h += '<div style="font-size:.72rem;color:var(--muted);margin-top:4px">Data acquisto: '+fmtDt(rr.requestedAt)+'</div>';
   h += '<div style="margin-top:10px;text-align:right"><button style="background:none;border:none;font-size:.75rem;font-weight:700;color:var(--b5);cursor:pointer;font-family:sans-serif;padding:4px 0" data-action="view-order" data-arg="'+esc(rr.id)+'" data-arg2="0">Dettagli ordine →</button></div>';
-  if (s === 'done_confirm') {
-    h += '<div class="confirm-box" style="margin-top:10px;background:#fff;border-radius:8px;padding:10px;border:1px solid #e2d5f0"><p style="font-weight:600;margin-bottom:8px;font-size:.8rem;color:var(--purple)">Il partner ha segnalato l\'ordine come consegnato. Confermi la ricezione?</p>';
-    h += '<div style="display:flex;gap:8px">';
-    h += '<button class="btn btn-d btn-sm" style="flex:1" data-action="confirm-done" data-arg="'+esc(rr.id)+'" data-arg2="no">❌ Non ancora</button>';
-    h += '<button class="btn btn-s btn-sm" style="flex:1" data-action="confirm-done" data-arg="'+esc(rr.id)+'" data-arg2="yes">✅ Ritiro Confermato</button>';
-    h += '</div></div>';
+  // Conferma ricezione: visibile per done_confirm, pending (scaduto) ed expired
+  // Il cliente può SEMPRE confermare la ricezione, indipendentemente dallo stato
+  if (s === 'done_confirm' || s === 'pending' || s === 'expired') {
+    var isPastDl = rr.deadline && Date.now() > new Date(rr.deadline).getTime();
+    var showConfirm = (s === 'done_confirm') || (s === 'expired') || (s === 'pending' && isPastDl);
+    if (showConfirm) {
+      var confirmTitle = s === 'done_confirm'
+        ? 'Il partner ha segnalato l\'ordine come consegnato. Confermi la ricezione?'
+        : s === 'expired'
+        ? 'L\'ordine è scaduto. Se è stato eseguito comunque, puoi confermarlo qui.'
+        : 'Il tempo è scaduto. Il partner ha comunque eseguito il premio? Puoi confermarlo.';
+      var confirmBg   = s === 'expired' ? 'rgba(231,76,60,0.06)' : '#fff';
+      var confirmBorder = s === 'expired' ? '1px solid rgba(231,76,60,0.25)' : '1px solid #e2d5f0';
+      h += '<div class="confirm-box" style="margin-top:10px;background:'+confirmBg+';border-radius:8px;padding:10px;border:'+confirmBorder+'">';
+      h += '<p style="font-weight:600;margin-bottom:8px;font-size:.8rem;color:'+(s==='expired'?'var(--red)':'var(--purple)')+'">'+confirmTitle+'</p>';
+      h += '<div style="display:flex;gap:8px">';
+      if (s !== 'expired') {
+        h += '<button class="btn btn-d btn-sm" style="flex:1" data-action="confirm-done" data-arg="'+esc(rr.id)+'" data-arg2="no">❌ Non ancora</button>';
+      }
+      h += '<button class="btn btn-s btn-sm" style="flex:'+(s==='expired'?'1':'1')+'" data-action="confirm-done" data-arg="'+esc(rr.id)+'" data-arg2="yes">✅ '+(s==='expired'?'Sì, è stato eseguito':'Ritiro Confermato')+'</button>';
+      h += '</div></div>';
+    }
   }
   h += '</div>';
   return h;
@@ -2128,7 +2153,7 @@ function renderExecCard(rr, showBtn) {
     h += '</ul></div>';
   }
   if (plainNote2) h += '<div style="font-size:.75rem;color:#6040a0;margin-bottom:12px;padding:8px;background:rgba(139,94,0,0.05);border-left:3px solid #d8b4e2;font-style:italic">Note: "'+esc(plainNote2)+'"</div>';
-  if (showBtn) h += '<button class="btn btn-p btn-sm" style="width:100%;font-weight:700;letter-spacing:.05em" data-action="mark-done" data-arg="'+esc(rr.id)+'">📦 Contrassegna come Consegnato</button>';
+  // Pulsante 'Contrassegna Consegnato' rimosso — è il cliente a confermare la ricezione
   h += '<div style="margin-top:10px;text-align:right"><button style="background:none;border:none;font-size:.75rem;font-weight:700;color:var(--b5);cursor:pointer;font-family:sans-serif;padding:4px 0" data-action="view-order" data-arg="'+esc(rr.id)+'" data-arg2="1">Dettagli ordine →</button></div>';
   h += '</div>';
   return h;
@@ -2362,8 +2387,19 @@ function renderOrderDetailOverlay() {
   }
   h += '</div>';
 
-  // Close
+  // Actions
+  h += '<div style="display:flex;flex-direction:column;gap:8px">';
+  // If client viewing an expired or done_confirm order — allow confirming
+  if (!isExec && (rr.status === 'expired' || rr.status === 'done_confirm' || (rr.status === 'pending' && rr.deadline && Date.now() > new Date(rr.deadline).getTime()))) {
+    var alreadyPenalised = rr.unfulfilledPenaltyApplied || rr.latePenaltyApplied;
+    if (!alreadyPenalised) {
+      h += '<button class="btn btn-s btn-full" style="font-weight:700" data-action="confirm-done" data-arg="'+esc(rr.id)+'" data-arg2="yes">✅ '+(rr.status==='expired'?'Conferma ricezione (tardiva)':'Conferma ricezione')+'</button>';
+    } else {
+      h += '<button class="btn btn-s btn-full" style="font-weight:700" data-action="confirm-done" data-arg="'+esc(rr.id)+'" data-arg2="yes">✅ Conferma ricezione</button>';
+    }
+  }
   h += '<button class="btn btn-o btn-full" data-action="cancel-overlay">← Chiudi Dettaglio</button>';
+  h += '</div>';
   h += '</div></div>';
   return h;
 }
