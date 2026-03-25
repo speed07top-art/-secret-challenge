@@ -305,7 +305,7 @@
 
     .bnav {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       background: white;
       border-top: 1px solid #e0eaf8;
       flex-shrink: 0;
@@ -2261,9 +2261,7 @@
               }
             }
           }, 1000);
-          // Auto-open as overlay popup
-          overlay = { type: 'activity' };
-          render();
+          
 
         } else if (isGameHour()) {
           // Mini-game
@@ -2279,9 +2277,7 @@
             gameState: initGameState(gt.type)
           };
 
-          // Auto-open as overlay popup
-          overlay = { type: 'activity' };
-          render();
+          
         }
       }
 
@@ -2944,15 +2940,7 @@
         if (tab === 'home') {
           page += renderHomeHeader(me, pts, u);
 
-          if (flashQ && !overlay) {
-            page += '<button class="btn btn-full" style="background:linear-gradient(135deg,#1e3060,#2d4b9e);color:white;padding:14px;border-radius:14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 6px 16px rgba(30,48,160,0.25)" data-action="open-activity">';
-            page += '<div style="text-align:left"><div style="font-size:.68rem;opacity:.7;text-transform:uppercase;font-weight:700;margin-bottom:2px">⚡ Domanda Flash in corso</div><div style="font-size:.9rem;font-weight:700">' + esc(flashQ.q.text.substring(0, 40)) + (flashQ.q.text.length > 40 ? '…' : '') + '</div></div>';
-            page += '<div style="font-size:1.4rem;opacity:.8">▶</div></button>';
-          } else if (miniGame && !overlay) {
-            page += '<button class="btn btn-full" style="background:linear-gradient(135deg,#1e3060,#2d4b9e);color:white;padding:14px;border-radius:14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 6px 16px rgba(30,48,160,0.25)" data-action="open-activity">';
-            page += '<div style="text-align:left"><div style="font-size:.68rem;opacity:.7;text-transform:uppercase;font-weight:700;margin-bottom:2px">' + miniGame.icon + ' Mini-Gioco disponibile</div><div style="font-size:.9rem;font-weight:700">' + esc(miniGame.name) + '</div></div>';
-            page += '<div style="font-size:1.4rem;opacity:.8">▶</div></button>';
-          }
+          
 
           if (toConf.length > 0) {
             page += '<div class="sec-label">🔔 Conferma richiesta (' + toConf.length + ')</div>';
@@ -3014,6 +3002,159 @@
       page += '<div style="text-align:center;font-size:.8rem;color:#b0b4c0;margin-top:24px;margin-bottom:20px">Hai visto tutti i prodotti disponibili</div>';
     }
   }
+        else if (tab === 'giochi') {
+          var hr = new Date().getHours();
+          var nowMs = Date.now();
+          
+          var hTop = '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 20px;">';
+          hTop += '<div style="font-size:1.6rem;font-weight:800;color:#1a1f36;font-family:\'Playfair Display\',serif">Giochi</div>';
+          hTop += '<div class="pts-badge" style="background:#1a2a5e;color:white;font-size:.85rem;padding:6px 12px;border-radius:20px;display:flex;align-items:center;gap:6px"><span style="color:#7eb3f5">🔷</span> '+myPts()+' pt</div>';
+          hTop += '</div>';
+          page += hTop;
+
+          var activeHours = [];
+          var futureHours = [];
+          
+          var todayEpoch = new Date();
+          todayEpoch.setHours(0,0,0,0);
+          var msToday = todayEpoch.getTime();
+
+          ALL_ACTIVITY_HOURS.forEach(function(h) {
+            var slotK = new Date().getFullYear() + '-' + new Date().getMonth() + '-' + new Date().getDate() + '-' + h;
+            var doneK = 'fq_done_' + session + '_' + slotK;
+            var isDone = !!localStorage.getItem(doneK);
+
+            var isQuiz = QUIZ_HOURS.indexOf(h)>=0;
+            var sch = GAME_SCHEDULE[h];
+            
+            var item = { h: h, isDone: isDone, isQuiz: isQuiz, slotK: slotK };
+            
+            if (isQuiz) {
+                item.icon = '⏱️';
+                item.bg = '#e6faed'; // green
+                item.name = 'Domanda Flash';
+                item.desc = 'Una domanda rapida sulla vostra coppia. 30 secondi per rispondere.';
+                item.btnColor = '#1a2a5e';
+            } else if (sch) {
+                item.icon = sch.icon; // e.g. 🎰
+                item.name = sch.name; // Gratta e Vinci
+                // Custom colors based on name like reference
+                if (sch.name.indexOf('Gratta')>=0) {
+                    item.bg = '#fff0eb';
+                    item.desc = 'Scopri cosa si nasconde sotto. Un solo tentativo!';
+                    item.btnColor = '#1a2a5e';
+                    item.liveCol = '#c04020'; 
+                } else if (sch.name.indexOf('Ruota')>=0) {
+                    item.bg = '#f5f0ff';
+                    item.desc = 'Fai girare la ruota e vinci punti, sconti o sfide.';
+                    item.btnColor = '#6c3fc4';
+                    item.liveCol = '#6c3fc4'; 
+                } else if (sch.name.indexOf('Dado')>=0) {
+                    item.bg = '#f0f4fb';
+                    item.desc = 'Lancia il dado e ricevi punti o una sfida di coppia.';
+                    item.btnColor = '#1a2a5e';
+                    item.liveCol = '#378add'; 
+                } else {
+                    item.bg = '#f0f4fb';
+                    item.desc = 'Allinea i simboli e vinci punti extra o bonus shop.';
+                    item.btnColor = '#1a2a5e';
+                    item.liveCol = '#378add'; 
+                }
+            } else {
+                item.icon = '🎮'; item.bg = '#f0f4fb'; item.name = 'Mini-gioco'; item.desc = ''; item.btnColor = '#1a2a5e'; item.liveCol = '#378add';
+            }
+
+            if (!isDone) {
+                if (h === hr) activeHours.push(item);
+                else if (h > hr) futureHours.push(item);
+            }
+          });
+
+          // Sort future hours
+          futureHours.sort(function(a,b) { return a.h - b.h; });
+
+          var renderActiveCard = function(item, action, arg) {
+              var targetMs = msToday + (item.h + 1) * 3600000;
+              var maxMs = 3600000;
+              
+              var h = '<div style="background:#ffffff;border:1px solid #e0eaf8;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 4px 12px rgba(26,42,94,0.03)">';
+              h += '<div style="display:flex;gap:16px;margin-bottom:16px">';
+              h += '<div style="width:54px;height:54px;background:'+item.bg+';border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:2rem;flex-shrink:0">'+item.icon+'</div>';
+              h += '<div style="flex:1">';
+              h += '<div style="display:flex;justify-content:space-between;align-items:center">';
+              h += '<div style="font-size:1.05rem;font-weight:800;color:#1a1f36">'+item.name+'</div>';
+              
+              h += '</div>';
+              h += '<div style="font-size:.75rem;color:#8a8f9e;line-height:1.4;margin-top:4px">'+item.desc+'</div>';
+              h += '</div></div>';
+              
+              h += '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px">';
+              h += '<div>';
+              h += '<div class="cnt-down-timer" data-target="'+targetMs+'" data-max="'+maxMs+'" data-reload="1" style="font-size:1.35rem;font-weight:800;font-family:\'DM Sans\',sans-serif;color:#1a1f36;line-height:1;margin-bottom:2px">00:00:00</div>';
+              h += '<div style="font-size:.6rem;font-weight:700;color:#b0b4c0;text-transform:uppercase;letter-spacing:.05em">RIMASTO</div>';
+              h += '</div>';
+              h += '<button style="background:'+item.btnColor+';color:#ffffff;border:none;padding:10px 16px;border-radius:10px;font-size:.85rem;font-weight:700;cursor:pointer" data-action="'+action+'" data-arg="'+arg+'">Gioca ora →</button>';
+              h += '</div>';
+              
+              h += '<div style="height:4px;background:#e2e5f0;border-radius:2px;overflow:hidden;margin-top:12px">';
+              h += '<div class="cnt-prog-fill" style="height:100%;width:100%;background:'+(item.liveCol||'#1a2a5e')+';border-radius:2px;transition:width 1s linear"></div>';
+              h += '</div>';
+              h += '</div>';
+              return h;
+          };
+
+          var renderFutureCard = function(item) {
+              var diffH = item.h - hr;
+              var targetMs = msToday + item.h * 3600000;
+              var badgeText = 'Tra ' + diffH + 'h 00m'; // Since games start exactly at Top of Hour
+              
+              var h = '<div style="background:#ffffff;border:1px solid #e0eaf8;border-radius:16px;padding:20px;margin-bottom:16px">';
+              h += '<div style="display:flex;gap:16px;margin-bottom:16px">';
+              h += '<div style="width:54px;height:54px;background:'+item.bg+';border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:2rem;flex-shrink:0;opacity:0.7;filter:grayscale(30%)">'+item.icon+'</div>';
+              h += '<div style="flex:1">';
+              h += '<div style="display:flex;justify-content:space-between;align-items:center">';
+              h += '<div style="font-size:1.05rem;font-weight:800;color:#1a1f36">'+item.name+'</div>';
+              
+              h += '</div>';
+              h += '<div style="font-size:.75rem;color:#8a8f9e;line-height:1.4;margin-top:4px">'+item.desc+'</div>';
+              h += '</div></div>';
+              
+              h += '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px">';
+              h += '<div>';
+              h += '<div class="cnt-down-timer" data-target="'+targetMs+'" data-max="0" data-reload="1" style="font-size:1.1rem;font-weight:800;font-family:\'DM Sans\',sans-serif;color:#8a8f9e;line-height:1;margin-bottom:2px">00:00:00</div>';
+              h += '<div style="font-size:.6rem;font-weight:700;color:#b0b4c0;text-transform:uppercase;letter-spacing:.05em">ALL\'ATTIVAZIONE</div>';
+              h += '</div>';
+              h += '<button style="background:#f0f4fb;color:#a0a8be;border:none;padding:10px 16px;border-radius:10px;font-size:.85rem;font-weight:700;cursor:not-allowed" disabled>In attesa</button>';
+              h += '</div>';
+              
+              h += '<div style="height:4px;background:#e2e5f0;border-radius:2px;overflow:hidden;margin-top:12px"></div>';
+              h += '</div>';
+              return h;
+          };
+
+          if (activeHours.length > 0) {
+              page += '<div style="font-size:.75rem;font-weight:800;color:#6b7080;text-transform:uppercase;margin-bottom:12px;letter-spacing:.05em">ATTIVI ORA</div>';
+              activeHours.forEach(function(item) {
+                  var actArg = item.isQuiz ? 'flash' : 'game';
+                  page += renderActiveCard(item, 'open-activity', actArg);
+              });
+          }
+
+          if (futureHours.length > 0) {
+              page += '<div style="font-size:.75rem;font-weight:800;color:#6b7080;text-transform:uppercase;margin-top:24px;margin-bottom:12px;letter-spacing:.05em">IN ARRIVO OGGI</div>';
+              futureHours.forEach(function(item) {
+                  page += renderFutureCard(item);
+              });
+          }
+
+          if (activeHours.length === 0 && futureHours.length === 0) {
+              page += '<div style="text-align:center;color:#8a8f9e;font-size:.9rem;padding:40px 20px;">Tutti i giochi di oggi sono stati completati! Ritorna domani. 🎉</div>';
+          }
+
+          page += '<div style="height:30px"></div>';
+
+          
+        }
         else if (tab === 'execute') {
           window.executeSubTab = window.executeSubTab || 'ricevuti';
           
@@ -3082,15 +3223,11 @@
 
         var ovHtml = overlay ? renderOverlay() : (showOB ? renderOnboarding() : '');
         var h = '<div class="app">';
-        if (tab !== 'home' && tab !== 'shop') {
-          h += '<div class="topbar"><span class="topbar-name">' + esc(pname(me)) + '</span>';
-          h += '<div class="pts-badge">🔷 ' + pts + ' pt</div>';
-          h += '<button class="icon-btn" data-action="logout"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></button></div>';
-        }
         h += '<div class="page' + (tab === 'home' ? ' home-page' : '') + '" ' + (tab === 'home' ? 'style="padding-top:0;display:block"' : '') + '>' + page + '</div>';
         h += '<div class="bnav">';
         h += '<button class="ni' + (tab === 'home' ? ' on' : '') + '" data-action="set-tab" data-arg="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg><span>Home</span></button>';
         h += '<button class="ni' + (tab === 'shop' ? ' on' : '') + '" data-action="set-tab" data-arg="shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg><span>Shop</span></button>';
+        h += '<button class="ni' + (tab === 'giochi' ? ' on' : '') + '" data-action="set-tab" data-arg="giochi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2" ry="2"></rect><line x1="6" y1="12" x2="10" y2="12"></line><line x1="8" y1="10" x2="8" y2="14"></line><circle cx="15" cy="12" r="1"></circle><circle cx="17" cy="10" r="1"></circle></svg><span>Giochi</span></button>';
         h += '<button class="ni' + (tab === 'execute' ? ' on' : '') + '" data-action="set-tab" data-arg="execute" style="position:relative"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg><span>Ordini</span>' + (hasBadge ? '<div class="ni-dot"></div>' : '') + '</button>';
         h += '<button class="ni' + (tab === 'benessere' ? ' on' : '') + '" data-action="set-tab" data-arg="benessere"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78v0z"></path></svg><span>Benessere</span></button>';
         h += '</div>' + ovHtml + (toast ? '<div class="toast">' + toast + '</div>' : '') + '</div>';
@@ -3224,7 +3361,7 @@
         h += '<div style="font-size:.95rem;font-weight:800;color:#1a1f36;margin-bottom:6px">Mini-giochi e quiz</div>';
         h += '<div style="font-size:.75rem;color:var(--muted);line-height:1.4;margin-bottom:16px">Gioca ai divertenti mini-giochi, rispondi ai quiz e accumula punti extra da spendere nello shop.</div>';
         h += '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">';
-        h += '<button style="background:#1a2a5e;color:white;border:none;padding:10px 16px;border-radius:12px;font-size:.8rem;font-weight:700;cursor:pointer" onclick="showToast(\'In arrivo prossimamente!\')">Scopri i giochi →</button>';
+        h += '<button style="background:#1a2a5e;color:white;border:none;padding:10px 16px;border-radius:12px;font-size:.8rem;font-weight:700;cursor:pointer" data-action="set-tab" data-arg="giochi">Scopri i giochi →</button>';
         h += '<div style="font-size:.75rem;color:#6c3fc4;font-weight:800;background:#f4f0ff;padding:6px 10px;border-radius:10px">✦ +pt bonus</div>';
         h += '</div></div></div>';
         return h;
@@ -3268,8 +3405,11 @@
 
         var wCount = 0, mCount = 0, prevMCount = 0;
         var myCount = 0, ptCount = 0;
+        var myMCount = 0, ptMCount = 0;
+        var prevMyMCount = 0;
         var items = {};
         var weeksMap = {};
+        var myWeeksMap = {};
 
         reqs.forEach(function (r) {
           var dStr = r.confirmedAt || r.doneAt || r.ts;
@@ -3281,35 +3421,50 @@
             wCount++;
             if (r.by === me) myCount++; else ptCount++;
           }
-          if (diffDays <= 30) mCount++;
-          else if (diffDays <= 60) prevMCount++;
+          if (diffDays <= 30) {
+              mCount++;
+              if (r.by === me) myMCount++; else ptMCount++;
+          }
+          else if (diffDays <= 60) {
+              prevMCount++;
+              if (r.by === me) prevMyMCount++;
+          }
 
           var wIdx = Math.floor(diffDays / 7);
           weeksMap[wIdx] = (weeksMap[wIdx] || 0) + 1;
+          if (r.by === me) {
+              myWeeksMap[wIdx] = (myWeeksMap[wIdx] || 0) + 1;
+          }
 
           items[r.rewardName || 'Varie'] = true;
         });
 
         var streak = 0;
         if (!weeksMap[0] && weeksMap[1]) {
-          for (var j = 1; j < 52; j++) {
-            if (weeksMap[j] > 0) streak++; else break;
-          }
+          for (var j = 1; j < 52; j++) { if (weeksMap[j] > 0) streak++; else break; }
         } else if (weeksMap[0]) {
-          for (var i = 0; i < 52; i++) {
-            if (weeksMap[i] > 0) streak++;
-            else break;
-          }
+          for (var i = 0; i < 52; i++) { if (weeksMap[i] > 0) streak++; else break; }
+        }
+
+        var myStreak = 0;
+        if (!myWeeksMap[0] && myWeeksMap[1]) {
+          for (var j = 1; j < 52; j++) { if (myWeeksMap[j] > 0) myStreak++; else break; }
+        } else if (myWeeksMap[0]) {
+          for (var i = 0; i < 52; i++) { if (myWeeksMap[i] > 0) myStreak++; else break; }
         }
 
         var trend = mCount - prevMCount;
+        var myTrend = myMCount - prevMyMCount;
         var variety = Object.keys(items).length;
 
         return {
           w: wCount, m: mCount, prevM: prevMCount,
           my: myCount, pt: ptCount,
+          myM: myMCount, ptM: ptMCount,
           streak: streak,
+          myStreak: myStreak,
           trend: trend,
+          myTrend: myTrend,
           variety: variety,
           total: reqs.length
         };
@@ -3318,79 +3473,77 @@
       function renderBenessereTab(me, pt) {
         var xStats = getExtendedBenessereStats(me);
         var wCount = xStats.w;
-        var mCount = xStats.m;
+        var mCount = xStats.myM;
         var totalCount = xStats.total;
 
-        var evalColor, evalTitle, phaseDesc;
+        var h = '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 20px;">';
+        h += '<div style="font-size:1.6rem;font-weight:800;color:#1a1f36;font-family:\'Playfair Display\',serif">Benessere di coppia</div>';
+        h += '<div class="pts-badge" style="background:#1a2a5e;color:white;font-size:.85rem;padding:6px 12px;border-radius:20px;display:flex;align-items:center;gap:6px"><span style="color:#7eb3f5">🔷</span> ' + myPts() + ' pt</div>';
+        h += '</div>';
+
         var trendStr = '';
+        if (xStats.myTrend > 0) trendStr = 'In crescita vs mese scorso';
+        else if (xStats.myTrend < 0) trendStr = 'In calo vs mese scorso';
+        else trendStr = 'Frequenza stabile';
 
-        if (xStats.trend > 0) trendStr = '📈 In crescita vs mese scorso';
-        else if (xStats.trend < 0) trendStr = '📉 In calo vs mese scorso';
-        else trendStr = '⚖️ Frequenza stabile';
+        h += '<div style="font-size:.75rem;font-weight:800;color:#6b7080;text-transform:uppercase;margin-bottom:12px;letter-spacing:.05em">METRICHE DI COSTANZA</div>';
+        h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px">';
 
-        if (wCount === 0 && xStats.streak === 0) {
-          evalColor = '#ffb6c1';
-          evalTitle = 'Fase: Riscoperta 🌱';
-          phaseDesc = 'Ogni periodo di pausa è un\'opportunità straordinaria per sorprendersi a vicenda da zero e creare un impatto emotivo ancora più forte.';
-        } else if (wCount >= 2 && xStats.streak >= 2) {
-          evalColor = '#88ffb0';
-          evalTitle = 'Fase: Luna di Miele Attiva 🍯';
-          phaseDesc = 'Siete in perfetta sintonia ritmica! Continuate a mixare i regali nello Shop per mantenere questa incredibile energia e passione ad altissimi livelli.';
-        } else {
-          evalColor = '#ffcc66';
-          evalTitle = 'Fase: Consolidamento 🤝';
-          phaseDesc = 'State costruendo fondamenta chimiche molto stabili. Usate l\'app per variare la routine, basta una piccolissima sorpresa per svoltare la serata!';
-        }
-
-        var h = '<div class="head" style="margin-bottom:15px"><h2>Benessere di Coppia</h2><p>Dati e insight scientifici sulle vostre affinità</p></div>';
-
-        h += '<div class="sec-label">📊 Metriche di Costanza</div>';
-        h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">';
-
-        h += '<div style="background:var(--surface);border-radius:16px;padding:16px;border:1px solid #e0eaf8;text-align:center">';
-        h += '<div style="font-size:2.2rem;font-weight:800;color:var(--b3);line-height:1;margin-bottom:4px;font-family:\'Playfair Display\',serif">' + mCount + '</div>';
-        h += '<div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase">Ordini 30 Giorni</div>';
-        h += '<div style="font-size:.65rem;color:' + (xStats.trend < 0 ? 'var(--muted)' : 'var(--green)') + ';margin-top:6px">' + trendStr + '</div>';
+        h += '<div style="background:#ffffff;border-radius:16px;padding:16px;border:1px solid #e0eaf8;">';
+        h += '<div style="font-size:1.8rem;font-weight:800;color:#1a1f36;line-height:1;margin-bottom:4px;font-family:\'DM Sans\',sans-serif">' + mCount + '</div>';
+        h += '<div style="font-size:.7rem;font-weight:700;color:#8a8f9e;text-transform:uppercase;margin-bottom:6px">ORDINI ULTIMI 30GG</div>';
+        h += '<div style="font-size:.7rem;font-weight:700;color:' + (xStats.myTrend < 0 ? '#8a8f9e' : '#1a7a4a') + ';">' + trendStr + '</div>';
         h += '</div>';
 
-        h += '<div style="background:var(--surface);border-radius:16px;padding:16px;border:1px solid #e0eaf8;text-align:center">';
-        h += '<div style="font-size:2.2rem;font-weight:800;color:var(--b3);line-height:1;margin-bottom:4px;font-family:\'Playfair Display\',serif">' + xStats.streak + '<span style="font-size:1rem;color:var(--muted);font-family:\'DM Sans\',sans-serif"> sett.</span></div>';
-        h += '<div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase">Streak Consecutivi</div>';
-        var aboveAvg = xStats.streak > 2;
-        h += '<div style="font-size:.65rem;color:' + (aboveAvg ? 'var(--green)' : 'var(--b4)') + ';margin-top:6px">' + (aboveAvg ? 'Sopra la media (+2 sett)' : 'Media coppie simili: 2 sett.') + '</div>';
+        h += '<div style="background:#ffffff;border-radius:16px;padding:16px;border:1px solid #e0eaf8;">';
+        h += '<div style="font-size:1.8rem;font-weight:800;color:#1a1f36;line-height:1;margin-bottom:4px;font-family:\'DM Sans\',sans-serif">' + xStats.streak + '<span style="font-size:1rem;color:#8a8f9e;"> sett.</span></div>';
+        h += '<div style="font-size:.7rem;font-weight:700;color:#8a8f9e;text-transform:uppercase;margin-bottom:6px">STREAK CONSECUTIVI</div>';
+        var aboveAvg = xStats.myStreak > 2;
+        h += '<div style="font-size:.7rem;font-weight:700;color:#b0b4c0;">' + (aboveAvg ? 'Sopra la media (+2 sett)' : 'Media coppie simili: 2 sett.') + '</div>';
         h += '</div>';
         h += '</div>';
 
-        h += '<div style="margin-bottom:24px;background:linear-gradient(135deg,#8a2846,#4a152e);border-radius:24px;padding:24px;color:white;position:relative;overflow:hidden;box-shadow:0 12px 24px rgba(138,40,70,0.15)">';
-        h += '<div style="font-size:.7rem;opacity:.8;text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:6px">Analisi Emotiva</div>';
-        h += '<div style="font-family:\'Playfair Display\',serif;font-size:1.7rem;font-weight:800;color:' + evalColor + ';line-height:1.2;margin-bottom:10px">' + evalTitle + '</div>';
-        h += '<div style="font-size:.85rem;opacity:.95;line-height:1.45;margin-bottom:18px">' + phaseDesc + '</div>';
-        h += '<div style="background:rgba(255,150,180,0.15);padding:12px 14px;border-radius:14px;font-size:.75rem;display:flex;align-items:center;gap:12px">';
-        h += '<span style="font-size:1.6rem">🎯</span> <span style="line-height:1.4"><strong>Sfida di questa settimana:</strong><br/>' + (xStats.variety < 3 ? 'La routine ha preso piede. Osate acquistando un premio completamente esotico che non avete mai provato!' : 'Avete un\'ottima varietà! Provate a piazzare un ordine nel momento più imprevedibile della giornata.') + '</span>';
+        h += '<div style="font-size:.75rem;font-weight:800;color:#6b7080;text-transform:uppercase;margin-bottom:12px;letter-spacing:.05em">ANALISI EMOTIVA</div>';
+        h += '<div style="margin-bottom:24px;background:#1a2a5e;border-radius:16px;padding:20px;color:white;position:relative;box-shadow:0 8px 16px rgba(26,42,94,0.1)">';
+        var phaseDesc = (wCount === 0 && xStats.streak === 0) ? "C\'è un calo nella frequenza degli ordini. E\' un ottimo momento per sorprendersi a vicenda." : ((wCount >= 2 && xStats.streak >= 2) ? "La vostra coppia sta vivendo un momento di esplorazione positiva. La costanza degli ultimi giorni mostra un segnale incoraggiante di connessione." : "La vostra coppia sta mantenendo una buona base. Un piccolo gesto inatteso potrebbe accendere ulteriormente la dinamica.");
+        h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">';
+        h += '<div style="font-size:.9rem;font-weight:700;line-height:1.5;color:#ffffff;max-width:85%">' + phaseDesc + '</div>';
+        h += '<div style="background:rgba(255,255,255,0.1);padding:4px 8px;border-radius:8px;font-size:.7rem;font-weight:700;color:#ffffff">AI</div>';
+        h += '</div>';
+        h += '<div style="display:flex;justify-content:space-between;align-items:center;font-size:.75rem;color:#8fa8d8;border-top:1px solid rgba(255,255,255,0.1);padding-top:12px">';
+        h += '<span>Aggiornato oggi · basato sugli ultimi 7gg</span>';
+        h += '<span style="font-weight:700;cursor:pointer;color:#7eb3f5">Analisi completa →</span>';
         h += '</div>';
         h += '</div>';
 
-        var mood = (xStats.streak >= 2) ? 'Radioso ✨' : ((wCount >= 1) ? 'In Miglioramento 🍃' : 'In cerca di stimoli 💭');
-        var sleep = (wCount >= 2) ? 'Profondo (stima 85%) 💤' : 'Variabile (stima 70%) 🛌';
-        var stress = (mCount >= 4) ? 'Basso, in rilascio 🧘' : 'In moderato accumulo 🔋';
+        var mood = (xStats.streak >= 2) ? 'In miglioramento' : ((wCount >= 1) ? 'Variabile' : 'In calo');
+        var moodCol = (xStats.streak >= 2) ? '#1a7a4a' : ((wCount >= 1) ? '#a06800' : '#c04020');
+        var sleep = (wCount >= 2) ? 'Profondo (85%)' : 'Variabile (70%)';
+        var sleepCol = (wCount >= 2) ? '#1a7a4a' : '#a06800';
+        var stress = (mCount >= 4) ? 'Sotto controllo' : 'In accumulo';
+        var stressCol = (mCount >= 4) ? '#1a7a4a' : '#c04020';
 
-        h += '<div class="sec-label">🧠 Impatto Fisiologico e Sonno (AI est.)</div>';
-        h += '<div style="background:#fff;border-radius:16px;padding:16px 20px;margin-bottom:24px;border:1px solid #e0eaf8">';
+        h += '<div style="font-size:.75rem;font-weight:800;color:#6b7080;text-transform:uppercase;margin-bottom:12px;letter-spacing:.05em">IMPATTO FISIOLOGICO</div>';
+        h += '<div style="background:#ffffff;border-radius:16px;padding:16px;margin-bottom:24px;border:1px solid #e0eaf8">';
 
         h += '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f4f8;padding-bottom:14px;margin-bottom:14px">';
-        h += '<div style="font-size:.85rem;font-weight:600;color:var(--b3)"><span style="margin-right:8px;font-size:1.1rem">🎭</span>Umore di Coppia</div>';
-        h += '<div style="font-size:.8rem;color:var(--b5);font-weight:700">' + mood + '</div>';
+        h += '<div style="font-size:.85rem;font-weight:700;color:#1a1f36;display:flex;align-items:center;gap:10px">';
+        h += '<div style="width:32px;height:32px;background:#f4f6fb;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem">🎭</div> Umore di coppia</div>';
+        h += '<div style="font-size:.85rem;color:' + moodCol + ';font-weight:700">' + mood + '</div>';
         h += '</div>';
 
         h += '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f4f8;padding-bottom:14px;margin-bottom:14px">';
-        h += '<div style="font-size:.85rem;font-weight:600;color:var(--b3)"><span style="margin-right:8px;font-size:1.1rem">⌚</span>Qualità Sonno REM</div>';
-        h += '<div style="font-size:.8rem;color:var(--b5);font-weight:700">' + sleep + '</div>';
+        h += '<div style="font-size:.85rem;font-weight:700;color:#1a1f36;display:flex;align-items:center;gap:10px">';
+        h += '<div style="width:32px;height:32px;background:#f4f6fb;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem">⌚</div> Qualità sonno REM</div>';
+        h += '<div style="font-size:.85rem;color:' + sleepCol + ';font-weight:700">' + sleep + '</div>';
         h += '</div>';
 
-        h += '<div style="display:flex;justify-content:space-between;align-items:center">';
-        h += '<div style="font-size:.85rem;font-weight:600;color:var(--b3)"><span style="margin-right:8px;font-size:1.1rem">📉</span>Livello Cortisolo</div>';
-        h += '<div style="font-size:.8rem;color:var(--b5);font-weight:700">' + stress + '</div>';
+        h += '<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:1px solid #f0f4f8;margin-bottom:10px">';
+        h += '<div style="font-size:.85rem;font-weight:700;color:#1a1f36;display:flex;align-items:center;gap:10px">';
+        h += '<div style="width:32px;height:32px;background:#f4f6fb;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem">🧠</div> Livello cortisolo</div>';
+        h += '<div style="font-size:.85rem;color:' + stressCol + ';font-weight:700">' + stress + '</div>';
         h += '</div>';
+        h += '<div style="font-size:.7rem;color:#b0b4c0;text-align:center;padding-top:4px">Stima basata su dati aggregati · non sostituisce parere medico</div>';
         h += '</div>';
 
         var alignPct = 0;
@@ -3402,32 +3555,29 @@
         }
 
         var alignText = '';
-        if (totalCount === 0) alignText = 'Siete all\'inizio della vostra avventura. Scoprite la gioia di sorprendervi.';
-        else if (alignPct >= 80) alignText = 'Sincronizzazione perfetta! Ognuno dà esattamente ciò che riceve dall\'altro.';
-        else if (alignPct >= 40) alignText = 'Ottima dinamica, ma sembra che uno dei due giochi più in attacco! Chi riequilibrerà i ruoli?';
-        else alignText = 'Dinamica sbilanciata. L\'amore è reciprocità: sorprendi il tuo partner per ringraziarlo!';
+        if (alignPct >= 80) alignText = 'Sincronizzazione perfetta! Ognuno dà esattamente ciò che riceve dall\'altro.';
+        else if (alignPct >= 40) alignText = 'Ottima dinamica, ma un piccolo sforzo in più può parificare le attenzioni!';
+        else alignText = 'Dinamica sbilanciata. Sorprendi il tuo partner per ringraziarlo!';
 
-        h += '<div class="sec-label">💞 Bilancio Relazionale ("Iniziative")</div>';
-        h += '<div style="background:#fff;border-radius:18px;padding:20px;margin-bottom:24px;border:1px solid #e0eaf8">';
+        h += '<div style="font-size:.75rem;font-weight:800;color:#6b7080;text-transform:uppercase;margin-bottom:12px;letter-spacing:.05em">BILANCIO RELAZIONALE</div>';
+        h += '<div style="background:#ffffff;border-radius:16px;padding:20px;margin-bottom:24px;border:1px solid #e0eaf8">';
 
-        h += '<div style="display:flex;align-items:center;gap:18px;margin-bottom:18px">';
-        h += '<div style="width:68px;height:68px;flex-shrink:0;border-radius:50%;background:conic-gradient(var(--b4) ' + alignPct + '%, var(--surface) 0);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.05)">';
-        h += '<div style="width:54px;height:54px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;color:var(--b3)">' + alignPct + '%</div>';
+        h += '<div style="display:flex;align-items:center;gap:18px;margin-bottom:20px">';
+        h += '<div style="width:64px;height:64px;flex-shrink:0;border-radius:50%;background:conic-gradient(#c04020 ' + alignPct + '%, #e2e5f0 0);display:flex;align-items:center;justify-content:center;">';
+        h += '<div style="width:52px;height:52px;background:#ffffff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:800;color:#1a1f36">' + alignPct + '%</div>';
         h += '</div>';
         h += '<div style="flex:1">';
-        h += '<div style="font-size:.9rem;font-weight:800;color:var(--b3);margin-bottom:4px">Indice Allineamento</div>';
-        h += '<div style="font-size:.72rem;color:var(--muted);line-height:1.45">' + alignText + '</div>';
+        h += '<div style="font-size:.95rem;font-weight:800;color:#1a1f36;margin-bottom:4px">Indice di allineamento</div>';
+        h += '<div style="font-size:.75rem;color:#8a8f9e;line-height:1.4">' + alignText + '</div>';
         h += '</div>';
         h += '</div>';
 
-        h += '<div style="background:linear-gradient(to right, rgba(235,240,255,0.8), rgba(240,230,250,0.8));border-radius:14px;padding:14px;display:flex;justify-content:space-between;align-items:center;border:1px solid #e2dcf4">';
-        h += '<div style="font-size:.75rem;color:var(--b3);font-weight:700">Traguardo in corso</div>';
         var nextTarget = (Math.floor(xStats.total / 10) + 1) * 10;
         var left = nextTarget - xStats.total;
-        if (xStats.total === 0) h += '<div style="font-size:.75rem;color:var(--purple);font-weight:800">1° ordine insieme! 🔥</div>';
-        else h += '<div style="font-size:.75rem;color:var(--purple);font-weight:800">Mancano ' + left + ' ai ' + nextTarget + ' ordini!</div>';
+        h += '<div style="background:#f4f6fb;border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center">';
+        h += '<div style="font-size:.8rem;color:#6b7080;font-weight:600">Traguardo in corso</div>';
+        h += '<div style="font-size:.8rem;color:#6c3fc4;font-weight:800">' + (xStats.total===0 ? '1° ordine insieme!' : 'Mancano ' + left + ' ai ' + nextTarget + ' ordini') + '</div>';
         h += '</div>';
-
         h += '</div>';
 
         var myW = 0, ptW = 0;
@@ -3444,82 +3594,74 @@
         });
 
         var thresholds = [0, 3, 5, 7, 10, 14];
+        var lvls = [
+          { name: 'Esplorazione', range: '0-2 ordini/settimana' },
+          { name: 'Germoglio', range: '3-4 ordini/settimana' },
+          { name: 'Scintilla', range: '5-6 ordini/settimana' },
+          { name: 'Fiamma', range: '7-9 ordini/settimana' },
+          { name: 'Cristallo', range: '10-13 ordini/settimana' },
+          { name: 'Leggenda', range: '14+ ordini/settimana' }
+        ];
+
         var myLvlId = 0, ptLvlId = 0;
         for (var i = 5; i >= 0; i--) if (myW >= thresholds[i]) { myLvlId = i; break; }
         for (var i = 5; i >= 0; i--) if (ptW >= thresholds[i]) { ptLvlId = i; break; }
 
-        var lvls = [
-          { id: 0, name: 'Esplorazione', range: '0-2 ordini/settimana', sub: 'Inizia il viaggio', icon: '☁️', color: '#95a5a6', bg: '#f4f6f7', badges: [{ t: 'Sblocca Lv 1 con 3 ordini', c: '#f4f6f7', tc: '#7f8c8d', bc: '#d0d0d0' }], prog: 0 },
-          { id: 1, name: 'Germoglio', range: '3-4 ordini/settimana', sub: '≈ 1 ogni 2 giorni', icon: '🌱', color: '#2ecc71', bg: '#edfbf3', badges: [{ t: 'Soglia minima', c: '#edfbf3', tc: '#1a9e50', bc: '#a9dfbf' }, { t: 'Streak 1+ settimana', c: '#edfbf3', tc: '#1a9e50', bc: '#a9dfbf' }, { t: 'Varietà bassa', c: '#f0f4f8', tc: '#4a6080', bc: '#d0daf0' }], prog: 20 },
-          { id: 2, name: 'Scintilla', range: '5-6 ordini/settimana', sub: 'quasi 1 al giorno', icon: '⚡', color: '#8b5cf6', bg: '#f5f0ff', badges: [{ t: 'Sopra la media', c: '#f5f0ff', tc: '#6d28d9', bc: '#d7bde2' }, { t: 'Streak 2+ settimane', c: '#f5f0ff', tc: '#6d28d9', bc: '#d7bde2' }, { t: 'IgA in crescita', c: '#edfbf3', tc: '#1a9e50', bc: '#a9dfbf' }], prog: 40 },
-          { id: 3, name: 'Fiamma', range: '7-9 ordini/settimana', sub: '1 al giorno o più', icon: '🔥', color: '#f39c12', bg: '#fdf3e6', badges: [{ t: 'Top 20% coppie IT', c: '#fdf3e6', tc: '#b9770e', bc: '#f5cba7' }, { t: 'Streak 4+ settimane', c: '#fdf3e6', tc: '#b9770e', bc: '#f5cba7' }, { t: 'Cortisolo ridotto', c: '#f5f0ff', tc: '#6d28d9', bc: '#d7bde2' }], prog: 60 },
-          { id: 4, name: 'Cristallo', range: '10-13 ordini/settimana', sub: 'media 1,5/giorno', icon: '💎', color: '#e74c3c', bg: '#fdedec', badges: [{ t: 'Top 10% coppie IT', c: '#fdedec', tc: '#c0392b', bc: '#f5b7b1' }, { t: 'Streak 8+ settimane', c: '#fdedec', tc: '#c0392b', bc: '#f5b7b1' }, { t: 'Varietà alta', c: '#fdf3e6', tc: '#b9770e', bc: '#f5cba7' }], prog: 80 },
-          { id: 5, name: 'Leggenda', range: '14+ ordini/settimana', sub: '2+ al giorno', icon: '👑', color: '#3a5ca8', bg: '#f0f5ff', badges: [{ t: 'Top 5% coppie IT', c: '#f0f5ff', tc: '#1e3060', bc: '#a9cce3' }, { t: 'Ossitocina massima', c: '#edfbf3', tc: '#1a9e50', bc: '#a9dfbf' }, { t: 'Streak 12+ settimane', c: '#fdf3e6', tc: '#b9770e', bc: '#f5cba7' }, { t: 'Varietà premium', c: '#fdedec', tc: '#c0392b', bc: '#f5b7b1' }], prog: 100 }
-        ];
+        h += '<div style="font-size:.75rem;font-weight:800;color:#6b7080;text-transform:uppercase;margin-bottom:12px;letter-spacing:.05em">LIVELLO DI ATTIVITÀ</div>';
 
-        h += '<div class="lvl-wrap">';
-        h += '<div class="sec-label" style="text-transform:uppercase;color:var(--muted)">Il Tuo Livello di Attività</div>';
+        // Helper func to render a level card
+        function renderLvlCard(userIsMe, nameStr, wCount, lvlId) {
+            var lInfo = lvls[lvlId];
+            var nextLInfo = lvlId < 5 ? lvls[lvlId + 1] : lvls[5];
+            var left = lvlId < 5 ? thresholds[lvlId + 1] - wCount : 0;
+            var pct = 100;
+            if (lvlId < 5) {
+                var range = thresholds[lvlId + 1] - thresholds[lvlId];
+                if(lvlId === 0) { range = 3; pct = Math.round((wCount/3)*100); }
+                else { pct = Math.round(((wCount - thresholds[lvlId]) / range) * 100); }
+            }
+            
+            var border = userIsMe ? '2px solid #1a2a5e' : '1px solid #e0eaf8';
+            var opacity = userIsMe ? '1' : '0.9';
+            var progCol = '#1a2a5e';
+            var trackCol = '#e2e5f0';
+            var badgeBg = '#f0f4fb';
+            var badgeCol = '#1a2a5e';
 
-        var lMe = lvls[myLvlId];
-        h += '<div class="lvl-card active">';
-        h += '<div class="lvl-header"><div class="lvl-icon" style="color:' + lMe.color + ';border:2px solid ' + lMe.color + ';background:' + lMe.bg + '">' + lMe.icon + '</div>';
-        h += '<div class="lvl-info"><div class="lvl-title">Livello ' + (lMe.id > 0 ? lMe.id : 'base') + ' — ' + lMe.name + '</div><div class="lvl-sub">' + lMe.range + ' · ' + lMe.sub + '</div>';
-        h += '<div class="lvl-badges">';
-        lMe.badges.forEach(function (b) {
-          h += '<span class="lvl-badge" style="background:' + b.c + ';color:' + b.tc + ';border-color:' + b.bc + '">' + b.t + '</span>';
-        });
-        h += '</div></div></div>';
+            var str = '<div style="background:#ffffff;border:'+border+';border-radius:16px;padding:16px;margin-bottom:14px;opacity:'+opacity+'">';
+            
+            str += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">';
+            str += '<div style="display:flex;align-items:center;gap:12px">';
+            str += '<div style="width:40px;height:40px;background:#e2e5f0;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#6b7080;font-size:1.2rem">👤</div>';
+            str += '<div><div style="font-size:.95rem;font-weight:800;color:#1a1f36;margin-bottom:2px">'+esc(nameStr)+'</div>';
+            str += '<div style="font-size:.75rem;color:#8a8f9e">'+lInfo.range+'</div></div>';
+            str += '</div>';
+            str += '<div style="background:'+badgeBg+';color:'+badgeCol+';padding:4px 10px;border-radius:12px;font-size:.7rem;font-weight:800">Lv '+lvlId+' — '+lInfo.name+'</div>';
+            str += '</div>';
 
-        if (myLvlId < 5) {
-          var nextL = lvls[myLvlId + 1];
-          var left = thresholds[myLvlId + 1] - myW;
-          var pct = Math.round(((myW - thresholds[myLvlId]) / (thresholds[myLvlId + 1] - thresholds[myLvlId])) * 100);
-          if (myLvlId === 0) pct = Math.round((myW / 3) * 100);
-          h += '<div class="lvl-prog-track" style="margin-bottom:8px;height:6px"><div class="lvl-prog-fill" style="width:' + pct + '%;background:' + lMe.color + '"></div></div>';
-          h += '<div style="font-size:.78rem;color:var(--b4);text-align:right">🚀 Fai altri <strong>' + left + ' ' + (left == 1 ? 'ordine' : 'ordini') + '</strong> per sbloccare <strong>Lv ' + (myLvlId + 1) + ' ' + nextL.name + '</strong>!</div>';
-        } else {
-          h += '<div class="lvl-prog-track" style="margin-bottom:8px;height:6px"><div class="lvl-prog-fill" style="width:100%;background:' + lMe.color + '"></div></div>';
-          h += '<div style="font-size:.78rem;color:var(--b4);text-align:right">Hai raggiunto il livello massimo! 👑</div>';
+            str += '<div style="height:6px;background:'+trackCol+';border-radius:3px;margin-bottom:10px;overflow:hidden">';
+            str += '<div style="height:100%;width:'+pct+'%;background:'+progCol+';border-radius:3px"></div>';
+            str += '</div>';
+
+            if (lvlId < 5) {
+                var bottomText = userIsMe ? 'Fai altri '+left+' ordini per sbloccare Lv '+(lvlId+1)+' — '+nextLInfo.name : 'Sblocca Lv '+(lvlId+1)+' con '+thresholds[lvlId + 1]+' ordini';
+                var textCol = userIsMe ? '#6c3fc4' : '#8a8f9e';
+                str += '<div style="font-size:.75rem;font-weight:'+(userIsMe?'700':'600')+';color:'+textCol+'">'+bottomText+'</div>';
+            } else {
+                str += '<div style="font-size:.75rem;font-weight:600;color:#8a8f9e">Livello massimo raggiunto!</div>';
+            }
+            str += '</div>';
+            return str;
         }
-        h += '</div>';
 
-        h += '<div class="sec-label" style="text-transform:uppercase;color:var(--muted);margin-top:20px">Livello di ' + esc(pname(pt)) + '</div>';
-        var lPt = lvls[ptLvlId];
-        h += '<div class="lvl-card" style="opacity:0.95">';
-        h += '<div class="lvl-header" style="margin-bottom:8px"><div class="lvl-icon" style="color:' + lPt.color + ';border:2px solid ' + lPt.color + ';background:' + lPt.bg + '">' + lPt.icon + '</div>';
-        h += '<div class="lvl-info"><div class="lvl-title">Livello ' + (lPt.id > 0 ? lPt.id : 'base') + ' — ' + lPt.name + '</div><div class="lvl-sub" style="margin-bottom:4px">' + lPt.range + '</div>';
-        h += '<div class="lvl-badges">';
-        lPt.badges.forEach(function (b) {
-          h += '<span class="lvl-badge" style="background:' + b.c + ';color:' + b.tc + ';border-color:' + b.bc + '">' + b.t + '</span>';
-        });
-        h += '</div></div></div>';
+        // Always show Stefano first as reference (or whoever `me` is? Reference shows Stefano top, Giulia bottom. Let's do `me` top, `pt` bottom).
+        h += renderLvlCard(true, pname(me), myW, myLvlId);
+        h += renderLvlCard(false, pname(pt), ptW, ptLvlId);
 
-        if (ptLvlId < 5) {
-          var ptPct = Math.round(((ptW - thresholds[ptLvlId]) / (thresholds[ptLvlId + 1] - thresholds[ptLvlId])) * 100);
-          if (ptLvlId === 0) ptPct = Math.round((ptW / 3) * 100);
-          h += '<div class="lvl-prog-track"><div class="lvl-prog-fill" style="width:' + ptPct + '%;background:' + lPt.color + '"></div></div>';
-        } else {
-          h += '<div class="lvl-prog-track"><div class="lvl-prog-fill" style="width:100%;background:' + lPt.color + '"></div></div>';
-        }
-        h += '</div>';
-
-        h += '</div>';
-
-        var month = new Date().getMonth();
-        var seasonText = '';
-        if (month >= 2 && month <= 4) seasonText = '🌸 <strong>Primavera Rivelata:</strong> Le energie si risvegliano naturalmente, ottimo momento per alzare i battiti ed esplorare nuove sfaccettature della coppia.';
-        else if (month >= 5 && month <= 7) seasonText = '☀️ <strong>Calore Estivo:</strong> Le alte temperature serali possono indurre inerzia fisiologica. Sfruttate le fresche mattinate del weekend!';
-        else if (month >= 8 && month <= 10) seasonText = '🍂 <strong>Autunno Romantico:</strong> Con i primi freddi, la ricerca neurologica di calore umano e coccole si impenna. Assecondate questo istinto formidabile.';
-        else seasonText = '❄️ <strong>Rifugio Invernale:</strong> Il sistema immunitario viene provato. È scientificamente provato che i momenti di vicinanza creano i perfetti anticorpi emotivi e fisici.';
-
-        h += '<div style="text-align:center;padding:10px 20px 30px">';
-        h += '<div style="font-size:.7rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:700;margin-bottom:10px">Insight Stagionale del Mese</div>';
-        h += '<div style="font-size:.78rem;color:var(--b4);line-height:1.5">' + seasonText + '</div>';
-        h += '</div>';
+        h += '<div style="height:20px"></div>';
 
         return h;
-      }
-
+}
       function renderMandatoryAlert() {
         return '<div class="mandatory-alert"><h4>⚠️ Fai un nuovo ordine!</h4><p>Sono passati 3+ giorni dall\'ultimo acquisto. Se non spendi i tuoi punti oggi, perdi 500 punti per inattività commerciale.<br>Vai allo <strong>Shop</strong>.</p></div>';
       }
@@ -3541,12 +3683,12 @@
 
       function renderWellnessWidget(me) {
         var xStats = getExtendedBenessereStats(me);
-        var streak = xStats.streak;
-        var mCount = xStats.m;
+        var streak = xStats.myStreak;
+        var mCount = xStats.myM;
 
         var thresholds = [0, 3, 5, 7, 10, 14];
         var lvls = ['Esplorazione', 'Germoglio', 'Scintilla', 'Fiamma', 'Cristallo', 'Leggenda'];
-        var myW = xStats.w;
+        var myW = xStats.my;
         var lvlId = 0;
         for (var i = 5; i >= 0; i--) if (myW >= thresholds[i]) { lvlId = i; break; }
 
@@ -3918,6 +4060,20 @@ function renderShopItem(r, pts) {
         });
         h += '</div></div>';
 
+        h += '<div style="margin-bottom:24px">';
+        h += '<div style="font-size:.7rem;font-weight:800;color:#8a8f9e;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">PRODOTTO ORDINATO</div>';
+        h += '<div style="display:flex;align-items:center;gap:16px;background:#f8faff;padding:16px;border-radius:16px;border:1px solid #e0eaf8">';
+        h += '<div style="font-size:2.2rem;line-height:1">' + esc(rr.emoji || '🎁') + '</div>';
+        h += '<div style="flex:1"><div style="font-size:1.05rem;font-weight:800;color:#1a1f36;margin-bottom:4px;font-family:\'Playfair Display\',serif">' + esc(rr.name) + '</div>';
+        var prodDesc = rr.desc || (function() {
+          var rw = S.rewards.filter(function(r){ return r.name === rr.name; })[0];
+          return rw ? (rw.desc || '') : '';
+        })();
+        if (prodDesc) {
+          h += '<div style="font-size:.8rem;color:#8a8f9e;line-height:1.4;margin-top:2px">' + esc(prodDesc) + '</div>';
+        }
+        h += '</div></div></div>';
+
         var premiumList = rr.premium && rr.premium.length > 0 ? rr.premium : (rr.note && rr.note.indexOf('[PREMIUM:') === 0 ? rr.note.replace('[PREMIUM: ', '').replace(']', '').split(', ') : []);
         if (premiumList.length > 0) {
           h += '<div style="margin-bottom:24px;padding:16px;background:#ffffff;border-radius:16px;border:1.5px dashed #b0bcd8">';
@@ -3952,7 +4108,7 @@ function renderShopItem(r, pts) {
         h += '<div style="font-size:.9rem;color:#e8edf8;margin-bottom:24px;line-height:1.4;font-weight:500">' + (isDone ? 'Questo ordine ha contribuito ai tuoi indicatori di benessere nella settimana in corso.' : 'Indicatori stimati attivi da quando hai effettuato l\'ordine.') + '</div>';
 
         var metrics = [
-          { label: 'Scudo immunitario (IgA)', pct: igaPct, color: '#7ee8b0', barBg: 'rgba(255,255,255,0.15)' },
+          { label: 'Scudo immunitario (IgA)', pct: igaPct, color: '#7ee8b0', barBg: 'rgba(255,255,255,0.15)' },,
           { label: 'Riduzione cortisolo', pct: cortPct, color: '#7ee8b0', barBg: 'rgba(255,255,255,0.15)' },
           { label: 'Sincronizzazione coppia', pct: syncPct, color: '#f8c97a', barBg: 'rgba(255,255,255,0.15)' },
           { label: 'Rilascio ossitocina', pct: oxPct, color: '#f8c97a', barBg: 'rgba(255,255,255,0.15)' }
@@ -4248,6 +4404,40 @@ function renderShopItem(r, pts) {
         checkPenaltyWarning();
         checkFlashQuestion();
       }, 10000);
+
+      setInterval(function() {
+        var els = document.querySelectorAll(".cnt-down-timer");
+        if (!els.length) return;
+        var now = Date.now();
+        els.forEach(function(el) {
+          var target = parseInt(el.getAttribute("data-target"), 10);
+          var diff = target - now;
+          if (diff <= 0) {
+            if (el.getAttribute("data-reload")==="1") { 
+                el.setAttribute("data-reload","0"); 
+                setTimeout(function(){ if(typeof render==="function") render(); }, 1000); 
+            }
+            el.innerHTML = "00:00:00";
+            var prnt = el.parentElement.parentElement.nextElementSibling;
+            var bar2 = prnt ? prnt.firstElementChild : null;
+            if (bar2 && bar2.classList.contains("cnt-prog-fill")) {
+               bar2.style.width = "0%";
+            }
+          } else {
+            var hd = Math.floor(diff / 3600000);
+            var md = Math.floor((diff % 3600000) / 60000);
+            var sd = Math.floor((diff % 60000) / 1000);
+            el.innerHTML = (hd<10?"0":"")+hd+":"+(md<10?"0":"")+md+":"+(sd<10?"0":"")+sd;
+            var prnt = el.parentElement.parentElement.nextElementSibling;
+            var bar2 = prnt ? prnt.firstElementChild : null;
+            var max = parseInt(el.getAttribute("data-max"), 10);
+            if (max > 0 && bar2 && bar2.classList.contains("cnt-prog-fill")) {
+               var pct = Math.max(0, Math.min(100, (diff / max) * 100));
+               bar2.style.width = pct + "%";
+            }
+          }
+        });
+      }, 1000);
 
       function svgHeart() { return '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>'; }
 
