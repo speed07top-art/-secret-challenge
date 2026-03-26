@@ -3056,7 +3056,7 @@
         else if (tab === 'shop') {
     var hTop = '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 20px;">';
     hTop += '<div style="font-size:1.8rem;font-weight:800;color:#1a1f36;font-family:\'Inter\',sans-serif;letter-spacing:-0.5px">Shop</div>';
-    hTop += '<div class="pts-badge" style="background:#1a2a5e;color:white;font-size:.9rem;font-weight:800;padding:6px 14px;border-radius:20px;display:flex;align-items:center;gap:6px"><span style="color:#7eb3f5;font-size:1.1em">♦</span> '+pts+' pt</div>';
+    hTop += '<div class="pts-badge" style="background:#1a2a5e;color:white;font-size:.9rem;font-weight:800;padding:6px 14px;border-radius:20px;display:flex;align-items:center;gap:6px"><span style="color:#7eb3f5;font-size:1.1em">♦&#xFE0E;</span> '+pts+' pt</div>';
     hTop += '</div>';
     page += hTop;
 
@@ -3416,11 +3416,11 @@
           h += '<div style="font-size:2rem;margin-bottom:10px">' + (fs.emoji || '🎁') + '</div>';
           h += '<div style="font-size:.85rem;font-weight:800;color:#1a1f36;margin-bottom:4px;line-height:1.2;flex-shrink:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + esc(fs.name) + '</div>';
           h += '<div style="font-size:.7rem;color:#b0b4c0;line-height:1.3;margin-bottom:10px;flex:1;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">' + esc(descText) + '</div>';
-          var wPtsStr = fs.ptb ? ('<div style="font-size:.7rem;font-weight:700;color:#1a9e50;margin-top:2px;display:flex;align-items:center;gap:4px"><span>♥️</span> +'+fs.ptb+' pt benessere</div>') : '';
+          var wPtsStr = fs.ptb ? ('<div style="font-size:.7rem;font-weight:700;color:#1a9e50;margin-top:2px;display:flex;align-items:center;gap:4px"><span>♥&#xFE0E;</span> +'+fs.ptb+' pt benessere</div>') : '';
           
           h += '<div style="display:flex;flex-direction:column;margin-bottom:12px">';
           h += '<div style="display:flex;align-items:center;gap:6px">';
-          h += '<div style="font-size:1.05rem;font-weight:800;color:#1a1f36"><span style="color:#7eb3f5">♦</span> ' + dscCost + ' pt</div>';
+          h += '<div style="font-size:1.05rem;font-weight:800;color:#1a1f36"><span style="color:#7eb3f5">♦&#xFE0E;</span> ' + dscCost + ' pt</div>';
           h += '<div style="font-size:.7rem;color:#b0b4c0;text-decoration:line-through">' + fs.cost + '</div>';
           h += '</div>';
           h += wPtsStr;
@@ -3794,7 +3794,7 @@ function renderShopItem(r, pts) {
   var finalCost = dscPct ? Math.floor(r.cost * (1 - dscPct)) : r.cost;
   var canAfford = pts >= finalCost;
   
-  var wPtsStr = r.ptb ? ('<div style="font-size:.7rem;font-weight:700;color:#1a9e50;margin-top:2px;display:flex;align-items:center;gap:4px"><span>♥️</span> +'+r.ptb+' pt benessere</div>') : '';
+  var wPtsStr = r.ptb ? ('<div style="font-size:.7rem;font-weight:700;color:#1a9e50;margin-top:2px;display:flex;align-items:center;gap:4px"><span>♥&#xFE0E;</span> +'+r.ptb+' pt benessere</div>') : '';
   
   var myWPts = getBenesserePts(session);
   var myLvl = getWellnessLevel(myWPts);
@@ -3830,7 +3830,7 @@ function renderShopItem(r, pts) {
   h += '<div style="display:flex;flex-direction:column">';
   // Cost
   h += '<div style="display:flex;align-items:center;gap:6px">';
-  h += '<div style="font-size:1.05rem;font-weight:800;color:#1a1f36"><span style="color:#7eb3f5">♦</span> '+finalCost+' pt</div>';
+  h += '<div style="font-size:1.05rem;font-weight:800;color:#1a1f36"><span style="color:#7eb3f5">♦&#xFE0E;</span> '+finalCost+' pt</div>';
   if (dscPct) {
     h += '<div style="font-size:.7rem;color:#b0b4c0;text-decoration:line-through">'+r.cost+'</div>';
   }
@@ -4126,7 +4126,7 @@ function renderShopItem(r, pts) {
         if (pEarned > 0) {
           h += '<div style="margin-bottom:24px;background:#eefdf3;border:1px dashed #75d49a;border-radius:12px;padding:12px;text-align:center">';
           h += '<div style="font-size:.7rem;color:#1a9e50;font-weight:800;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">PUNTI GUADAGNATI</div>';
-          h += '<div style="font-size:1.2rem;color:#1a9e50;font-weight:900">♥️ +' + pEarned + ' pt benessere</div>';
+          h += '<div style="font-size:1.2rem;color:#1a9e50;font-weight:900">♥&#xFE0E; +' + pEarned + ' pt benessere</div>';
           h += '</div>';
         }
 
@@ -4368,7 +4368,7 @@ function renderShopItem(r, pts) {
           body += '<div class="acard"><h3>🎁 Premi (' + rs.length + ')</h3><div class="alist">';
           if (!rs.length) body += '<div style="color:#4a6080;font-size:.8rem">Nessun premio.</div>';
           else rs.forEach(function (r) {
-            body += '<div class="aitem"><div><h4>' + (r.emoji || '🎁') + ' ' + esc(r.name) + '</h4><p><span class="chip ' + (r.partner === 'both' ? 'cb' : r.partner === 'giulia' ? 'cg' : 'cs') + '">' + r.partner + '</span> · 🔷 ' + r.cost + ' pt · 📂 ' + (r.cat || 'Per te') + ' · 🔒 Lv ' + (r.reqLvl || 0) + (r.ptb?' · ♥️ +'+r.ptb+' pt':'') + (r.desc ? '<br><span style="color:#8a8f9e">' + esc(r.desc) + '</span>' : '') + '</p></div>';
+            body += '<div class="aitem"><div><h4>' + (r.emoji || '🎁') + ' ' + esc(r.name) + '</h4><p><span class="chip ' + (r.partner === 'both' ? 'cb' : r.partner === 'giulia' ? 'cg' : 'cs') + '">' + r.partner + '</span> · 🔷 ' + r.cost + ' pt · 📂 ' + (r.cat || 'Per te') + ' · 🔒 Lv ' + (r.reqLvl || 0) + (r.ptb?' · ♥&#xFE0E; +'+r.ptb+' pt':'') + (r.desc ? '<br><span style="color:#8a8f9e">' + esc(r.desc) + '</span>' : '') + '</p></div>';
             body += '<div style="display:flex;gap:6px"><button class="abtn" data-action="edit-r" data-arg="' + esc(r.id) + '">✏️</button><button class="adel" data-action="del-r" data-arg="' + esc(r.id) + '">🗑</button></div></div>';
           });
           body += '</div></div>';
