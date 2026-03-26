@@ -3029,7 +3029,17 @@
 
           page += renderWellnessWidget(me);
           page += renderFlashSaleWidget();
-          page += renderLastOrderWidget(myReqs);
+          
+          var lastOrderTarget = null;
+          if (toExec.length > 0) {
+            lastOrderTarget = toExec[toExec.length - 1];
+          } else if (S.requests.length > 0) {
+            lastOrderTarget = S.requests[S.requests.length - 1];
+          }
+          if (lastOrderTarget) {
+            page += renderLastOrderWidget(lastOrderTarget);
+          }
+          
           page += renderGamesCTA();
 
           if (showHistory) {
@@ -3422,10 +3432,8 @@
         return h;
       }
 
-      function renderLastOrderWidget(myReqs) {
-        var allMe = myReqs.slice().reverse();
-        if (allMe.length === 0) return '';
-        var lr = allMe[0];
+      function renderLastOrderWidget(lr) {
+        if (!lr) return '';
 
         var s = lr.status;
         var bc = s === 'pending' ? 'badge-wait' : s === 'done' ? 'badge-ok' : s === 'done_confirm' ? 'badge-conf' : 'badge-exp';
