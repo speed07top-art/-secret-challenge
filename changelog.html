@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Novità Secret Challenge 🚀</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #070d1f;                    /* Sfondo Scuro App */
+            --card-navy: #1a2a5e;            /* Navy Blue (Shop/Alerts) */
+            --card-purple: #5c2d6e;          /* Purple (Wellness/Couple) */
+            --primary: #7eb3f5;              /* Light Blue (Gems/Link) */
+            --secondary: #d4a8e8;            /* Lavender (Wellness Label) */
+            --text-main: #f5eaff;            /* White-ish Text */
+            --text-muted: #8a8f9e;            /* Gray Muted Text */
+            --success: #1a9e50;              /* App Success Green */
+            --warning: #fcd34d;              /* App Level Yellow */
+            --accent: #5c2d6e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(160deg, #070d1f, #0e1933);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 24px 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-top: 20px;
+        }
+
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 12px;
+            display: inline-block;
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #fff, #7eb3f5);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: rgba(126, 179, 245, 0.15);
+            color: var(--primary);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Changelog Sections */
+        .section {
+            background: var(--card-navy);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .section.wellness {
+            background: var(--card-purple);
+        }
+
+        .section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--primary);
+        }
+
+        .section.wellness::before { background: var(--secondary); }
+        .section.shop::before { background: var(--success); }
+        .section.ux::before { background: var(--warning); }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .section-icon {
+            font-size: 1.5rem;
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            font-weight: 800;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        li {
+            margin-bottom: 16px;
+            padding-left: 28px;
+            position: relative;
+            font-size: 0.95rem;
+        }
+
+        li::before {
+            content: '✦';
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .wellness li::before { color: var(--secondary); }
+        .shop li::before { color: var(--success); }
+        .ux li::before { color: var(--warning); }
+
+        .feature-title {
+            display: block;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+
+        .feature-desc {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* Highlight box */
+        .highlight {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 12px;
+            border: 1px dashed var(--secondary);
+        }
+
+        .highlight-text {
+            font-size: 0.85rem;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-bottom: 20px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: var(--primary);
+            color: #070d1f;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 16px;
+            font-weight: 800;
+            font-size: 1rem;
+            box-shadow: 0 4px 15px rgba(126, 179, 245, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .cta-button:active {
+            transform: scale(0.96);
+        }
+
+        .small-print {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">🔷</div>
+            <h1>Secret Challenge</h1>
+            <p class="subtitle">Scopri le novità dell'ultimo aggiornamento</p>
+            <div class="version-badge">Versione 2.0 • Points & Wellness</div>
+        </header>
+
+        <!-- SHOP -->
+        <div class="section shop">
+            <div class="section-header">
+                <span class="section-icon">🛍️</span>
+                <h2>Nuovo Shop & Categorie</h2>
+            </div>
+            <ul>
+                <li>
+                    <span class="feature-title">Navigazione rapida</span>
+                    <span class="feature-desc">Lo shop è ora diviso in 3 comode categorie: <b>Stuzzicherie</b>, <b>Per te</b> e <b>Di coppia</b>. Trova subito quello che cerchi!</span>
+                </li>
+                <li>
+                    <span class="feature-title">Prodotti Sbloccabili</span>
+                    <span class="feature-desc">Alcuni premi esclusivi richiedono un certo Livello Benessere per essere acquistati. Sali di livello per vederli tutti!</span>
+                </li>
+                <li>
+                    <span class="feature-title">Flash Sales</span>
+                    <span class="feature-desc">Ogni 5 ore trovi 3 prodotti scontati in Home. Solo per i più veloci!</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- WELLNESS -->
+        <div class="section wellness">
+            <div class="section-header">
+                <span class="section-icon">💜</span>
+                <h2>Livelli Benessere 2.0</h2>
+            </div>
+            <ul>
+                <li>
+                    <span class="feature-title">Sistema a Punti</span>
+                    <span class="feature-desc">Dimentica i calcoli complessi. Ogni ordine effettuato ti regala <b>Punti Benessere</b>. Più punti accumuli, più sali di livello.</span>
+                </li>
+                <li>
+                    <span class="feature-title">I 6 Livelli</span>
+                    <span class="feature-desc">Da <i>Esplorazione</i> a <i>Leggenda</i>. Qual è il vostro traguardo oggi?</span>
+                </li>
+                <li>
+                    <span class="feature-title">Decadimento & Costanza</span>
+                    <span class="feature-desc">Il benessere va coltivato! Di lunedì i punti si dimezzano, e se non fai acquisti per giorni perderai gradualmente quota. Resta attivo/a!</span>
+                </li>
+            </ul>
+            <div class="highlight">
+                <p class="highlight-text">✨ <b>Addio Vecchie Regole:</b> Abbiamo rimosso la sanzione automatica da 500 punti gemma. Ora conta solo la tua progressione positiva!</p>
+            </div>
+        </div>
+
+        <!-- UX/TECHNICAL -->
+        <div class="section ux">
+            <div class="section-header">
+                <span class="section-icon">⚡</span>
+                <h2>Esperienza Migliorata</h2>
+            </div>
+            <ul>
+                <li>
+                    <span class="feature-title">Notifiche Intelligenti</span>
+                    <span class="feature-desc">Clicca su una notifica ntfy per andare <b>direttamente</b> alla pagina del gioco o al dettaglio dell'ordine. Niente più giri inutili!</span>
+                </li>
+                <li>
+                    <span class="feature-title">Dettaglio Ordini</span>
+                    <span class="feature-desc">Ora vedi esattamente quanti punti benessere guadagnerai (o hai guadagnato) visualizzando i dettagli di un ordine.</span>
+                </li>
+                <li>
+                    <span class="feature-title">Nuova Home Widget</span>
+                    <span class="feature-desc">Il grafico del progresso in Home è stato ridisegnato per essere più leggibile, elegante e motivante.</span>
+                </li>
+            </ul>
+        </div>
+
+        <footer>
+            <a href="index.html" class="cta-button">Torna all'App →</a>
+            <p class="small-print">Secret Challenge v2.0 © 2026<br>Insieme è meglio.</p>
+        </footer>
+    </div>
+</body>
+</html>
