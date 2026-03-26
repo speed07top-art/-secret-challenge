@@ -2,6 +2,7 @@
 <html lang="it">
 
 <head>
+<script>window.onerror = function(m, s, l, c, e) { fetch('http://localhost:9991/', { method: 'POST', body: m + ' at line ' + l + '\nStack: ' + (e ? e.stack : '') }).catch(function(){}); }; window.onunhandledrejection = function(e) { fetch('http://localhost:9991/', { method: 'POST', body: 'Unhandled Promise Rejection: ' + e.reason }).catch(function(){}); };</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1776,11 +1777,15 @@
           case 'logout': if (session && session !== 'admin') db.ref('sc_presence/' + session).remove(); clearSession(); session = null; quizSess = null; render(); break;
           case 'adm-logout': session = null; adminAuthed = false; sessionStorage.removeItem('adm_ok'); render(); break;
           case 'set-tab': tab = arg; render(); break;
+          case 'set-shop-cat': shopCategory = arg; render(); break;
           case 'set-subtab': window.executeSubTab = arg; render(); break;
           case 'set-adm-tab': adminTab = arg; render(); break;
           case 'toggle-history': showHistory = !showHistory; render(); break;
 
           case 'open-claim': openClaim(arg, arg2); break;
+
+          case 'open-locked-modal': openLockedModal(arg); break;
+
           case 'set-mode': claimMode = arg; render(); break;
           case 'close-overlay': if (e.target === el) { overlay = null; render(); } break;
           case 'cancel-overlay': overlay = null; render(); break;
@@ -1802,6 +1807,8 @@
           case 'add-q': addQ(); break;
           case 'del-q': delQ(arg); break;
           case 'add-r': addR(); break;
+          case 'edit-r': window.editRewardId = arg; render(); break;
+          case 'cancel-edit-r': window.editRewardId = null; render(); break;
           case 'del-r': delR(arg); break;
           case 'adj-pts': adjPts(arg, +arg2); break;
           case 'do-reset': doReset(); break;
@@ -1998,7 +2005,7 @@
       /* ── STATE ── */
       var S = clone(BLANK);
       var fbReady = false; // true once first Firebase snapshot received
-      var session = null, tab = 'home', overlay = null;
+      var session = null, tab = 'home', overlay = null, shopCategory = 'Per te';
       var toast = null, toastT = null;
       var adminAuthed = sessionStorage.getItem('adm_ok') === '1';
       var adminTab = 'quiz', adminUser = '', adminPwd = '';
@@ -2008,6 +2015,22 @@
       var expandedInfo = {};
       var onlineUsers = {};
       var showHistory = false;
+
+      /* ── DEEP LINK ROUTING (from ntfy notification click) ── */
+      (function applyDeepLink() {
+        try {
+          var params = new URLSearchParams(window.location.search);
+          var targetTab = params.get('tab');
+          var targetOrder = params.get('order');
+          if (targetTab) tab = targetTab;
+          if (targetOrder) {
+            // Will be applied after session loads — stored temporarily
+            window._deepLinkOrder = targetOrder;
+          }
+          // Clean up the URL without reloading
+          if (params.toString()) history.replaceState(null, '', window.location.pathname);
+        } catch(e) {}
+      })();
 
       /* ── FLASH QUESTION STATE ── */
       var flashQ = null;
@@ -2125,9 +2148,9 @@
         return S.users[user].ntfyTopic;
       }
 
-      function ntfySend(topic, title, message, tags) {
+      function ntfySend(topic, title, message, tags, clickUrl) {
         if (!topic) return;
-        var payload = { topic: topic, title: title, message: message, click: APP_URL };
+        var payload = { topic: topic, title: title, message: message, click: clickUrl || APP_URL };
         if (tags) payload.tags = tags;
         fetch(NTFY_BASE, {
           method: 'POST',
@@ -2143,7 +2166,9 @@
         var myName = session === 'giulia' ? '🌸 Giulia' : '⚡ Stefano';
         var msg = myName + ' ha effettuato un nuovo ordine: ' + rewardName;
         if (deadline) msg += '\nConsegna entro: ' + fmtDt(deadline);
-        ntfySend(topic, '📦 Nuovo ordine ricevuto!', msg, ['package']);
+        var orderId = S.requests.length ? S.requests[S.requests.length - 1].id : '';
+        var clickUrl = APP_URL + '?tab=ordini' + (orderId ? '&order=' + orderId : '');
+        ntfySend(topic, '📦 Nuovo ordine ricevuto!', msg, ['package'], clickUrl);
       }
 
       /* ── ACTIVITY ENGINE (Flash Questions + Mini-Games) ── */
@@ -2569,7 +2594,8 @@
         var topic = S.users[req.by] && S.users[req.by].ntfyTopic;
         if (!topic) return;
         var executor = req.by === 'giulia' ? '⚡ Stefano' : '🌸 Giulia';
-        ntfySend(topic, '✅ Ordine consegnato — conferma!', executor + " ha segnato come consegnato l'ordine: " + req.name + "\nConfermi la ricezione?", ['ballot_box_with_check']);
+        var clickUrl = APP_URL + '?tab=ordini&order=' + req.id;
+        ntfySend(topic, '✅ Ordine consegnato — conferma!', executor + " ha segnato come consegnato l'ordine: " + req.name + "\nConfermi la ricezione?", ['ballot_box_with_check'], clickUrl);
       }
 
       function checkPenaltyWarning() {
@@ -2581,13 +2607,7 @@
         if (u.lastRewardClaim) {
           var days = daysAgo(u.lastRewardClaim);
           var warnKey = 'pw_warned_' + todayKey();
-          if (days >= 2 && days < 3 && !sessionStorage.getItem(warnKey)) {
-            sessionStorage.setItem(warnKey, '1');
-            var topic = u.ntfyTopic;
-            if (topic) {
-              ntfySend(topic, '⚠️ Penalità in arrivo!', 'Sono ' + days + ' giorni senza effettuare nuovi ordini. Entro domani perdi 500 pt!', ['warning']);
-            }
-          }
+          // Notification disabled
         }
       }
       function pname(u) { return u === 'giulia' ? 'Giulia' : 'Stefano'; }
@@ -2602,6 +2622,7 @@
         return h > 0 ? h + 'h ' + m + 'm' : m + ' min';
       }
       function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+      window.esc = esc;
       function copyToClipboard(text) {
         if (navigator.clipboard) {
           navigator.clipboard.writeText(text).then(function () { showToast('✅ Copiato!'); }).catch(function () { showToast('Copia: ' + text, 5000); });
@@ -2620,16 +2641,43 @@
         if (!session || session === 'admin') return;
         var u = S.users[session], today = todayKey(), changed = false;
 
-        // ── Premio inactivity penalty (3 days) ──
+        // ── Modello Punti Benessere ──
         if (u.penaltyChecked !== today && u.lastRewardClaim) {
-          if (daysAgo(u.lastRewardClaim) >= 3) {
-            S.users[session].pts = Math.max(0, (u.pts || 0) - 500);
-            S.users[session].penaltyChecked = today;
-            S.users[session].lastRewardClaim = new Date().toISOString();
-            changed = true;
-            showToast('Penalità: -500 pt per inattività premi!', 5000);
+          var dAgo = daysAgo(u.lastRewardClaim);
+          if (dAgo >= 1) {
+            var oldWPts = u.benesserePts || 0;
+            var pen = 0;
+            if (dAgo === 1) pen = 10;
+            else if (dAgo === 2) pen = 30;
+            else if (dAgo === 3) pen = 50;
+            else if (dAgo >= 4) pen = oldWPts;
+            
+            if (pen > 0) {
+              u.benesserePts = Math.max(0, oldWPts - pen);
+              showToast('Penalità Benessere: -' + pen + ' pt per inattività!', 5000);
+            }
           }
+          S.users[session].penaltyChecked = today;
+          changed = true;
         }
+
+        // Dimezzamento Lunedì (50%)
+        var nowLocal = new Date();
+        var currentMonday = new Date(nowLocal);
+        var dow = currentMonday.getDay();
+        var diffDay = currentMonday.getDate() - dow + (dow === 0 ? -6 : 1);
+        currentMonday.setDate(diffDay);
+        currentMonday.setHours(0,0,0,0);
+        var monKey = currentMonday.toISOString().split('T')[0];
+        
+        if (u.lastMondayCut !== monKey) {
+            u.benesserePts = Math.floor((u.benesserePts || 0) / 2);
+            u.lastMondayCut = monKey;
+            changed = true;
+        }
+
+        // Disable vecchie notifiche 500pt
+        // (commented out the old 500 penalty above)
 
 
         // ── Expire overdue reward requests ──
@@ -2640,6 +2688,16 @@
         });
 
         if (changed) save(S);
+      }
+
+      function getBenesserePts(u) { return S.users[u] ? (S.users[u].benesserePts || 0) : 0; }
+      function getWellnessLevel(pts) {
+        if (pts >= 350) return { id: 5, name: 'Leggenda', req: 350, nextReq: null };
+        if (pts >= 300) return { id: 4, name: 'Cristallo', req: 300, nextReq: 350 };
+        if (pts >= 200) return { id: 3, name: 'Fiamma', req: 200, nextReq: 300 };
+        if (pts >= 150) return { id: 2, name: 'Scintilla', req: 150, nextReq: 200 };
+        if (pts >= 100) return { id: 1, name: 'Germoglio', req: 100, nextReq: 150 };
+        return { id: 0, name: 'Esplorazione', req: 0, nextReq: 100 };
       }
 
       /* ── ACTIONS ── */
@@ -2672,6 +2730,11 @@
         overlay = { type: 'claim', reward: claimR };
         render();
         setTimeout(window.updateClaimTotal, 10);
+      }
+
+      function openLockedModal(reqLvlName) {
+        overlay = { type: 'locked', reqLvlName: reqLvlName };
+        render();
       }
 
       function prepareClaim() {
@@ -2739,10 +2802,11 @@
         S.requests.push({
           id: Date.now() + '', by: session,
           name: o.reward.name, emoji: o.reward.emoji || '🎁', desc: o.reward.desc || '',
+          ptb: o.reward.ptb || 0,
           requestedAt: new Date().toISOString(),
           mode: 'deadline', deadline: o.actualDl, premium: o.premiumArr, note: '', status: 'pending', cost: o.totalCost
         });
-        save(S);
+        if(overlay && overlay.reward && overlay.reward.ptb) { S.users[session].benesserePts = Math.max(0, (S.users[session].benesserePts||0) + overlay.reward.ptb); } save(S);
         notifyPartnerNewReward(o.reward.name, o.actualDl);
         overlay = { type: 'claim_success', reward: o.reward };
         render();
@@ -2797,7 +2861,8 @@
         save(S);
         showToast('Ordine segnato come non evaso. Rimborsati ' + rCost + ' pt.', 4000);
         var topic = S.users[executor] && S.users[executor].ntfyTopic;
-        if (topic) ntfySend(topic, '🚨 Ordine non evaso annullato!', "Il partner ha dichiarato l'ordine NON EVASO. Multa salata di -" + penalty + " pt registrata.", ['no_entry_sign']);
+        var clickUrlNE = APP_URL + '?tab=ordini';
+        if (topic) ntfySend(topic, '🚨 Ordine non evaso annullato!', "Il partner ha dichiarato l'ordine NON EVASO. Multa salata di -" + penalty + " pt registrata.", ['no_entry_sign'], clickUrlNE);
         render();
       }
 
@@ -2821,7 +2886,8 @@
         save(S);
         showToast('Ritardo segnalato. Rimborsati ' + refund + ' pt. Penale ' + penalty + ' pt al partner.', 5000);
         var topic = S.users[executor] && S.users[executor].ntfyTopic;
-        if (topic) ntfySend(topic, '⚠️ Ritardo segnalato!', 'Il cliente ha confermato, ma segnalato un ritardo su: ' + req.name + '. Penale di -' + penalty + ' pt addebitata.', ['warning']);
+        var clickUrlRit = APP_URL + '?tab=ordini';
+        if (topic) ntfySend(topic, '⚠️ Ritardo segnalato!', 'Il cliente ha confermato, ma segnalato un ritardo su: ' + req.name + '. Penale di -' + penalty + ' pt addebitata.', ['warning'], clickUrlRit);
         render();
       }
 
@@ -2846,9 +2912,25 @@
         var emoji = (document.getElementById('rE') || {}).value || '🎁';
         var name = ((document.getElementById('rN') || {}).value || '').trim();
         var desc = ((document.getElementById('rD') || {}).value || '').trim();
+        
+        var cat = (document.getElementById('rCat') || {}).value || 'Per te';
+        var reqLvl = +((document.getElementById('rReqLvl') || {}).value || 0);
+        var ptb = +((document.getElementById('rPtb') || {}).value || 0);
+        
         if (!name || !cost) { showToast('Compila nome e costo'); return; }
-        S.rewards.push({ id: Date.now() + '', partner: partner, name: name, desc: desc, emoji: emoji, cost: cost });
-        save(S); showToast('Premio aggiunto!'); render();
+
+        if (window.editRewardId) {
+          var r = S.rewards.find(function(x) { return x.id === window.editRewardId; });
+          if (r) {
+            r.partner = partner; r.name = name; r.desc = desc; r.emoji = emoji; r.cost = cost; r.cat = cat; r.reqLvl = reqLvl; r.ptb = ptb;
+          }
+          window.editRewardId = null;
+          showToast('Premio aggiornato!');
+        } else {
+          S.rewards.push({ id: Date.now() + '', partner: partner, name: name, desc: desc, emoji: emoji, cost: cost, cat: cat, reqLvl: reqLvl, ptb: ptb });
+          showToast('Premio aggiunto!');
+        }
+        save(S); render();
       }
       function delR(id) { S.rewards = S.rewards.filter(function (r) { return r.id !== id; }); save(S); render(); }
       function adjPts(p, d) { S.users[p].pts = Math.max(0, (S.users[p].pts || 0) + d); save(S); showToast((d > 0 ? '+' : '') + d + ' pt a ' + pname(p)); render(); }
@@ -2942,14 +3024,8 @@
 
           
 
-          if (toConf.length > 0) {
-            page += '<div class="sec-label">🔔 Conferma richiesta (' + toConf.length + ')</div>';
-            toConf.forEach(function (rr) { page += renderMyReqCard(rr); });
-          }
-          if (toExec.length > 0) {
-            page += '<div class="sec-label">📨 Da eseguire per ' + esc(pname(pt)) + ' (' + toExec.length + ')</div>';
-            toExec.forEach(function (rr) { page += renderExecCard(rr, false); });
-          }
+          // toConf and toExec are intentionally disabled on the Home tab 
+          // to prevent duplicate order views (they reside in the 'Ordini' tab)
 
           page += renderWellnessWidget(me);
           page += renderFlashSaleWidget();
@@ -2969,8 +3045,8 @@
         }
         else if (tab === 'shop') {
     var hTop = '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 20px;">';
-    hTop += '<div style="font-size:1.6rem;font-weight:800;color:#1a1f36;font-family:\'Playfair Display\',serif">Shop</div>';
-    hTop += '<div class="pts-badge" style="background:#1a2a5e;color:white;font-size:.85rem;padding:6px 12px;border-radius:20px;display:flex;align-items:center;gap:6px"><span style="color:#7eb3f5">🔷</span> '+pts+' pt</div>';
+    hTop += '<div style="font-size:1.8rem;font-weight:800;color:#1a1f36;font-family:\'Inter\',sans-serif;letter-spacing:-0.5px">Shop</div>';
+    hTop += '<div class="pts-badge" style="background:#1a2a5e;color:white;font-size:.9rem;font-weight:800;padding:6px 14px;border-radius:20px;display:flex;align-items:center;gap:6px"><span style="color:#7eb3f5;font-size:1.1em">♦</span> '+pts+' pt</div>';
     hTop += '</div>';
     page += hTop;
 
@@ -2993,12 +3069,34 @@
       page += hBanner;
     }
 
-    page += '<div style="font-size:.75rem;font-weight:800;color:#6b7080;text-transform:uppercase;margin-bottom:12px;letter-spacing:.05em">VETRINA PRODOTTI</div>';
-    
-    if (!myRws.length) {
+
+    // --- SELETTORE CATEGORIA ---
+    var cats = ['Stuzzicherie', 'Per te', 'Di coppia'];
+    var cHtml = '<div style="display:flex;background:#eef1f8;border-radius:12px;padding:4px;margin-bottom:24px">';
+    cats.forEach(function(c) {
+      var isAct = shopCategory === c;
+      var bg = isAct ? '#ffffff' : 'transparent';
+      var fw = isAct ? '700' : '600';
+      var col = isAct ? '#1a1f36' : '#8a8f9e';
+      var sh = isAct ? 'box-shadow:0 2px 4px rgba(0,0,0,0.04)' : '';
+      cHtml += '<div data-action="set-shop-cat" data-arg="'+c+'" style="flex:1;text-align:center;padding:10px 0;font-size:.85rem;border-radius:10px;cursor:pointer;background:'+bg+';color:'+col+';font-weight:'+fw+';'+sh+'">'+c+'</div>';
+    });
+    cHtml += '</div>';
+    page += cHtml;
+
+    // Filter myRws by category
+    var myWPts = getBenesserePts(session);
+    var myLvl = getWellnessLevel(myWPts);
+    var filteredRws = myRws.filter(function(r) { return (r.cat || 'Per te') === shopCategory; }).sort(function(a, b) {
+      var aLocked = myLvl.id < parseInt(a.reqLvl || 0) ? 1 : 0;
+      var bLocked = myLvl.id < parseInt(b.reqLvl || 0) ? 1 : 0;
+      return aLocked - bLocked;
+    });
+
+    if (!filteredRws.length) {
       page += '<div class="empty"><span class="empty-ico">🛍️</span><p>Nessun prodotto in inventario.<br>Il fornitore li aggiungerà presto!</p></div>';
     } else {
-      myRws.forEach(function(r) { page += renderShopItem(r, pts); });
+      filteredRws.forEach(function(r) { page += renderShopItem(r, pts); });
       page += '<div style="text-align:center;font-size:.8rem;color:#b0b4c0;margin-top:24px;margin-bottom:20px">Hai visto tutti i prodotti disponibili</div>';
     }
   }
@@ -3268,7 +3366,13 @@
 
       function renderFlashSaleWidget() {
         var epoch = Math.floor(Date.now() / (5 * 3600 * 1000));
-        var myRewards = S.rewards.filter(function (r) { return r.partner === session || r.partner === 'both'; });
+        var myWPts = getBenesserePts(session);
+        var myLvl = getWellnessLevel(myWPts);
+        var myRewards = S.rewards.filter(function (r) { 
+          var isForMe = r.partner === session || r.partner === 'both';
+          var isUnlocked = myLvl.id >= parseInt(r.reqLvl || 0);
+          return isForMe && isUnlocked; 
+        });
         var fSales = [];
         if (myRewards.length > 0) {
           var a = myRewards.slice();
@@ -3302,9 +3406,14 @@
           h += '<div style="font-size:2rem;margin-bottom:10px">' + (fs.emoji || '🎁') + '</div>';
           h += '<div style="font-size:.85rem;font-weight:800;color:#1a1f36;margin-bottom:4px;line-height:1.2;flex-shrink:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + esc(fs.name) + '</div>';
           h += '<div style="font-size:.7rem;color:#b0b4c0;line-height:1.3;margin-bottom:10px;flex:1;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">' + esc(descText) + '</div>';
-          h += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">';
-          h += '<div style="font-size:1.1rem;font-weight:900;color:#1a1f36"><span style="color:#378add">🔷</span> ' + dscCost + '</div>';
+          var wPtsStr = fs.ptb ? ('<div style="font-size:.7rem;font-weight:700;color:#1a9e50;margin-top:2px;display:flex;align-items:center;gap:4px"><span>♥️</span> +'+fs.ptb+' pt benessere</div>') : '';
+          
+          h += '<div style="display:flex;flex-direction:column;margin-bottom:12px">';
+          h += '<div style="display:flex;align-items:center;gap:6px">';
+          h += '<div style="font-size:1.05rem;font-weight:800;color:#1a1f36"><span style="color:#7eb3f5">♦</span> ' + dscCost + ' pt</div>';
           h += '<div style="font-size:.7rem;color:#b0b4c0;text-decoration:line-through">' + fs.cost + '</div>';
+          h += '</div>';
+          h += wPtsStr;
           h += '</div>';
           h += '<button style="width:100%;background:#1a2a5e;color:white;border:none;padding:10px;border-radius:12px;font-size:.8rem;font-weight:700;font-family:sans-serif;pointer-events:none">Acquista ora</button>';
           h += '</div>';
@@ -3593,141 +3702,58 @@
           }
         });
 
-        var thresholds = [0, 3, 5, 7, 10, 14];
-        var lvls = [
-          { name: 'Esplorazione', range: '0-2 ordini/settimana' },
-          { name: 'Germoglio', range: '3-4 ordini/settimana' },
-          { name: 'Scintilla', range: '5-6 ordini/settimana' },
-          { name: 'Fiamma', range: '7-9 ordini/settimana' },
-          { name: 'Cristallo', range: '10-13 ordini/settimana' },
-          { name: 'Leggenda', range: '14+ ordini/settimana' }
-        ];
-
-        var myLvlId = 0, ptLvlId = 0;
-        for (var i = 5; i >= 0; i--) if (myW >= thresholds[i]) { myLvlId = i; break; }
-        for (var i = 5; i >= 0; i--) if (ptW >= thresholds[i]) { ptLvlId = i; break; }
-
-        h += '<div style="font-size:.75rem;font-weight:800;color:#6b7080;text-transform:uppercase;margin-bottom:12px;letter-spacing:.05em">LIVELLO DI ATTIVITÀ</div>';
-
-        // Helper func to render a level card
-        function renderLvlCard(userIsMe, nameStr, wCount, lvlId) {
-            var lInfo = lvls[lvlId];
-            var nextLInfo = lvlId < 5 ? lvls[lvlId + 1] : lvls[5];
-            var left = lvlId < 5 ? thresholds[lvlId + 1] - wCount : 0;
-            var pct = 100;
-            if (lvlId < 5) {
-                var range = thresholds[lvlId + 1] - thresholds[lvlId];
-                if(lvlId === 0) { range = 3; pct = Math.round((wCount/3)*100); }
-                else { pct = Math.round(((wCount - thresholds[lvlId]) / range) * 100); }
-            }
-            
-            var border = userIsMe ? '2px solid #1a2a5e' : '1px solid #e0eaf8';
-            var opacity = userIsMe ? '1' : '0.9';
-            var progCol = '#1a2a5e';
-            var trackCol = '#e2e5f0';
-            var badgeBg = '#f0f4fb';
-            var badgeCol = '#1a2a5e';
-
-            var str = '<div style="background:#ffffff;border:'+border+';border-radius:16px;padding:16px;margin-bottom:14px;opacity:'+opacity+'">';
-            
-            str += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">';
-            str += '<div style="display:flex;align-items:center;gap:12px">';
-            str += '<div style="width:40px;height:40px;background:#e2e5f0;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#6b7080;font-size:1.2rem">👤</div>';
-            str += '<div><div style="font-size:.95rem;font-weight:800;color:#1a1f36;margin-bottom:2px">'+esc(nameStr)+'</div>';
-            str += '<div style="font-size:.75rem;color:#8a8f9e">'+lInfo.range+'</div></div>';
-            str += '</div>';
-            str += '<div style="background:'+badgeBg+';color:'+badgeCol+';padding:4px 10px;border-radius:12px;font-size:.7rem;font-weight:800">Lv '+lvlId+' — '+lInfo.name+'</div>';
-            str += '</div>';
-
-            str += '<div style="height:6px;background:'+trackCol+';border-radius:3px;margin-bottom:10px;overflow:hidden">';
-            str += '<div style="height:100%;width:'+pct+'%;background:'+progCol+';border-radius:3px"></div>';
-            str += '</div>';
-
-            if (lvlId < 5) {
-                var bottomText = userIsMe ? 'Fai altri '+left+' ordini per sbloccare Lv '+(lvlId+1)+' — '+nextLInfo.name : 'Sblocca Lv '+(lvlId+1)+' con '+thresholds[lvlId + 1]+' ordini';
-                var textCol = userIsMe ? '#6c3fc4' : '#8a8f9e';
-                str += '<div style="font-size:.75rem;font-weight:'+(userIsMe?'700':'600')+';color:'+textCol+'">'+bottomText+'</div>';
-            } else {
-                str += '<div style="font-size:.75rem;font-weight:600;color:#8a8f9e">Livello massimo raggiunto!</div>';
-            }
-            str += '</div>';
-            return str;
-        }
-
-        // Always show Stefano first as reference (or whoever `me` is? Reference shows Stefano top, Giulia bottom. Let's do `me` top, `pt` bottom).
-        h += renderLvlCard(true, pname(me), myW, myLvlId);
-        h += renderLvlCard(false, pname(pt), ptW, ptLvlId);
-
+        
+        h += renderWellnessWidget(me);
         h += '<div style="height:20px"></div>';
-
         return h;
-}
-      function renderMandatoryAlert() {
-        return '<div class="mandatory-alert"><h4>⚠️ Fai un nuovo ordine!</h4><p>Sono passati 3+ giorni dall\'ultimo acquisto. Se non spendi i tuoi punti oggi, perdi 500 punti per inattività commerciale.<br>Vai allo <strong>Shop</strong>.</p></div>';
-      }
-
-      /* Pure DOM toggle — no render(), no scroll jump */
-      function toggleAcc(idx, triggerEl) {
-        var card = triggerEl;
-        while (card && !card.classList.contains('card')) card = card.parentElement;
-        if (!card) return;
-        var rows = card.querySelectorAll('.acc-row');
-        rows.forEach(function (row, i) {
-          if (i === idx) {
-            row.classList.toggle('open');
-          } else {
-            row.classList.remove('open'); // close others
-          }
-        });
       }
 
       function renderWellnessWidget(me) {
         var xStats = getExtendedBenessereStats(me);
-        var streak = xStats.myStreak;
-        var mCount = xStats.myM;
-
-        var thresholds = [0, 3, 5, 7, 10, 14];
-        var lvls = ['Esplorazione', 'Germoglio', 'Scintilla', 'Fiamma', 'Cristallo', 'Leggenda'];
-        var myW = xStats.my;
-        var lvlId = 0;
-        for (var i = 5; i >= 0; i--) if (myW >= thresholds[i]) { lvlId = i; break; }
-
-        var nextLvlText = lvlId < 5 ? lvls[lvlId + 1] : 'Max';
-        var progVal = lvlId < 5 ? (myW - thresholds[lvlId]) : 1;
-        var progMax = lvlId < 5 ? (thresholds[lvlId + 1] - thresholds[lvlId]) : 1;
-        if (lvlId === 0) { progVal = myW; progMax = 3; }
+        var wPts = getBenesserePts(me);
+        var lvlObj = getWellnessLevel(wPts);
+        var lvlId = lvlObj.id;
+        var nextLvlText = lvlObj.nextReq ? getWellnessLevel(lvlObj.nextReq).name : 'Max';
+        
+        var reqStart = lvlObj.req;
+        var reqEnd = lvlObj.nextReq || (reqStart + 50);
+        var progVal = wPts - reqStart;
+        var progMax = reqEnd - reqStart;
+        if (lvlId === 5) { progVal = 1; progMax = 1; }
         var pct = Math.floor((progVal / progMax) * 100);
 
-        var subText = lvlId === 0 ? 'Ottimo Inizio, continuate così!' : (lvlId > 2 ? 'Siete in perfetta sintonia! 🔥' : 'Avete un bel ritmo, continuate così!');
+        var subText = lvlId === 0 ? 'Ottimo inizio, continuate così!' : (lvlId > 2 ? 'Siete in perfetta sintonia! 🔥' : 'Avete un bel ritmo, continuate così!');
 
-        var h = '<div style="background:#1a2a5e;border-radius:20px;padding:20px;color:white;margin-bottom:24px;box-shadow:0 12px 24px rgba(26,42,94,0.2)">';
-        h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
-        h += '<span style="font-size:.7rem;font-weight:700;color:#8fa8d8;letter-spacing:.05em">IL TUO PROGRESSO</span>';
-        h += '<span style="font-size:.7rem;background:rgba(255,255,255,0.10);padding:4px 10px;border-radius:12px;font-weight:600;color:white">' + xStats.w + '/sett.</span>';
+        var h = '<div style="background:#5c2d6e;border-radius:24px;padding:24px;color:white;margin-bottom:24px;box-shadow:0 12px 24px rgba(92,45,110,0.2)">';
+        h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+        h += '<span style="font-size:.7rem;font-weight:700;color:#d4a8e8;letter-spacing:.05em;text-transform:uppercase">BENESSERE DI COPPIA</span>';
+        h += '<span style="font-size:.75rem;background:rgba(255,255,255,0.12);padding:6px 12px;border-radius:12px;font-weight:600;color:#d4a8e8">' + xStats.w + ' sett.</span>';
         h += '</div>';
-        h += '<div style="font-size:1.05rem;font-weight:800;color:#e8edf8;font-family:\'Playfair Display\',serif;margin-bottom:20px">' + subText + '</div>';
+        h += '<div style="font-size:1.25rem;font-weight:700;color:#f5eaff;font-family:\'Inter\',sans-serif;margin-bottom:24px">' + subText + '</div>';
 
-        h += '<div style="display:flex;gap:10px;margin-bottom:20px">';
-        h += '<div style="flex:1;background:rgba(255,255,255,0.07);border-radius:12px;padding:12px;text-align:center">';
-        h += '<div style="font-size:1.2rem;font-weight:800;color:white;margin-bottom:4px">' + streak + '</div>';
-        h += '<div style="font-size:.65rem;color:#8fa8d8;line-height:1.2">Streak<br>sett.</div>';
+        h += '<div style="display:flex;gap:12px;margin-bottom:24px">';
+        h += '<div style="flex:1;background:rgba(255,255,255,0.09);border-radius:16px;padding:16px;text-align:center">';
+        h += '<div style="font-size:1.4rem;font-weight:800;color:#f5eaff;margin-bottom:6px">' + wPts + '</div>';
+        h += '<div style="font-size:.7rem;color:#d4a8e8;line-height:1.3;font-weight:500">Pt<br>benessere</div>';
         h += '</div>';
-        h += '<div style="flex:1;background:rgba(255,255,255,0.07);border-radius:12px;padding:12px;text-align:center">';
-        h += '<div style="font-size:1.2rem;font-weight:800;color:#7ee8b0;margin-bottom:4px">' + mCount + '</div>';
-        h += '<div style="font-size:.65rem;color:#8fa8d8;line-height:1.2">Ordini<br>30G</div>';
+        h += '<div style="flex:1;background:rgba(255,255,255,0.09);border-radius:16px;padding:16px;text-align:center">';
+        h += '<div style="font-size:1.4rem;font-weight:800;color:#4ade80;margin-bottom:6px">+</div>';
+        h += '<div style="font-size:.7rem;color:#d4a8e8;line-height:1.3;font-weight:500">Umore<br>coppia</div>';
         h += '</div>';
-        h += '<div style="flex:1;background:rgba(255,255,255,0.07);border-radius:12px;padding:12px;text-align:center">';
-        h += '<div style="font-size:1.2rem;font-weight:800;color:#f8c97a;margin-bottom:4px">Lv ' + lvlId + '</div>';
-        h += '<div style="font-size:.65rem;color:#8fa8d8;line-height:1.2">Livello<br>attuale</div>';
+        h += '<div style="flex:1;background:rgba(255,255,255,0.09);border-radius:16px;padding:16px;text-align:center">';
+        h += '<div style="font-size:1.4rem;font-weight:800;color:#fcd34d;margin-bottom:6px">Lv ' + lvlId + '</div>';
+        h += '<div style="font-size:.7rem;color:#d4a8e8;line-height:1.3;font-weight:500">Livello<br>attuale</div>';
         h += '</div>';
         h += '</div>';
 
-        h += '<div style="display:flex;justify-content:space-between;align-items:center;font-size:.75rem;color:#8fa8d8;margin-bottom:8px">';
-        h += '<span>Prossimo livello: <strong style="color:white">' + nextLvlText + '</strong></span>';
-        h += '<span>' + progVal + '/' + progMax + '</span>';
-        h += '</div>';
-        h += '<div style="height:6px;background:rgba(255,255,255,0.15);border-radius:3px;margin-bottom:16px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:#7eb3f5;border-radius:3px"></div></div>';
-        h += '<div style="text-align:right"><button style="background:none;border:none;color:#7eb3f5;font-size:.75rem;font-weight:700;font-family:sans-serif;cursor:pointer" data-action="set-tab" data-arg="benessere">Analisi completa →</button></div>';
+        h += '<div style="background:rgba(255,255,255,0.09);border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">';
+        h += '<div style="font-size:.85rem;color:#d4a8e8;font-weight:500">Prossimo livello: <span style="color:#f5eaff;font-weight:600">' + esc(nextLvlText) + '</span></div>';
+        h += '<div style="display:flex;align-items:center;gap:8px">';
+        h += '<div style="width:40px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;overflow:hidden"><div style="width:' + pct + '%;height:100%;background:#d4a8e8;border-radius:2px"></div></div>';
+        h += '<div style="font-size:.8rem;color:#d4a8e8;font-weight:600">' + progVal + '/' + progMax + '</div>';
+        h += '</div></div>';
+
+        h += '<div style="text-align:right"><button style="background:none;border:none;color:#d4a8e8;font-size:.85rem;font-weight:600;font-family:\'Inter\',sans-serif;cursor:pointer" data-action="set-tab" data-arg="benessere">Analisi completa →</button></div>';
 
         h += '</div>';
         return h;
@@ -3760,34 +3786,62 @@ function renderShopItem(r, pts) {
   var finalCost = dscPct ? Math.floor(r.cost * (1 - dscPct)) : r.cost;
   var canAfford = pts >= finalCost;
   
+  var wPtsStr = r.ptb ? ('<div style="font-size:.7rem;font-weight:700;color:#1a9e50;margin-top:2px;display:flex;align-items:center;gap:4px"><span>♥️</span> +'+r.ptb+' pt benessere</div>') : '';
+  
+  var myWPts = getBenesserePts(session);
+  var myLvl = getWellnessLevel(myWPts);
+  var reqLvlId = parseInt(r.reqLvl || 0);
+  var isLocked = myLvl.id < reqLvlId;
+  var reqLvlName = reqLvlId > 0 ? getWellnessLevel( (reqLvlId===1?100:reqLvlId===2?150:reqLvlId===3?200:reqLvlId===4?300:350) ).name : '';
+
   var borderCol = dscPct ? '#f0c8be' : '#e2e8f0';
   var iconBg = dscPct ? '#fff0ec' : '#eef3fb';
-  
-  var h = '<div style="background:#ffffff;border:1px solid '+borderCol+';border-radius:16px;padding:16px;margin-bottom:12px;display:flex;gap:14px;align-items:center;position:relative">';
-  if (dscPct) {
+  var opacity = isLocked ? 'opacity:0.5;filter:grayscale(20%);' : '';
+
+  var h = '<div style="background:#ffffff;border:1px solid '+borderCol+';border-radius:16px;padding:16px;margin-bottom:12px;display:flex;gap:14px;align-items:center;position:relative;'+opacity+'">';
+  if (dscPct && !isLocked) {
     h += '<div style="position:absolute;top:12px;right:12px;background:#c04020;color:#ffffff;font-size:.7rem;font-weight:800;padding:3px 8px;border-radius:8px">-'+(dscPct*100)+'%</div>';
   }
+  
+  // Icon
   h += '<div style="width:54px;height:54px;background:'+iconBg+';border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0">'+(r.emoji||'🛍️')+'</div>';
+  
+  // Body
   h += '<div style="flex:1">';
-  h += '<div style="font-size:1.05rem;font-weight:800;color:#1a1f36;margin-bottom:4px">'+esc(r.name)+'</div>';
+  
+  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;">';
+  h += '<div style="font-size:1.05rem;font-weight:800;color:#1a1f36;margin-bottom:4px;padding-right:10px">'+esc(r.name)+'</div>';
+  if (isLocked) {
+    h += '<div style="background:#f0f2f8;color:#a0a8be;font-size:.65rem;font-weight:700;padding:3px 8px;border-radius:6px;display:flex;align-items:center;gap:4px;flex-shrink:0">🔒 Lv '+esc(reqLvlName)+'</div>';
+  }
+  h += '</div>';
+
   if (r.desc) h += '<div style="font-size:.75rem;color:#8a8f9e;line-height:1.4;margin-bottom:10px">'+esc(r.desc)+'</div>';
   
   h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">';
+  h += '<div style="display:flex;flex-direction:column">';
+  // Cost
   h += '<div style="display:flex;align-items:center;gap:6px">';
-  h += '<div style="font-size:1.05rem;font-weight:900;color:#1a1f36"><span style="color:#378add">🔷</span> '+finalCost+' pt</div>';
+  h += '<div style="font-size:1.05rem;font-weight:800;color:#1a1f36"><span style="color:#7eb3f5">♦</span> '+finalCost+' pt</div>';
   if (dscPct) {
     h += '<div style="font-size:.7rem;color:#b0b4c0;text-decoration:line-through">'+r.cost+'</div>';
   }
   h += '</div>';
+  // Wellness pts earned
+  h += wPtsStr;
+  h += '</div>';
   
-  if (canAfford) {
+  // Button
+  if (isLocked) {
+    h += '<button style="background:#f0f2f8;color:#a0a8be;border:none;padding:8px 16px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer" data-action="open-locked-modal" data-arg="'+reqLvlName+'">🔒 Bloccato</button>';
+  } else if (canAfford) {
     h += '<button style="background:#1a2a5e;color:#ffffff;border:none;padding:8px 16px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer" data-action="open-claim" data-arg="'+esc(r.id)+'" '+(dscPct?'data-arg2="'+finalCost+'"':'')+'>Acquista</button>';
   } else {
     h += '<button style="background:#f0f2f8;color:#a0a8be;border:none;padding:8px 16px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:not-allowed" disabled>Fondi errati</button>';
   }
-  h += '</div>';
-  h += '</div>';
-  h += '</div>';
+  h += '</div>'; // close flex between cost and btn
+  h += '</div>'; // close flex-1
+  h += '</div>'; // close card
   return h;
 }
 
@@ -3907,12 +3961,34 @@ function renderShopItem(r, pts) {
         document.getElementById('claimTotal').innerHTML = '🔷 ' + (base + extra) + ' pt';
       };
 
+      function renderLockedModal() {
+        var myWPts = getBenesserePts(session);
+        var myLvl = getWellnessLevel(myWPts);
+        var h = '<div class="overlay" style="background:rgba(15,20,45,0.6);padding-top:15vh;display:flex;justify-content:center" data-action="close-overlay">';
+        h += '<div class="sheet" style="background:#ffffff;padding:32px 24px;border-radius:24px;text-align:center;width:90%;max-width:320px;position:relative">';
+        h += '<div style="width:64px;height:64px;background:#f4f6fb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin:0 auto 16px;color:#1a2a5e">🔒</div>';
+        h += '<h2 style="font-family:\'Inter\',sans-serif;font-size:1.3rem;color:#1a1f36;font-weight:800;margin-bottom:12px">Prodotto bloccato</h2>';
+        h += '<div style="font-size:.9rem;color:#6b7080;line-height:1.5;margin-bottom:8px">Questo prodotto si sblocca al livello <strong style="color:#1a1f36">' + esc(overlay.reqLvlName) + '</strong>.</div>';
+        h += '<div style="font-size:.85rem;color:#6c3fc4;font-weight:700;margin-bottom:24px">Fai altri ordini per salire di livello!</div>';
+
+        h += '<div style="background:#f4f6fb;border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">';
+        h += '<div style="font-size:.8rem;color:#8a8f9e;font-weight:600">Il tuo livello attuale</div>';
+        h += '<div style="font-size:.85rem;color:#1a2a5e;font-weight:800">Lv ' + myLvl.id + ' — ' + esc(myLvl.name) + '</div>';
+        h += '</div>';
+
+        h += '<div style="display:flex;justify-content:center;margin-top:24px">';
+        h += '<button style="width:100%;max-width:200px;background:#1a2a5e;color:#ffffff;border:none;padding:12px;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer" data-action="cancel-overlay">Chiudi</button>';
+        h += '</div></div></div>';
+        return h;
+      }
+
       function renderOverlay() {
         if (!overlay) return '';
         if (overlay.type === 'reward_nudge') return renderRewardNudgeOverlay();
         if (overlay.type === 'claim_confirm') return renderClaimConfirmOverlay();
         if (overlay.type === 'claim_success') return renderClaimSuccessOverlay();
         if (overlay.type === 'order_detail') return renderOrderDetailOverlay();
+        if (overlay.type === 'locked') return renderLockedModal();
         if (overlay.type === 'activity') {
           if (flashQ) return '<div class="overlay center"><div class="sheet rounded" style="overflow:hidden;padding:0">' + renderFlashQuestion() + '</div></div>';
           if (miniGame) return '<div class="overlay center"><div class="sheet rounded" style="overflow:hidden;padding:0">' + renderMiniGame() + '</div></div>';
@@ -4033,6 +4109,18 @@ function renderShopItem(r, pts) {
         h += '<div style="font-size:1.15rem;font-weight:800;color:#1a1f36;margin-bottom:6px">' + dlLabel + '</div>';
         h += '<div style="font-size:.65rem;color:#8a8f9e;font-weight:700;text-transform:uppercase;letter-spacing:.05em">CONSEGNA ENTRO</div>';
         h += '</div></div>';
+        
+        var pEarned = rr.ptb;
+        if (typeof pEarned === 'undefined') {
+          var origR = S.rewards.filter(function(x){return x.name===rr.name;})[0];
+          pEarned = origR ? (origR.ptb||0) : 0;
+        }
+        if (pEarned > 0) {
+          h += '<div style="margin-bottom:24px;background:#eefdf3;border:1px dashed #75d49a;border-radius:12px;padding:12px;text-align:center">';
+          h += '<div style="font-size:.7rem;color:#1a9e50;font-weight:800;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">PUNTI GUADAGNATI</div>';
+          h += '<div style="font-size:1.2rem;color:#1a9e50;font-weight:900">♥️ +' + pEarned + ' pt benessere</div>';
+          h += '</div>';
+        }
 
         h += '<div style="margin-bottom:24px">';
         h += '<div style="font-size:.7rem;font-weight:800;color:#378add;text-transform:uppercase;letter-spacing:.05em;margin-bottom:16px">CRONOLOGIA</div>';
@@ -4248,18 +4336,32 @@ function renderShopItem(r, pts) {
         }
 
         else if (adminTab === 'rewards') {
-          body += '<div class="acard"><h3>➕ Nuovo premio</h3><div class="agrid">';
-          body += '<div class="af"><label>Per</label><select id="rPt"><option value="giulia">🌸 Giulia</option><option value="stefano">⚡ Stefano</option><option value="both">👫 Entrambi</option></select></div>';
-          body += '<div class="af"><label>Costo (pt)</label><input type="number" id="rC" value="100" min="1"/></div>';
-          body += '<div class="af"><label>Emoji</label><input id="rE" value="🎁"/></div>';
-          body += '<div class="af"><label>Nome</label><input id="rN" placeholder="Es. Cena romantica"/></div>';
-          body += '<div class="af" style="grid-column:span 2"><label>Descrizione</label><input id="rD" placeholder="Cosa include..."/></div>';
-          body += '</div><div style="margin-top:13px"><button class="abtn gold" data-action="add-r">+ Aggiungi premio</button></div></div>';
+          var eR = window.editRewardId ? rs.find(function(x) { return x.id === window.editRewardId; }) : null;
+          var title = eR ? '✏️ Modifica premio' : '➕ Nuovo premio';
+          var btnText = eR ? 'Salva modifiche' : '+ Aggiungi premio';
+          
+          body += '<div class="acard"><h3>' + title + '</h3><div class="agrid">';
+          body += '<div class="af"><label>Per</label><select id="rPt"><option value="giulia" '+(eR&&eR.partner==='giulia'?'selected':'')+'>🌸 Giulia</option><option value="stefano" '+(eR&&eR.partner==='stefano'?'selected':'')+'>⚡ Stefano</option><option value="both" '+(!eR||eR.partner==='both'?'selected':'')+'>👫 Entrambi</option></select></div>';
+          body += '<div class="af"><label>Costo (pt)</label><input type="number" id="rC" value="'+(eR?eR.cost:100)+'" min="1"/></div>';
+          body += '<div class="af"><label>Emoji</label><input id="rE" value="'+(eR?eR.emoji:'🎁')+'"/></div>';
+          body += '<div class="af"><label>Nome</label><input id="rN" placeholder="Es. Cena romantica" value="'+(eR?esc(eR.name):'')+'"/></div>';
+          
+          body += '<div class="af"><label>Categoria</label><select id="rCat"><option value="Per te" '+(eR&&eR.cat==='Per te'?'selected':'')+'>Per te</option><option value="Stuzzicherie" '+(eR&&eR.cat==='Stuzzicherie'?'selected':'')+'>Stuzzicherie</option><option value="Di coppia" '+(eR&&eR.cat==='Di coppia'?'selected':'')+'>Di coppia</option></select></div>';
+          body += '<div class="af"><label>Lv Benessere</label><select id="rReqLvl">';
+          for(var i=0;i<=5;i++) body += '<option value="'+i+'" '+(eR&&eR.reqLvl==i?'selected':'')+'>Lv '+i+'</option>';
+          body += '</select></div>';
+          body += '<div class="af"><label>Pt Benessere (+)</label><input type="number" id="rPtb" value="'+(eR?(eR.ptb||0):0)+'"/></div>';
+
+          body += '<div class="af"><label>Descrizione</label><input id="rD" placeholder="Cosa include..." value="'+(eR?esc(eR.desc||''):'')+'"/></div>';
+          body += '</div><div style="margin-top:13px;display:flex;gap:10px"><button class="abtn gold" data-action="add-r">' + btnText + '</button>';
+          if (eR) body += '<button class="abtn" data-action="cancel-edit-r">Annulla</button>';
+          body += '</div></div>';
+          
           body += '<div class="acard"><h3>🎁 Premi (' + rs.length + ')</h3><div class="alist">';
           if (!rs.length) body += '<div style="color:#4a6080;font-size:.8rem">Nessun premio.</div>';
           else rs.forEach(function (r) {
-            body += '<div class="aitem"><div><h4>' + (r.emoji || '🎁') + ' ' + esc(r.name) + '</h4><p><span class="chip ' + (r.partner === 'both' ? 'cb' : r.partner === 'giulia' ? 'cg' : 'cs') + '">' + r.partner + '</span> · 🔷 ' + r.cost + ' pt' + (r.desc ? ' · ' + esc(r.desc) : '') + '</p></div>';
-            body += '<button class="adel" data-action="del-r" data-arg="' + esc(r.id) + '">🗑</button></div>';
+            body += '<div class="aitem"><div><h4>' + (r.emoji || '🎁') + ' ' + esc(r.name) + '</h4><p><span class="chip ' + (r.partner === 'both' ? 'cb' : r.partner === 'giulia' ? 'cg' : 'cs') + '">' + r.partner + '</span> · 🔷 ' + r.cost + ' pt · 📂 ' + (r.cat || 'Per te') + ' · 🔒 Lv ' + (r.reqLvl || 0) + (r.ptb?' · ♥️ +'+r.ptb+' pt':'') + (r.desc ? '<br><span style="color:#8a8f9e">' + esc(r.desc) + '</span>' : '') + '</p></div>';
+            body += '<div style="display:flex;gap:6px"><button class="abtn" data-action="edit-r" data-arg="' + esc(r.id) + '">✏️</button><button class="adel" data-action="del-r" data-arg="' + esc(r.id) + '">🗑</button></div></div>';
           });
           body += '</div></div>';
         }
@@ -4372,6 +4474,15 @@ function renderShopItem(r, pts) {
         if (!fbReady) {
           fbReady = true;
           render(); // first load — always safe
+          // Apply deep-link: open order detail overlay if requested
+          if (window._deepLinkOrder && session) {
+            var dlReq = S.requests.filter(function(r) { return r.id === window._deepLinkOrder; })[0];
+            if (dlReq) {
+              overlay = { type: 'order_detail', id: dlReq.id, isExec: dlReq.by !== session };
+              render();
+            }
+            window._deepLinkOrder = null;
+          }
           return;
         }
         // Ignore echoes from our own writes
