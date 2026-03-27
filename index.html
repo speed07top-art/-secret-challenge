@@ -1785,6 +1785,7 @@
           case 'open-claim': openClaim(arg, arg2); break;
 
           case 'open-locked-modal': openLockedModal(arg); break;
+          case 'open-cd-modal': overlay = { type: 'cooldown', rId: arg }; render(); break;
 
           case 'set-mode': claimMode = arg; render(); break;
           case 'close-overlay': if (e.target === el) { overlay = null; render(); } break;
@@ -2806,7 +2807,15 @@
           requestedAt: new Date().toISOString(),
           mode: 'deadline', deadline: o.actualDl, premium: o.premiumArr, note: '', status: 'pending', cost: o.totalCost
         });
-        if(overlay && overlay.reward && overlay.reward.ptb) { S.users[session].benesserePts = Math.max(0, (S.users[session].benesserePts||0) + overlay.reward.ptb); } save(S);
+        if(overlay && overlay.reward && overlay.reward.ptb) { 
+            var split = getPointsSplit(overlay.reward);
+            S.users[session].benesserePts = Math.max(0, (S.users[session].benesserePts||0) + split.myS);
+            if (split.isSplit) {
+                var _pt = partner();
+                if (S.users[_pt]) S.users[_pt].benesserePts = Math.max(0, (S.users[_pt].benesserePts||0) + split.ptS);
+            }
+        }
+        save(S);
         notifyPartnerNewReward(o.reward.name, o.actualDl);
         overlay = { type: 'claim_success', reward: o.reward };
         render();
@@ -3381,7 +3390,8 @@
         var myRewards = S.rewards.filter(function (r) { 
           var isForMe = r.partner === session || r.partner === 'both';
           var isUnlocked = myLvl.id >= parseInt(r.reqLvl || 0);
-          return isForMe && isUnlocked; 
+          var isNotCD = !getCooldown(r);
+          return isForMe && isUnlocked && isNotCD;
         });
         var fSales = [];
         if (myRewards.length > 0) {
@@ -3416,7 +3426,15 @@
           h += '<div style="font-size:2rem;margin-bottom:10px">' + (fs.emoji || '🎁') + '</div>';
           h += '<div style="font-size:.85rem;font-weight:800;color:#1a1f36;margin-bottom:4px;line-height:1.2;flex-shrink:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + esc(fs.name) + '</div>';
           h += '<div style="font-size:.7rem;color:#b0b4c0;line-height:1.3;margin-bottom:10px;flex:1;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">' + esc(descText) + '</div>';
-          var wPtsStr = fs.ptb ? ('<div style="font-size:.7rem;font-weight:700;color:#1a9e50;margin-top:2px;display:flex;align-items:center;gap:4px"><span>♥&#xFE0E;</span> +'+fs.ptb+' pt benessere</div>') : '';
+          var wPtsStr = '';
+          if (fs.ptb) {
+              var split = getPointsSplit(fs);
+              if (split.isSplit) {
+                  wPtsStr = '<div style="font-size:.65rem;font-weight:700;color:#1a9e50;margin-top:2px;display:flex;align-items:center;gap:4px"><span>♥&#xFE0E;</span> +'+split.myS+' te / +'+split.ptS+' partner</div>';
+              } else {
+                  wPtsStr = '<div style="font-size:.7rem;font-weight:700;color:#1a9e50;margin-top:2px;display:flex;align-items:center;gap:4px"><span>♥&#xFE0E;</span> +'+fs.ptb+' pt benessere</div>';
+              }
+          }
           
           h += '<div style="display:flex;flex-direction:column;margin-bottom:12px">';
           h += '<div style="display:flex;align-items:center;gap:6px">';
@@ -3769,7 +3787,14 @@
 
       function getFlashSaleInfo(itemId) {
   var epoch = Math.floor(Date.now() / (5 * 3600 * 1000));
-  var myRewards = S.rewards.filter(function(r) { return r.partner === session || r.partner === 'both'; });
+  var myWPts = getBenesserePts(session);
+  var myLvl = getWellnessLevel(myWPts);
+  var myRewards = S.rewards.filter(function(r) { 
+    var isForMe = r.partner === session || r.partner === 'both';
+    var isUnlocked = myLvl.id >= parseInt(r.reqLvl || 0);
+    var isNotCD = !getCooldown(r);
+    return isForMe && isUnlocked && isNotCD;
+  });
   var fSales = [];
   if (myRewards.length > 0) {
     var a = myRewards.slice();
@@ -3789,22 +3814,77 @@
   return (fx - Math.floor(fx)) > 0.5 ? 0.10 : 0.05;
 }
 
+function getCooldown(r) {
+  if (!session || session === 'admin') return null;
+  
+  var isDiCoppia = (r.cat === 'Di coppia');
+  var isSpecificPerTe = (r.id === '1774349178678');
+  if (!isDiCoppia && !isSpecificPerTe) return null;
+  
+  var myPast = S.requests.filter(function(req) {
+    if (req.by !== session) return false;
+    
+    var pastR = S.rewards.find(function(x) { return x.name === req.name; });
+    if (!pastR) return false;
+    
+    var isPastDiCoppia = (pastR.cat === 'Di coppia');
+    var isPastSpecific = (pastR.id === '1774349178678');
+    
+    return isPastDiCoppia || isPastSpecific;
+  });
+  
+  if (!myPast.length) return null;
+  
+  myPast.sort(function(a, b) { return new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(); });
+  var last = myPast[0];
+  var cdMs = 24 * 3600 * 1000;
+  var reqStart = new Date(last.deadline || last.requestedAt).getTime();
+  var diff = Date.now() - reqStart;
+  
+  if (diff < cdMs) {
+    return {
+      active: true,
+      lastAt: reqStart,
+      target: reqStart + cdMs
+    };
+  }
+  return null;
+}
+
+function getPointsSplit(r) {
+  if (!r.ptb) return null;
+  var isCoppia = (r.cat === 'Di coppia') || (r.id === '1774349178678');
+  if (isCoppia) {
+    return { myS: Math.round(r.ptb * 0.7), ptS: Math.round(r.ptb * 0.3), isSplit: true, total: r.ptb };
+  }
+  return { myS: r.ptb, ptS: 0, isSplit: false, total: r.ptb };
+}
+
 function renderShopItem(r, pts) {
   var dscPct = typeof getFlashSaleInfo === "function" ? getFlashSaleInfo(r.id) : null;
   var finalCost = dscPct ? Math.floor(r.cost * (1 - dscPct)) : r.cost;
   var canAfford = pts >= finalCost;
   
-  var wPtsStr = r.ptb ? ('<div style="font-size:.7rem;font-weight:700;color:#1a9e50;margin-top:2px;display:flex;align-items:center;gap:4px"><span>♥&#xFE0E;</span> +'+r.ptb+' pt benessere</div>') : '';
+  var wPtsStr = '';
+  if (r.ptb) {
+      var split = getPointsSplit(r);
+      if (split.isSplit) {
+          wPtsStr = '<div style="font-size:.65rem;font-weight:700;color:#1a9e50;margin-top:2px;display:flex;align-items:center;gap:4px"><span>♥&#xFE0E;</span> +'+split.myS+' te / +'+split.ptS+' partner</div>';
+      } else {
+          wPtsStr = '<div style="font-size:.7rem;font-weight:700;color:#1a9e50;margin-top:2px;display:flex;align-items:center;gap:4px"><span>♥&#xFE0E;</span> +'+r.ptb+' pt benessere</div>';
+      }
+  }
   
   var myWPts = getBenesserePts(session);
   var myLvl = getWellnessLevel(myWPts);
   var reqLvlId = parseInt(r.reqLvl || 0);
   var isLocked = myLvl.id < reqLvlId;
+  var cdInfo = getCooldown(r);
   var reqLvlName = reqLvlId > 0 ? getWellnessLevel( (reqLvlId===1?100:reqLvlId===2?150:reqLvlId===3?200:reqLvlId===4?300:350) ).name : '';
 
   var borderCol = dscPct ? '#f0c8be' : '#e2e8f0';
   var iconBg = dscPct ? '#fff0ec' : '#eef3fb';
-  var opacity = isLocked ? 'opacity:0.5;filter:grayscale(20%);' : '';
+  var opacity = (isLocked || cdInfo) ? 'opacity:0.5;filter:grayscale(60%);' : '';
 
   var h = '<div style="background:#ffffff;border:1px solid '+borderCol+';border-radius:16px;padding:16px;margin-bottom:12px;display:flex;gap:14px;align-items:center;position:relative;'+opacity+'">';
   if (dscPct && !isLocked) {
@@ -3842,6 +3922,8 @@ function renderShopItem(r, pts) {
   // Button
   if (isLocked) {
     h += '<button style="background:#f0f2f8;color:#a0a8be;border:none;padding:8px 16px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer" data-action="open-locked-modal" data-arg="'+reqLvlName+'">🔒 Bloccato</button>';
+  } else if (cdInfo) {
+    h += '<button style="background:#f0f2f8;color:#a0a8be;border:none;padding:8px 16px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer" data-action="open-cd-modal" data-arg="'+r.id+'">⏳ In Ricarica</button>';
   } else if (canAfford) {
     h += '<button style="background:#1a2a5e;color:#ffffff;border:none;padding:8px 16px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer" data-action="open-claim" data-arg="'+esc(r.id)+'" '+(dscPct?'data-arg2="'+finalCost+'"':'')+'>Acquista</button>';
   } else {
@@ -3972,7 +4054,7 @@ function renderShopItem(r, pts) {
       function renderLockedModal() {
         var myWPts = getBenesserePts(session);
         var myLvl = getWellnessLevel(myWPts);
-        var h = '<div class="overlay" style="background:rgba(15,20,45,0.6);padding-top:15vh;display:flex;justify-content:center" data-action="close-overlay">';
+        var h = '<div class="overlay" style="background:rgba(15,20,45,0.6);display:flex;align-items:center;justify-content:center" data-action="close-overlay">';
         h += '<div class="sheet" style="background:#ffffff;padding:32px 24px;border-radius:24px;text-align:center;width:90%;max-width:320px;position:relative">';
         h += '<div style="width:64px;height:64px;background:#f4f6fb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin:0 auto 16px;color:#1a2a5e">🔒</div>';
         h += '<h2 style="font-family:\'Inter\',sans-serif;font-size:1.3rem;color:#1a1f36;font-weight:800;margin-bottom:12px">Prodotto bloccato</h2>';
@@ -3990,6 +4072,36 @@ function renderShopItem(r, pts) {
         return h;
       }
 
+      function renderCooldownModal() {
+        var rId = overlay.rId;
+        var r = S.rewards.find(function(x) { return x.id === rId; });
+        if (!r) return '';
+        var cd = getCooldown(r);
+        if (!cd) return ''; 
+
+        var h = '<div class="overlay" style="background:rgba(15,20,45,0.6);display:flex;align-items:center;justify-content:center" data-action="close-overlay">';
+        h += '<div class="sheet" style="background:#ffffff;padding:32px 24px;border-radius:24px;text-align:center;width:90%;max-width:360px;position:relative">';
+        h += '<div style="width:52px;height:52px;background:#f4f6fb;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto 16px;color:#1a2a5e">🕒</div>';
+        h += '<h2 style="font-family:\'Inter\',sans-serif;font-size:1.3rem;color:#1a1f36;font-weight:800;margin-bottom:8px">Ricarica in corso</h2>';
+        h += '<div style="font-size:.9rem;color:#6b7080;line-height:1.5;margin-bottom:24px">Hai già ordinato un\'<strong style="color:#1a1f36">esperienza di coppia</strong> di recente.<br>Potrai riacquistarne un\'altra tra:</div>';
+
+        h += '<div style="background:#f4f6fb;border-radius:16px;padding:24px 20px 20px;margin-bottom:16px;position:relative">';
+        h += '<div class="cnt-down-timer" data-target="'+cd.target+'" data-start="'+cd.lastAt+'" data-cdbox="1"></div>';
+        
+        // Timeline graphic
+        h += '<div style="height:4px;background:#d0d4e0;border-radius:2px;margin:24px 0 10px;position:relative;overflow:hidden"><div class="cd-prog-fill" style="position:absolute;top:0;left:0;height:100%;background:#1a2a5e;width:0%"></div></div>';
+        h += '</div>';
+
+        h += '<div style="background:#fffcf0;border:1px solid #fbe69e;border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;text-align:left;margin-bottom:24px">';
+        h += '<div style="color:#e0a800;font-size:1.1rem;margin-top:-2px">ⓘ</div>';
+        h += '<div style="font-size:.8rem;color:#a87d00;line-height:1.4;font-weight:600">Il cooldown garantisce che entrambi i partner abbiano il tempo di vivere appieno l\'esperienza prima del prossimo ordine.</div>';
+        h += '</div>';
+
+        h += '<button style="width:100%;color:#1a1f36;background:#ffffff;border:1px solid #d0d4e0;padding:14px;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer" data-action="cancel-overlay">Chiudi</button>';
+        h += '</div></div>';
+        return h;
+      }
+
       function renderOverlay() {
         if (!overlay) return '';
         if (overlay.type === 'reward_nudge') return renderRewardNudgeOverlay();
@@ -3997,6 +4109,7 @@ function renderShopItem(r, pts) {
         if (overlay.type === 'claim_success') return renderClaimSuccessOverlay();
         if (overlay.type === 'order_detail') return renderOrderDetailOverlay();
         if (overlay.type === 'locked') return renderLockedModal();
+        if (overlay.type === 'cooldown') return renderCooldownModal();
         if (overlay.type === 'activity') {
           if (flashQ) return '<div class="overlay center"><div class="sheet rounded" style="overflow:hidden;padding:0">' + renderFlashQuestion() + '</div></div>';
           if (miniGame) return '<div class="overlay center"><div class="sheet rounded" style="overflow:hidden;padding:0">' + renderMiniGame() + '</div></div>';
@@ -4119,14 +4232,20 @@ function renderShopItem(r, pts) {
         h += '</div></div>';
         
         var pEarned = rr.ptb;
+        var pOrigR = S.rewards.filter(function(x){return x.name===rr.name;})[0] || rr;
         if (typeof pEarned === 'undefined') {
-          var origR = S.rewards.filter(function(x){return x.name===rr.name;})[0];
-          pEarned = origR ? (origR.ptb||0) : 0;
+          pEarned = pOrigR.ptb || 0;
         }
         if (pEarned > 0) {
+          pOrigR.ptb = pEarned; 
+          var split = getPointsSplit(pOrigR);
           h += '<div style="margin-bottom:24px;background:#eefdf3;border:1px dashed #75d49a;border-radius:12px;padding:12px;text-align:center">';
           h += '<div style="font-size:.7rem;color:#1a9e50;font-weight:800;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">PUNTI GUADAGNATI</div>';
-          h += '<div style="font-size:1.2rem;color:#1a9e50;font-weight:900">♥&#xFE0E; +' + pEarned + ' pt benessere</div>';
+          if (split && split.isSplit) {
+            h += '<div style="font-size:1.1rem;color:#1a9e50;font-weight:900">♥&#xFE0E; +' + split.myS + ' te / +' + split.ptS + ' partner</div>';
+          } else {
+            h += '<div style="font-size:1.2rem;color:#1a9e50;font-weight:900">♥&#xFE0E; +' + pEarned + ' pt benessere</div>';
+          }
           h += '</div>';
         }
 
@@ -4536,23 +4655,48 @@ function renderShopItem(r, pts) {
                 el.setAttribute("data-reload","0"); 
                 setTimeout(function(){ if(typeof render==="function") render(); }, 1000); 
             }
-            el.innerHTML = "00:00:00";
+            if (el.getAttribute("data-cdbox") === "1") {
+              el.innerHTML = "00:00:00";
+            } else {
+              el.innerHTML = "00:00:00";
+            }
             var prnt = el.parentElement.parentElement.nextElementSibling;
             var bar2 = prnt ? prnt.firstElementChild : null;
             if (bar2 && bar2.classList.contains("cnt-prog-fill")) {
                bar2.style.width = "0%";
             }
+            var barCd = el.parentNode.querySelector('.cd-prog-fill');
+            if (barCd) barCd.style.width = "100%";
+            
           } else {
             var hd = Math.floor(diff / 3600000);
             var md = Math.floor((diff % 3600000) / 60000);
             var sd = Math.floor((diff % 60000) / 1000);
-            el.innerHTML = (hd<10?"0":"")+hd+":"+(md<10?"0":"")+md+":"+(sd<10?"0":"")+sd;
+            
+            if (el.getAttribute("data-cdbox") === "1") {
+              var hHtml = '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;width:60px;height:65px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,0.02)"><div style="font-size:1.6rem;font-weight:800;color:#1a2a5e;line-height:1">' + (hd<10?"0":"")+hd + '</div><div style="font-size:.65rem;font-weight:700;color:#8a8f9e;margin-top:2px">ore</div></div>';
+              var mHtml = '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;width:60px;height:65px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,0.02)"><div style="font-size:1.6rem;font-weight:800;color:#1a2a5e;line-height:1">' + (md<10?"0":"")+md + '</div><div style="font-size:.65rem;font-weight:700;color:#8a8f9e;margin-top:2px">min</div></div>';
+              var sHtml = '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;width:60px;height:65px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,0.02)"><div style="font-size:1.6rem;font-weight:800;color:#1a2a5e;line-height:1">' + (sd<10?"0":"")+sd + '</div><div style="font-size:.65rem;font-weight:700;color:#8a8f9e;margin-top:2px">sec</div></div>';
+              el.innerHTML = '<div style="display:flex;gap:10px;align-items:center;justify-content:center">' + hHtml + '<div style="font-weight:800;color:#d0d4e0;font-size:1.2rem;margin-top:-14px">:</div>' + mHtml + '<div style="font-weight:800;color:#d0d4e0;font-size:1.2rem;margin-top:-14px">:</div>' + sHtml + '</div>';
+            } else {
+              el.innerHTML = (hd<10?"0":"")+hd+":"+(md<10?"0":"")+md+":"+(sd<10?"0":"")+sd;
+            }
+            
             var prnt = el.parentElement.parentElement.nextElementSibling;
             var bar2 = prnt ? prnt.firstElementChild : null;
             var max = parseInt(el.getAttribute("data-max"), 10);
             if (max > 0 && bar2 && bar2.classList.contains("cnt-prog-fill")) {
                var pct = Math.max(0, Math.min(100, (diff / max) * 100));
                bar2.style.width = pct + "%";
+            }
+            
+            var barCd = el.parentNode.querySelector('.cd-prog-fill');
+            if (barCd && el.getAttribute("data-start")) {
+               var start = parseInt(el.getAttribute("data-start"), 10);
+               var elapsed = now - start;
+               var total = target - start;
+               var pct = Math.min(100, Math.max(0, (elapsed / total) * 100));
+               barCd.style.width = pct + "%";
             }
           }
         });
