@@ -2106,7 +2106,13 @@
 
       /* ── HELPERS ── */
       function todayKey() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
-      function daysAgo(iso) { if (!iso) return 0; return Math.round((Date.now() - new Date(iso)) / 86400000); }
+      function daysAgo(iso) { 
+        if (!iso) return 0; 
+        var d1 = new Date(iso); d1.setHours(0,0,0,0);
+        var d2 = new Date(); d2.setHours(0,0,0,0);
+        var diff = Math.round((d2.getTime() - d1.getTime()) / 86400000);
+        return Math.max(0, diff - 1); // 1 = 1 full day without orders
+      }
       function fmtDt(s) { if (!s) return ''; try { return new Date(s).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch (e) { return s; } }
       function fmtTime(s) { if (!s) return ''; try { return new Date(s).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return s; } }
 
@@ -2684,7 +2690,9 @@
         // ── Expire overdue reward requests ──
         S.requests.forEach(function (rr, i) {
           if (rr.status === 'pending' && rr.mode === 'deadline' && rr.deadline && new Date(rr.deadline) < new Date()) {
-            S.requests[i].status = 'expired'; changed = true;
+            S.requests[i].status = 'done_confirm'; 
+            S.requests[i].doneAt = new Date().toISOString(); 
+            changed = true;
           }
         });
 
@@ -4347,10 +4355,8 @@ function renderShopItem(r, pts) {
             h += '<button style="background:#1a7a4a;color:#fff;border:none;padding:16px;border-radius:12px;font-size:1rem;font-weight:700;display:flex;justify-content:center;align-items:center;cursor:pointer" data-action="confirm-done" data-arg="' + esc(rr.id) + '" data-arg2="yes">Conferma Ricezione ✅</button>';
             h += '<div style="display:flex;gap:10px">';
             h += '<button style="flex:1;background:#fff5f0;color:#c04020;border:1px solid #f5c0bc;padding:12px;border-radius:12px;font-size:.9rem;font-weight:700;cursor:pointer" data-action="report-late" data-arg="' + esc(rr.id) + '">In Ritardo</button>';
-            h += '<button style="flex:1;background:#fff5f0;color:#a32d2d;border:1px solid #f5c0bc;padding:12px;border-radius:12px;font-size:.9rem;font-weight:700;cursor:pointer" data-action="confirm-done" data-arg="' + esc(rr.id) + '" data-arg2="no">Non Eseguito</button>';
+            h += '<button style="flex:1;background:#fff5f0;color:#a32d2d;border:1px solid #f5c0bc;padding:12px;border-radius:12px;font-size:.9rem;font-weight:700;cursor:pointer" data-action="declare-unfulfilled" data-arg="' + esc(rr.id) + '">Non Consegnato</button>';
             h += '</div>';
-          } else if (rr.status === 'pending' && Date.now() > new Date(rr.deadline||0).getTime() + 600000) {
-            h += '<button style="background:#fdf0f0;color:#a32d2d;border:1px solid #f5c0bc;padding:16px;border-radius:12px;font-size:1rem;font-weight:700;display:flex;justify-content:center;cursor:pointer" data-action="declare-unfulfilled" data-arg="' + esc(rr.id) + '">Dichiara Inadempienza 🚨</button>';
           } else if (rr.status === 'expired') {
              h += '<button style="background:#e6f7ee;color:#1a7a4a;border:1px solid #a3e6be;padding:16px;border-radius:12px;font-size:1rem;font-weight:700;display:flex;justify-content:center;cursor:pointer" data-action="confirm-done" data-arg="' + esc(rr.id) + '" data-arg2="yes">Alla fine consegnato ✅</button>';
           }
