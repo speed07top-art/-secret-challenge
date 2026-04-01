@@ -2258,6 +2258,7 @@
           case 'ob-back': obStep--; render(); break;
           case 'ob-close': showOB = false; render(); break;
           case 'add-q': addQ(); break;
+          case 'save-cq-config': saveCQConfig(); break;
           case 'del-q': delQ(arg); break;
           case 'add-r': addR(); break;
           case 'edit-r': window.editRewardId = arg; render(); break;
@@ -2270,6 +2271,11 @@
           case 'fq-dismiss': dismissFlashQ(); break;
           case 'fq-claim': flashQ = null; miniGame = null; tab = 'shop'; render(); break;
           case 'fq-skip-claim': flashQ = null; miniGame = null; render(); break;
+          case 'start-cq': startCQ(); break;
+          case 'begin-cq': beginCQ(); break;
+          case 'close-cq': closeCQ(); break;
+          case 'ans-cq': ansCQ(+arg); break;
+          case 'claim-cq': claimCQPrize(); break;
           case 'mg-dismiss': dismissMiniGame(); break;
           case 'mg-wheel-spin': doWheelSpin(); break;
           case 'mg-scratch': doScratchReveal(+arg); break;
@@ -2420,8 +2426,8 @@
       var DB_REF = 'sc_app';
 
       /* ── DATA ── */
-      function freshUser() { return { pwd: '', pwdSet: false, pts: 1000, quizToday: null, lastRewardClaim: null, penaltyChecked: null, onboardingFireCompleted: false, onboardingFireSkipped: false }; }
-      var BLANK = { users: { giulia: freshUser(), stefano: freshUser() }, questions: [], rewards: [], requests: [] };
+      function freshUser() { return { pwd: '', pwdSet: false, pts: 1000, quizToday: null, lastRewardClaim: null, penaltyChecked: null, onboardingFireCompleted: false, onboardingFireSkipped: false, cqState: null }; }
+      var BLANK = { users: { giulia: freshUser(), stefano: freshUser() }, questions: [], rewards: [], requests: [], coupleQuizConfig: { qs: ['', '', ''], o1: [['','','',''],['','','',''],['','','','']], c: [0, 0, 0], prodId: '' } };
 
       /* ── FIRE ONBOARDING — 18 QUESTIONS ── */
       var FIRE_QUESTIONS = [
@@ -2516,6 +2522,7 @@
           var params = new URLSearchParams(window.location.search);
           var targetTab = params.get('tab');
           var targetOrder = params.get('order');
+          if (params.get('test_cq') === '1') window._debugCQ = true;
           if (targetTab) tab = targetTab;
           if (targetOrder) {
             // Will be applied after session loads — stored temporarily
@@ -2548,7 +2555,8 @@
           users: s.users,
           questions: arrToObj(s.questions),
           rewards: arrToObj(s.rewards),
-          requests: arrToObj(s.requests)
+          requests: arrToObj(s.requests),
+          coupleQuizConfig: s.coupleQuizConfig
         };
         _writing = true;
         if (_writeTimer) clearTimeout(_writeTimer);
@@ -2671,6 +2679,16 @@
         ntfySend(topic, '📦 Nuovo ordine ricevuto!', msg, ['package'], clickUrl);
       }
 
+      function notifyPartnerCQReady() {
+        var pt = session === 'giulia' ? 'stefano' : 'giulia';
+        var topic = S.users[pt] && S.users[pt].ntfyTopic;
+        if (!topic) return;
+        var myName = session === 'giulia' ? '🌸 Giulia' : '⚡ Stefano';
+        var msg = myName + ' ha impostato le sue preferenze! Entra ora per indovinarle.';
+        var clickUrl = APP_URL + '?tab=giochi';
+        ntfySend(topic, '🧠 Quiz di coppia pronto!', msg, ['brain'], clickUrl);
+      }
+
       /* ── ACTIVITY ENGINE (Flash Questions + Mini-Games) ── */
 
       var ALL_ACTIVITY_HOURS = [15, 16, 17, 18, 19, 20, 21];
@@ -2731,6 +2749,8 @@
 
       /* ── MINI-GAME STATE ── */
       var miniGame = null;
+      var coupleQuiz = null;
+      var cqInterval = null;
       /* miniGame shape: {
            type: 'wheel'|'scratch'|'slots'|'dice',
            slotKey: string,
@@ -2914,6 +2934,220 @@
         }
         miniGame = null;
         render();
+      }
+
+      function startCQ() {
+         var cw = new Date().getDay();
+         var isDebug = window._debugCQ === true;
+         var cSetter = (cw===3 || isDebug) ? 'stefano' : 'giulia';
+         var cGuesser = (cw===3 || isDebug) ? 'giulia' : 'stefano';
+         coupleQuiz = {
+           step: 'intro',
+           setter: cSetter,
+           isGuesser: session === cGuesser,
+           qIdx: 0,
+           ans: [],
+           rem: 20,
+           correctCnt: 0,
+           res: []
+         };
+         render();
+      }
+      function beginCQ() {
+         coupleQuiz.step = 'q';
+         startCQTimer();
+         render();
+      }
+      function startCQTimer() {
+         if (cqInterval) clearInterval(cqInterval);
+         coupleQuiz.rem = 20;
+         cqInterval = setInterval(function() {
+            if (!coupleQuiz || coupleQuiz.step !== 'q') { clearInterval(cqInterval); return; }
+            coupleQuiz.rem--;
+            var el = document.getElementById('cq-timer');
+            if (el) el.innerText = coupleQuiz.rem;
+            if (coupleQuiz.rem <= 0) {
+              ansCQ(-1); // timeout
+            }
+         }, 1000);
+      }
+      function ansCQ(optIdx) {
+         clearInterval(cqInterval);
+         var cfg = S.coupleQuizConfig || { qs:['','',''], o1:[['','','',''],['','','',''],['','','','']], prodId:'' };
+         coupleQuiz.ans.push(optIdx);
+         
+         if (coupleQuiz.isGuesser) {
+           var ptST = S.users[partner()].cqState;
+           var isCorrect = false;
+           if (ptST && ptST.setterAnswers && ptST.setterAnswers[coupleQuiz.qIdx] === optIdx) {
+             isCorrect = true;
+             coupleQuiz.correctCnt++;
+             S.users[session].pts += 5;
+             S.users[partner()].pts += 5;
+           }
+           coupleQuiz.res.push(isCorrect);
+         }
+         
+         setTimeout(function() {
+           if (coupleQuiz.qIdx < 2) {
+             coupleQuiz.qIdx++;
+             startCQTimer();
+             render();
+           } else {
+             coupleQuiz.step = 'result';
+             var myST = S.users[session].cqState;
+             if (!myST || myST.date !== todayKey()) S.users[session].cqState = { date: todayKey() };
+             if (coupleQuiz.isGuesser) {
+               S.users[session].cqState.guesserAnswers = coupleQuiz.ans;
+               S.users[session].cqState.res = coupleQuiz.res;
+               // Unlock prize only if the 3rd question is correct
+               S.users[session].cqState.wonPrize = coupleQuiz.res[2]; 
+               S.users[session].cqState.prizeExpires = Date.now() + 600000;
+             } else {
+               S.users[session].cqState.setterAnswers = coupleQuiz.ans;
+               notifyPartnerCQReady();
+             }
+             save(S);
+             render();
+           }
+         }, 800);
+         render(); 
+      }
+      function closeCQ() {
+         coupleQuiz = null;
+         if (cqInterval) clearInterval(cqInterval);
+         render();
+      }
+      function claimCQPrize() {
+         var myST = S.users[session].cqState;
+         var cfg = S.coupleQuizConfig || { qs:['','',''], o1:[['','','',''],['','','',''],['','','','']], prodId:'' };
+         if (myST && myST.wonPrize && myST.prizeExpires > Date.now()) {
+            S.requests.push({ id: 'req_' + Date.now(), rewardId: cfg.prodId, name: 'Premio Quiz di Coppia', emoji: '🎁', by: session, requestedAt: new Date().toISOString(), status: 'pending', partner: partner() });
+            myST.wonPrize = false;
+            save(S);
+            alert('Premio richiesto con successo! Lo troverai nei tuoi ordini.');
+            closeCQ();
+         }
+      }
+
+      function renderCoupleQuiz() {
+        var cfg = S.coupleQuizConfig || { qs:['','',''], o1:[['','','',''],['','','',''],['','','','']], prodId:'' };
+        var h = '<div style="min-height:100vh;background:#6c3fc4;display:flex;flex-direction:column;font-family:\'DM Sans\',sans-serif;color:white;padding:20px;padding-top:max(20px,env(safe-area-inset-top));box-sizing:border-box">';
+        
+        if (coupleQuiz.step === 'intro') {
+           h += '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">';
+           h += '<div style="font-size:4rem;margin-bottom:20px">🧠</div>';
+           h += '<div style="font-size:.75rem;font-weight:700;letter-spacing:.1em;margin-bottom:12px;opacity:.8">QUIZ DI COPPIA</div>';
+           if (coupleQuiz.isGuesser) {
+             h += '<h1 style="font-family:\'Playfair Display\',serif;font-size:2rem;line-height:1.2;margin-bottom:16px">Quanto conosci '+pname(coupleQuiz.setter)+'?</h1>';
+             h += '<p style="font-size:.9rem;line-height:1.5;opacity:.9;margin-bottom:40px;padding:0 20px">3 domande sulle preferenze di '+pname(coupleQuiz.setter)+'. Rispondi correttamente e vinci un premio immediato su un prodotto dello shop.</p>';
+           } else {
+             h += '<h1 style="font-family:\'Playfair Display\',serif;font-size:2rem;line-height:1.2;margin-bottom:16px">Definisci le tue preferenze</h1>';
+             h += '<p style="font-size:.9rem;line-height:1.5;opacity:.9;margin-bottom:40px;padding:0 20px">Rispondi a 3 semplici domande. Ti ricordiamo che la terza domanda prevede lo sblocco di un prodotto in omaggio.</p>';
+           }
+           h += '<div style="background:rgba(255,255,255,0.1);border-radius:16px;padding:24px;width:100%;margin-bottom:30px">';
+           h += '<div style="display:flex;justify-content:space-between;margin-bottom:12px"><span style="opacity:.8;font-size:.85rem">Domande</span><span style="font-weight:700">3</span></div>';
+           h += '<div style="display:flex;justify-content:space-between"><span style="opacity:.8;font-size:.85rem">Tempo per domanda</span><span style="font-weight:700">20 secondi</span></div>';
+           h += '</div>';
+           h += '<button style="background:white;color:#6c3fc4;border:none;padding:16px;border-radius:14px;font-size:1.05rem;font-weight:700;width:100%;cursor:pointer;margin-bottom:20px" data-action="begin-cq">Inizia il quiz →</button>';
+           h += '<button style="background:none;border:none;color:white;opacity:.8;font-size:.9rem;cursor:pointer" data-action="close-cq">Torna ai giochi</button>';
+           h += '</div>';
+        } 
+        else if (coupleQuiz.step === 'q') {
+           var qI = coupleQuiz.qIdx;
+           h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:30px">';
+           h += '<button style="background:white;color:#6c3fc4;border:none;width:36px;height:36px;border-radius:18px;display:flex;align-items:center;justify-content:center;cursor:pointer" data-action="close-cq">✕</button>';
+           h += '<div style="font-size:.9rem;font-weight:700;opacity:.9">Domanda '+(qI+1)+' di 3</div>';
+           h += '<div style="font-size:1.1rem;font-weight:800;color:'+(coupleQuiz.rem<=5?'#ff8080':'white')+'" id="cq-timer">'+coupleQuiz.rem+'</div>';
+           h += '</div>';
+           h += '<div style="flex:1">';
+           var labels = ['A','B','C','D'];
+           
+           if (coupleQuiz.isGuesser) h += '<div style="text-align:center;font-size:.75rem;font-weight:700;letter-spacing:.1em;margin-bottom:10px;opacity:.8">PREFERENZE DI '+pname(coupleQuiz.setter).toUpperCase()+'</div>';
+           else h += '<div style="text-align:center;font-size:.75rem;font-weight:700;letter-spacing:.1em;margin-bottom:10px;opacity:.8">LE TUE PREFERENZE</div>';
+           
+           h += '<h2 style="font-family:\'Playfair Display\',serif;font-size:1.5rem;line-height:1.3;text-align:center;margin-bottom:40px">'+esc(cfg.qs[qI])+'</h2>';
+           
+           for(var j=0; j<4; j++) {
+              var optText = esc(cfg.o1[qI][j]);
+              if (!optText) continue;
+              var isSelected = coupleQuiz.ans.length > qI && coupleQuiz.ans[qI] === j;
+              var bg = 'white', col = '#1a1f36', op = 1;
+              if (coupleQuiz.ans.length > qI) {
+                 if (isSelected) {
+                   if (coupleQuiz.isGuesser) {
+                     bg = coupleQuiz.res[qI] ? '#e6faed' : '#fde8e6';
+                     col = coupleQuiz.res[qI] ? '#1a9e50' : '#e74c3c';
+                   } else {
+                     bg = '#e6faed'; col = '#1a9e50';
+                   }
+                 } else { op = 0.5; }
+              }
+              h += '<button style="display:flex;align-items:center;width:100%;background:'+bg+';color:'+col+';border:none;padding:16px;border-radius:14px;margin-bottom:12px;font-size:.95rem;font-weight:600;font-family:\'DM Sans\',sans-serif;cursor:pointer;opacity:'+op+';transition:all 0.2s" '+(coupleQuiz.ans.length>qI?'disabled':'data-action="ans-cq" data-arg="'+j+'"')+'>';
+              var letterBg = isSelected ? 'transparent' : '#f0f4fb';
+              var letter = isSelected ? (coupleQuiz.isGuesser ? (coupleQuiz.res[qI] ? '✓' : '✕') : '✓') : labels[j];
+              h += '<div style="width:28px;height:28px;border-radius:14px;background:'+letterBg+';color:'+(isSelected?col:'#8a8f9e')+';display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:800;margin-right:16px;flex-shrink:0">'+letter+'</div>';
+              h += '<div style="text-align:left">'+optText+'</div>';
+              h += '</button>';
+           }
+           h += '</div>';
+        }
+        else if (coupleQuiz.step === 'result') {
+           h += '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">';
+           h += '<div style="font-size:4rem;margin-bottom:20px">🎉</div>';
+           h += '<div style="font-size:.75rem;font-weight:700;letter-spacing:.1em;margin-bottom:12px;opacity:.8">RISULTATO</div>';
+           if (coupleQuiz.isGuesser) {
+             h += '<h1 style="font-family:\'Playfair Display\',serif;font-size:2.2rem;line-height:1.2;margin-bottom:10px">'+coupleQuiz.correctCnt+' su 3 corrette!</h1>';
+             if (coupleQuiz.correctCnt >= 2) h += '<p style="font-size:.9rem;line-height:1.5;opacity:.9;margin-bottom:30px">Conosci bene '+pname(coupleQuiz.setter)+'. Hai guadagnato Punti Benessere extra!</p>';
+             else h += '<p style="font-size:.9rem;line-height:1.5;opacity:.9;margin-bottom:30px">Non benissimo. Forse devi ascoltare di più '+pname(coupleQuiz.setter)+'.</p>';
+             
+             h += '<div style="background:rgba(255,255,255,0.1);border-radius:16px;padding:16px;width:100%;margin-bottom:20px">';
+             for(var i=0; i<3; i++) {
+               var label = 'Domanda '+(i+1);
+               var cStr = coupleQuiz.res[i] ? '<span style="color:#2ecc71">✓ Corretta</span>' : '<span style="color:#ff8080">✕ Errata</span>';
+               h += '<div style="display:flex;justify-content:space-between;margin-bottom:'+(i<2?'16px':'0')+'"><span style="opacity:.8;font-size:.85rem">'+label+'</span><span style="font-weight:700;font-size:.85rem">'+cStr+'</span></div>';
+             }
+             h += '</div>';
+             
+             if (coupleQuiz.res[2] && cfg.prodId) {
+               var rw = S.rewards.find(function(rx) { return rx.id === cfg.prodId; });
+               if (rw) {
+                 var myST = S.users[session].cqState;
+                 var remMs = Math.max(0, myST.prizeExpires - Date.now());
+                 h += '<div style="background:#f4f0ff;border-radius:16px;padding:20px;width:100%;margin-bottom:24px;color:#1a1f36;text-align:left">';
+                 h += '<div style="font-size:.75rem;font-weight:800;letter-spacing:.05em;margin-bottom:12px;color:#1a1f36">● PREMIO SBLOCCATO</div>';
+                 h += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">';
+                 h += '<div style="font-size:2rem;background:#ffffff;padding:10px;border-radius:12px">'+(rw.emoji||'🎁')+'</div>';
+                 h += '<div><div style="font-weight:800;font-size:1rem;margin-bottom:4px">'+esc(rw.name)+'</div><div style="font-size:.75rem;color:#8a8f9e">Premio valido per 10 minuti</div></div>';
+                 h += '</div>';
+                 if (myST.wonPrize && remMs > 0) {
+                    h += '<div style="background:#fef3cc;border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center;font-size:.85rem"><span style="color:#856404;font-weight:500">Premio scade tra</span><span class="cnt-down-timer" data-target="'+myST.prizeExpires+'" data-max="0" style="font-weight:700;color:#856404;font-family:\'DM Sans\',sans-serif">10:00:00</span></div>';
+                 } else if (remMs <= 0 && myST.wonPrize) {
+                    h += '<div style="color:var(--red);font-size:.85rem;font-weight:700">Premio scaduto</div>';
+                 } else {
+                    h += '<div style="color:var(--green);font-size:.85rem;font-weight:700">Premio richiesto</div>';
+                 }
+                 h += '</div>';
+                 
+                 if (myST.wonPrize && remMs > 0) {
+                    h += '<button style="background:white;color:#6c3fc4;border:none;padding:16px;border-radius:14px;font-size:1.05rem;font-weight:700;width:100%;cursor:pointer;margin-bottom:20px" data-action="claim-cq">Riscatta ora</button>';
+                 } else {
+                    h += '<button style="background:rgba(255,255,255,0.2);color:white;border:none;padding:16px;border-radius:14px;font-size:1.05rem;font-weight:700;width:100%;cursor:pointer;margin-bottom:20px" data-action="close-cq">Chiudi</button>';
+                 }
+               }
+             } else {
+                h += '<button style="background:white;color:#6c3fc4;border:none;padding:16px;border-radius:14px;font-size:1.05rem;font-weight:700;width:100%;cursor:pointer;margin-bottom:20px" data-action="close-cq">Torna ai giochi</button>';
+             }
+           } else {
+             h += '<h1 style="font-family:\'Playfair Display\',serif;font-size:2.2rem;line-height:1.2;margin-bottom:10px">Perfetto!</h1>';
+             h += '<p style="font-size:.9rem;line-height:1.5;opacity:.9;margin-bottom:30px">Le tue preferenze sono state salvate.<br>Ora tocca a '+pname(coupleQuiz.setter === 'giulia' ? 'stefano' : 'giulia')+' indovinare!</p>';
+             h += '<button style="background:white;color:#6c3fc4;border:none;padding:16px;border-radius:14px;font-size:1.05rem;font-weight:700;width:100%;cursor:pointer;margin-bottom:20px" data-action="close-cq">Torna ai giochi</button>';
+           }
+           h += '</div>';
+        }
+        
+        h += '</div>';
+        return h;
       }
 
       function renderFlashQuestion() {
@@ -3450,6 +3684,27 @@
         save(S); render();
       }
       function delR(id) { S.rewards = S.rewards.filter(function (r) { return r.id !== id; }); save(S); render(); }
+      
+      function saveCQConfig() {
+        var qs = [document.getElementById('cq_q1').value, document.getElementById('cq_q2').value, document.getElementById('cq_q3').value];
+        var o1 = [];
+        for (var i=0; i<3; i++) {
+          var opts = [];
+          for (var j=0; j<4; j++) {
+            opts.push(document.getElementById('cq_o'+(i+1)+'_'+(j+1)).value);
+          }
+          o1.push(opts);
+        }
+        var prodId = document.getElementById('cq_prod').value;
+        S.coupleQuizConfig = { qs: qs, o1: o1, c: [0, 0, 0], prodId: prodId };
+        // Reset cq states when new questions are saved
+        if (S.users.giulia) S.users.giulia.cqState = null;
+        if (S.users.stefano) S.users.stefano.cqState = null;
+        save(S);
+        toast = 'Configurazione salvata.';
+        setTimeout(function() { toast=''; render(); }, 2000);
+        render();
+      }
       function adjPts(p, d) { S.users[p].pts = Math.max(0, (S.users[p].pts || 0) + d); save(S); showToast((d > 0 ? '+' : '') + d + ' pt a ' + pname(p)); render(); }
       function doReset() {
         if (confirm('Reset completo? Irreversibile!')) {
@@ -3958,6 +4213,11 @@
           }
           return;
         }
+        
+        if (coupleQuiz) {
+          root.innerHTML = renderCoupleQuiz();
+          return;
+        }
 
         root.innerHTML = renderApp();
       }
@@ -4250,6 +4510,49 @@
             return h;
           };
 
+          var cw = new Date().getDay();
+          var isDebug = window._debugCQ === true;
+          if (cw===1 || cw===3 || cw===5 || isDebug) {
+            var cSetter = (cw===3 || isDebug) ? 'stefano' : 'giulia';
+            var cGuesser = (cw===3 || isDebug) ? 'giulia' : 'stefano';
+            var myST = S.users[me].cqState || {};
+            var ptST = S.users[pt].cqState || {};
+            var cDone = myST.date === todayKey() && ((session === cSetter && myST.setterAnswers) || (session === cGuesser && myST.guesserAnswers));
+            
+            var setterReady = ptST.date === todayKey() && ptST.setterAnswers;
+            if (isDebug) setterReady = true; // In debug il partner è sempre pronto se sono il guesser
+            
+            var canPlay = false;
+            var cqSub = '';
+            
+            if (session === cSetter) {
+              if ((hr >= 15 || isDebug) && !cDone) { canPlay = true; cqSub = 'Definisci le tue preferenze in 3 brevi domande.'; }
+            } else {
+              if ((hr >= 16 || isDebug) && setterReady && !cDone) { canPlay = true; cqSub = 'Quanto conosci '+pname(cSetter)+'? Rispondi a 3 domande e vinci un premio.'; }
+              else if ((hr >= 15 || isDebug) && !cDone && !setterReady) { canPlay = false; cqSub = 'In attesa che '+pname(cSetter)+' compili il suo quiz.'; }
+            }
+            
+            if (!cDone && (canPlay || ((hr>=15 || isDebug) && session!==cSetter))) {
+              page += '<div style="background:#f4f0ff;border-radius:18px;margin-bottom:16px;padding:2px">';
+              page += '<div style="background:#ffffff;border-radius:16px;padding:16px;box-shadow:0 4px 12px rgba(26,42,94,0.03);display:flex;flex-direction:column">';
+              page += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">';
+              page += '<div style="display:flex;gap:12px;align-items:center">';
+              page += '<div style="width:48px;height:48px;background:#f4f0ff;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.8rem">🧠</div>';
+              page += '<div><div style="font-size:1.05rem;font-weight:800;color:#1a1f36">Quiz di coppia</div></div></div>';
+              page += '<div style="font-size:.7rem;color:#6c3fc4;background:#f0eaff;font-weight:800;padding:4px 8px;border-radius:8px">Novità</div></div>';
+              page += '<div style="font-size:.8rem;color:#8a8f9e;line-height:1.4;margin-bottom:16px">'+cqSub+'</div>';
+              page += '<div style="display:flex;justify-content:space-between;align-items:center">';
+              if (canPlay) {
+                page += '<div style="font-size:.8rem;font-weight:700;color:#6c3fc4">✦ Prodotto in omaggio</div>';
+                page += '<button style="background:#6c3fc4;color:#ffffff;border:none;padding:10px 16px;border-radius:10px;font-size:.85rem;font-weight:700;cursor:pointer" data-action="start-cq">Inizia →</button>';
+              } else {
+                page += '<div style="font-size:.8rem;font-weight:700;color:#a0a8be">Non disponibile</div>';
+                page += '<button style="background:#f0f4fb;color:#a0a8be;border:none;padding:10px 16px;border-radius:10px;font-size:.85rem;font-weight:700;cursor:not-allowed">In attesa</button>';
+              }
+              page += '</div></div></div>';
+            }
+          }
+
           if (activeHours.length > 0) {
             page += '<div style="font-size:.75rem;font-weight:800;color:#6b7080;text-transform:uppercase;margin-bottom:12px;letter-spacing:.05em">ATTIVI ORA</div>';
             activeHours.forEach(function (item) {
@@ -4270,7 +4573,6 @@
           }
 
           page += '<div style="height:30px"></div>';
-
 
         }
         else if (tab === 'execute') {
@@ -5516,6 +5818,25 @@
           body += '</div></div>';
         }
 
+        else if (adminTab === 'couple_quiz') {
+          var cfg = S.coupleQuizConfig || { qs:['','',''], o1:[['','','',''],['','','',''],['','','','']], prodId:'' };
+          body += '<div class="acard"><h3>💜 Configurazione Quiz Coppia</h3>';
+          body += '<p style="font-size:0.8rem;color:var(--muted);margin-bottom:12px">Imposta le tre domande che la coppia dovrà indovinare a vicenda. Il quiz è attivo Lunedì, Mercoledì e Venerdì alle 15:00.</p>';
+          for (var i=0; i<3; i++) {
+            body += '<div style="margin-bottom:16px;border:1px solid #e0eaf8;padding:12px;border-radius:12px"><h4 style="margin-bottom:8px">Domanda '+(i+1)+'</h4>';
+            body += '<div class="af" style="margin-bottom:11px"><label>Testo Domanda</label><textarea id="cq_q'+(i+1)+'" placeholder="Es. Qual è il posto preferito per...?">'+esc(cfg.qs[i]||'')+'</textarea></div>';
+            body += '<div class="agrid">';
+            for (var j=0; j<4; j++) {
+              body += '<div class="af"><label>Opzione '+(j+1)+'</label><input id="cq_o'+(i+1)+'_'+(j+1)+'" value="'+esc(cfg.o1[i][j]||'')+'"/></div>';
+            }
+            body += '</div></div>';
+          }
+          body += '<div class="af" style="margin-bottom:14px"><label>Prodotto in Omaggio (Sbloccato con Q3 Corretta)</label><select id="cq_prod"><option value="">Nessuno</option>';
+          rs.forEach(function(r) { body += '<option value="'+esc(r.id)+'" '+(cfg.prodId===r.id?'selected':'')+'>'+(r.emoji||'🎁')+' '+esc(r.name)+' (Lv '+r.reqLvl+')</option>'; });
+          body += '</select></div>';
+          body += '<button class="abtn gold" style="width:100%;margin-top:10px" data-action="save-cq-config">Salva Configurazione</button></div>';
+        }
+
         else if (adminTab === 'stats') {
           var gPts = ptOf('giulia'), sPts = ptOf('stefano');
           var gQ = S.users.giulia.quizToday && S.users.giulia.quizToday.date === todayKey() ? 'Fatto' : '—';
@@ -5581,6 +5902,7 @@
         h += '<div class="adm-body">';
         h += '<div class="adm-tabs">';
         h += '<button class="adm-tab' + (adminTab === 'quiz' ? ' on' : '') + '" data-action="set-adm-tab" data-arg="quiz">🧠 Quiz</button>';
+        h += '<button class="adm-tab' + (adminTab === 'couple_quiz' ? ' on' : '') + '" data-action="set-adm-tab" data-arg="couple_quiz">💜 Quiz Coppia</button>';
         h += '<button class="adm-tab' + (adminTab === 'rewards' ? ' on' : '') + '" data-action="set-adm-tab" data-arg="rewards">🎁 Premi</button>';
         h += '<button class="adm-tab' + (adminTab === 'stats' ? ' on' : '') + '" data-action="set-adm-tab" data-arg="stats">📊 Stats</button>';
         h += '</div>' + body + '</div>';
@@ -5618,8 +5940,11 @@
             users: data.users || clone(BLANK).users,
             questions: objToArr(data.questions),
             rewards: objToArr(data.rewards),
-            requests: objToArr(data.requests)
+            requests: objToArr(data.requests),
+            coupleQuizConfig: data.coupleQuizConfig || clone(BLANK).coupleQuizConfig
           };
+          if (!S.users.giulia.cqState) S.users.giulia.cqState = null;
+          if (!S.users.stefano.cqState) S.users.stefano.cqState = null;
         }
         if (!fbReady) {
           fbReady = true;
