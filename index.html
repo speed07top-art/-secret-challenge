@@ -2294,6 +2294,13 @@
           case 'fire-ob-slider': fireOnbAnswers[fireOnbStep] = +arg; break; // handled via oninput
           case 'fire-ob-open': fireOnboarding = 'intro'; fireOnbStep = 0; fireOnbAnswers = new Array(FIRE_QUESTIONS.length).fill(null); fireOnbMsel = []; render(); break;
           case 'fire-ob-close': doFireFinish(); break;
+
+          /* modalita pausa */
+          case 'open-pause-modal': overlay = { type: 'request_pause' }; render(); break;
+          case 'approve-pause': window.approvePause(); break;
+          case 'reject-pause': window.rejectPause(); break;
+          case 'pause-3': window.requestPause(3); break;
+          case 'pause-7': window.requestPause(7); break;
         }
       }
 
@@ -2426,8 +2433,15 @@
       var DB_REF = 'sc_app';
 
       /* ── DATA ── */
-      function freshUser() { return { pwd: '', pwdSet: false, pts: 1000, quizToday: null, lastRewardClaim: null, penaltyChecked: null, onboardingFireCompleted: false, onboardingFireSkipped: false, cqState: null }; }
-      var BLANK = { users: { giulia: freshUser(), stefano: freshUser() }, questions: [], rewards: [], requests: [], coupleQuizConfig: { qs: ['', '', ''], o1: [['','','',''],['','','',''],['','','','']], c: [0, 0, 0], prodId: '' } };
+      function freshUser() { return { pwd: '', pwdSet: false, pts: 1000, quizToday: null, lastRewardClaim: null, penaltyChecked: null, onboardingFireCompleted: false, onboardingFireSkipped: false, cqState: null, lastActivity: null, fondoLivello: 0, maxLvlReached: 0 }; }
+      var BLANK = { 
+        users: { giulia: freshUser(), stefano: freshUser() }, 
+        questions: [], 
+        rewards: [], 
+        requests: [], 
+        coupleQuizConfig: { qs: ['', '', ''], o1: [['','','',''],['','','',''],['','','','']], c: [0, 0, 0], prodId: '' },
+        pauseState: { active: false, start: null, end: null, lastEnd: null, pending: null, history: [] } 
+      };
 
       /* ── FIRE ONBOARDING — 18 QUESTIONS ── */
       var FIRE_QUESTIONS = [
@@ -2556,7 +2570,8 @@
           questions: arrToObj(s.questions),
           rewards: arrToObj(s.rewards),
           requests: arrToObj(s.requests),
-          coupleQuizConfig: s.coupleQuizConfig
+          coupleQuizConfig: s.coupleQuizConfig,
+          pauseState: s.pauseState
         };
         _writing = true;
         if (_writeTimer) clearTimeout(_writeTimer);
@@ -2607,12 +2622,14 @@
 
       /* ── HELPERS ── */
       function todayKey() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
-      function daysAgo(iso) {
+      function getDaysDiff(iso) {
         if (!iso) return 0;
         var d1 = new Date(iso); d1.setHours(0, 0, 0, 0);
         var d2 = new Date(); d2.setHours(0, 0, 0, 0);
-        var diff = Math.round((d2.getTime() - d1.getTime()) / 86400000);
-        return Math.max(0, diff - 1); // 1 = 1 full day without orders
+        return Math.round((d2.getTime() - d1.getTime()) / 86400000);
+      }
+      function daysAgo(iso) {
+        return Math.max(0, getDaysDiff(iso) - 1); // 1 = 1 full day without orders
       }
       function fmtDt(s) { if (!s) return ''; try { return new Date(s).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch (e) { return s; } }
       function fmtTime(s) { if (!s) return ''; try { return new Date(s).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return s; } }
@@ -3375,27 +3392,73 @@
         if (!session || session === 'admin') return;
         var u = S.users[session], today = todayKey(), changed = false;
 
-        // ── Modello Punti Benessere ──
-        if (u.penaltyChecked !== today && u.lastRewardClaim) {
-          var dAgo = daysAgo(u.lastRewardClaim);
-          if (dAgo >= 1) {
-            var oldWPts = u.benesserePts || 0;
-            var pen = 0;
-            if (dAgo === 1) pen = 10;
-            else if (dAgo === 2) pen = 30;
-            else if (dAgo === 3) pen = 50;
-            else if (dAgo >= 4) pen = oldWPts;
+        var nowMs = Date.now();
+        // -- Check scadenze Pausa --
+        if (S.pauseState && S.pauseState.pending && (nowMs - S.pauseState.pending.at > 86400000)) {
+           S.pauseState.pending = null;
+           changed = true;
+        }
+        if (S.pauseState && S.pauseState.active && nowMs >= S.pauseState.end) {
+           S.pauseState.active = false;
+           S.pauseState.lastEnd = S.pauseState.end;
+           S.pauseState.history = S.pauseState.history || [];
+           S.pauseState.history.push({start: S.pauseState.start, end: S.pauseState.end, days: Math.round((S.pauseState.end - S.pauseState.start)/86400000)});
+           changed = true;
+        }
 
-            if (pen > 0) {
-              u.benesserePts = Math.max(0, oldWPts - pen);
-              showToast('Penalità Benessere: -' + pen + ' pt per inattività!', 5000);
+        // ── Modello Punti Benessere: Loop decadimento elatisco & Silenzio ──
+        if (u.penaltyChecked && u.penaltyChecked !== today) {
+          var loopDate = new Date(u.penaltyChecked);
+          loopDate.setHours(0,0,0,0);
+          var endD = new Date();
+          endD.setHours(0,0,0,0);
+
+          var ptUser = S.users[partner()];
+          var tLastMy = u.lastActivity || u.lastRewardClaim || u.penaltyChecked;
+          var tLastPt = ptUser ? (ptUser.lastActivity || ptUser.lastRewardClaim || u.penaltyChecked) : u.penaltyChecked;
+          
+          var myLastActivityTime = new Date(tLastMy).setHours(0,0,0,0);
+          var ptLastActivityTime = new Date(tLastPt).setHours(0,0,0,0);
+
+          var totalPen = 0;
+          var loopCount = 0;
+          while (loopDate < endD && loopCount < 365) {
+            loopCount++;
+            loopDate.setDate(loopDate.getDate() + 1);
+            var currTime = loopDate.getTime();
+            
+            var dMy = Math.round((currTime - myLastActivityTime) / 86400000);
+            var dPt = Math.round((currTime - ptLastActivityTime) / 86400000);
+            
+            var isSilent = (dMy >= 2 && dPt >= 2);
+            if (S.pauseState && S.pauseState.active && currTime >= S.pauseState.start && currTime <= S.pauseState.end) isSilent = true;
+            
+            if (!isSilent) {
+              var p = u.benesserePts || 0;
+              var pen = 0;
+              if (p > 200) pen = 30;
+              else if (p >= 100) pen = 15;
+              else if (p >= 1) pen = 5;
+              
+              var newP = Math.max(0, p - pen);
+              totalPen += (p - newP);
+              u.benesserePts = newP;
             }
           }
-          S.users[session].penaltyChecked = today;
+          if (totalPen > 0) {
+            var isSilentNow = (Math.round((endD.getTime() - myLastActivityTime)/86400000) >= 2 && Math.round((endD.getTime() - ptLastActivityTime)/86400000) >= 2);
+            if (S.pauseState && S.pauseState.active && endD.getTime() >= S.pauseState.start && endD.getTime() <= S.pauseState.end) isSilentNow = true;
+            if (!isSilentNow) showToast('Decadimento Benessere: -' + totalPen + ' pt in totale', 5000);
+          }
+        }
+        
+        // Assegno il penaltyChecked anche la prima volta
+        if (u.penaltyChecked !== today) {
+          u.penaltyChecked = today;
           changed = true;
         }
 
-        // Dimezzamento Lunedì (50%)
+        // ── Fondo Livello Settimanale (Lunedì 30%) ──
         var nowLocal = new Date();
         var currentMonday = new Date(nowLocal);
         var dow = currentMonday.getDay();
@@ -3405,14 +3468,31 @@
         var monKey = currentMonday.toISOString().split('T')[0];
 
         if (u.lastMondayCut !== monKey) {
-          u.benesserePts = Math.floor((u.benesserePts || 0) / 2);
+          var monMs = currentMonday.getTime();
+          var inPause = (S.pauseState && S.pauseState.active && monMs >= S.pauseState.start && monMs <= S.pauseState.end);
+          if (!inPause) {
+            var tr = Math.floor((u.benesserePts || 0) * 0.30);
+            u.benesserePts = Math.max(0, (u.benesserePts || 0) - tr);
+            u.fondoLivello = (u.fondoLivello || 0) + tr;
+          }
           u.lastMondayCut = monKey;
           changed = true;
         }
+        
+        // Azzera fondoLivello in caso di level up
+        var totalB = (u.benesserePts || 0) + (u.fondoLivello || 0);
+        var currentLvl = getWellnessLevel(totalB);
+        if (currentLvl.id > (u.maxLvlReached || 0)) {
+           u.fondoLivello = 0;
+           u.maxLvlReached = currentLvl.id;
+           changed = true;
+        }
 
-        // Disable vecchie notifiche 500pt
-        // (commented out the old 500 penalty above)
-
+        // Update last activity ora che abbiamo valutato
+        if (u.lastActivity !== today) {
+          u.lastActivity = today;
+          changed = true;
+        }
 
         // ── Expire overdue reward requests ──
         S.requests.forEach(function (rr, i) {
@@ -3426,7 +3506,8 @@
         if (changed) save(S);
       }
 
-      function getBenesserePts(u) { return S.users[u] ? (S.users[u].benesserePts || 0) : 0; }
+      function getBenesserePts(u) { return S.users[u] ? ((S.users[u].benesserePts || 0) + (S.users[u].fondoLivello || 0)) : 0; }
+
       function getWellnessLevel(pts) {
         if (pts >= 350) return { id: 5, name: 'Leggenda', req: 350, nextReq: null };
         if (pts >= 300) return { id: 4, name: 'Cristallo', req: 300, nextReq: 350 };
@@ -4297,6 +4378,7 @@
           // toConf and toExec are intentionally disabled on the Home tab 
           // to prevent duplicate order views (they reside in the 'Ordini' tab)
 
+          if (isWeekendPromo()) page += renderWeekendPromoBanner();
           page += renderWellnessWidget(me);
           page += renderFlashSaleWidget();
 
@@ -4337,7 +4419,26 @@
             fSalesCount = Math.min(3, myRewards.length);
           }
 
-          if (fSalesCount > 0) {
+          if (isWeekendPromo()) {
+            // Weekend promo banner in shop tab
+            var endP = new Date('2026-04-06T23:59:59+02:00');
+            var nowP = new Date();
+            var diffHH = Math.floor((endP - nowP) / 3600000);
+            var diffDD = Math.floor(diffHH / 24);
+            var remHH = diffHH % 24;
+            var timePStr = diffDD > 0 ? diffDD + 'g ' + remHH + 'h rimaste' : diffHH + 'h rimaste';
+            var hPromoShop = '<div style="background:linear-gradient(135deg,#1a0a3e,#6c1fa0);border-radius:16px;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">';
+            hPromoShop += '<div>';
+            hPromoShop += '<div style="font-size:.7rem;font-weight:800;color:#dbb8ff;text-transform:uppercase;margin-bottom:4px;letter-spacing:.08em">WEEKEND PROMO 🎉</div>';
+            hPromoShop += '<div style="font-size:1.05rem;font-weight:800;color:#ffffff;margin-bottom:4px">Tutto gratis e sbloccato!</div>';
+            hPromoShop += '<div style="font-size:.7rem;color:#dbb8ff">' + timePStr + ' — scade lun 23:59</div>';
+            hPromoShop += '</div>';
+            hPromoShop += '<div style="background:rgba(255,255,255,0.15);border-radius:12px;padding:8px 12px;text-align:center;min-width:70px">';
+            hPromoShop += '<div style="font-size:.65rem;color:#ff9fff;font-weight:800;text-transform:uppercase;margin-bottom:2px">SCONTO</div>';
+            hPromoShop += '<div style="font-size:1.4rem;font-weight:900;color:#ffffff;line-height:1">100%</div>';
+            hPromoShop += '</div></div>';
+            page += hPromoShop;
+          } else if (fSalesCount > 0) {
             var hrsLeft = 5 - (Math.floor(Date.now() / 3600000) % 5);
             var hBanner = '<div style="background:#1a2a5e;border-radius:16px;padding:20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">';
             hBanner += '<div><div style="font-size:.7rem;font-weight:800;color:#8fa8d8;text-transform:uppercase;margin-bottom:4px">FLASH SALE ATTIVA</div>';
@@ -4368,8 +4469,8 @@
           var myWPts = getBenesserePts(session);
           var myLvl = getWellnessLevel(myWPts);
           var filteredRws = myRws.filter(function (r) { return (r.cat || 'Per te') === shopCategory; }).sort(function (a, b) {
-            var aLocked = myLvl.id < parseInt(a.reqLvl || 0) ? 1 : 0;
-            var bLocked = myLvl.id < parseInt(b.reqLvl || 0) ? 1 : 0;
+            var aLocked = isWeekendPromo() ? 0 : (myLvl.id < parseInt(a.reqLvl || 0) ? 1 : 0);
+            var bLocked = isWeekendPromo() ? 0 : (myLvl.id < parseInt(b.reqLvl || 0) ? 1 : 0);
             return aLocked - bLocked;
           });
 
@@ -4668,25 +4769,48 @@
         h += '<button style="width:36px;height:36px;border-radius:50%;background:#e2e8f0;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--b3)" data-action="logout"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></button>';
         h += '</div></div>';
 
-        if (!u.lastRewardClaim) {
+        var isSilent = false;
+        var ptUser = S.users[partner()];
+        if (u && ptUser) {
+           var tLastMy = u.lastActivity || u.lastRewardClaim || todayKey();
+           var tLastPt = ptUser.lastActivity || ptUser.lastRewardClaim || todayKey();
+           if (getDaysDiff(tLastMy) >= 2 && getDaysDiff(tLastPt) >= 2) isSilent = true;
+        }
+
+        if (S.pauseState && S.pauseState.pending && S.pauseState.pending.by !== session) {
+          h += '<div style="margin-bottom:16px;background:#fffcf0;border:1px solid #fbe69e;border-radius:16px;padding:14px;">';
+          h += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">';
+          h += '<div style="font-size:2rem;line-height:1">⏸️</div>';
+          h += '<div><div style="font-size:.9rem;font-weight:800;color:#a87d00;margin-bottom:4px">Richiesta di Pausa</div>';
+          h += '<div style="font-size:.75rem;color:#856404;line-height:1.4">' + esc(pname(partner())) + ' vuole una pausa di ' + S.pauseState.pending.days + ' giorni. Approvi?</div></div>';
+          h += '</div>';
+          h += '<div style="display:flex;gap:8px">';
+          h += '<button style="flex:1;background:#1a2a5e;color:white;border:none;padding:10px;border-radius:10px;font-weight:800;font-size:.85rem;font-family:inherit;cursor:pointer" data-action="approve-pause">✔️ Approva</button>';
+          h += '<button style="flex:1;background:#f4f6fb;color:#6b7080;border:1px solid #e2e8f0;padding:10px;border-radius:10px;font-weight:800;font-size:.85rem;font-family:inherit;cursor:pointer" data-action="reject-pause">Rifiuta</button>';
+          h += '</div></div>';
+        } else if (S.pauseState && S.pauseState.active) {
+          var remainingDays = Math.max(0, Math.ceil((S.pauseState.end - Date.now()) / 86400000));
+          h += '<div style="margin-bottom:16px;background:#f4f6fb;border:1px solid #e2e8f0;border-radius:16px;padding:14px;display:flex;align-items:center;gap:14px;">';
+          h += '<div style="font-size:2rem;line-height:1">⏸️</div>';
+          h += '<div><div style="font-size:.9rem;font-weight:800;color:#1a2a5e;margin-bottom:4px">Pausa attiva</div>';
+          h += '<div style="font-size:.75rem;color:#6b7080;line-height:1.4">' + remainingDays + ' giorn' + (remainingDays === 1 ? 'o' : 'i') + ' rimanent' + (remainingDays === 1 ? 'e' : 'i') + ' &mdash; penalità sospese.</div></div>';
+          h += '</div>';
+        } else if (!u.lastRewardClaim) {
           h += '<div style="margin-bottom:16px;background:#fff;border:1px solid #e0eaf8;border-radius:16px;padding:14px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.03)" onclick="document.querySelector(\'[data-arg=shop]\').click()">';
           h += '<div style="font-size:2rem;line-height:1">🛍️</div>';
           h += '<div><div style="font-size:.9rem;font-weight:800;color:#1a2a5e;margin-bottom:4px">Benvenuto nello Shop!</div><div style="font-size:.75rem;color:var(--b3);line-height:1.4">Fai il tuo <strong>primo acquisto</strong> per sbloccare l\'analisi clinica.</div></div>';
           h += '</div>';
-        } else if (dAgo >= 3) {
-          h += '<div style="margin-bottom:16px;background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);border-radius:16px;padding:14px;display:flex;align-items:center;gap:14px;cursor:pointer;" onclick="document.querySelector(\'[data-arg=shop]\').click()">';
-          h += '<div style="font-size:2rem;line-height:1">🚨</div>';
-          h += '<div><div style="font-size:.9rem;font-weight:800;color:#c0392b;margin-bottom:4px">Penalità Imminente!</div><div style="font-size:.75rem;color:#e74c3c;line-height:1.4">Sfogli lo <strong>Shop</strong> e acquista qualcosa per disinnescare la penalità!</div></div>';
-          h += '</div>';
-        } else if (dAgo === 2) {
-          h += '<div style="margin-bottom:16px;background:rgba(243,156,18,0.1);border:1px dashed rgba(243,156,18,0.4);border-radius:16px;padding:12px;text-align:center;cursor:pointer;font-size:.8rem;color:#d68910;font-weight:700" onclick="document.querySelector(\'[data-arg=shop]\').click()">';
-          h += '⏳ Sei a quota 2 giorni senza acquisti. Rimedia prima della penalità!';
+        } else if (isSilent) {
+          h += '<div style="margin-bottom:16px;background:#f8f9fa;border:1px solid #e9ecef;border-radius:16px;padding:14px;display:flex;align-items:center;gap:14px;">';
+          h += '<div style="font-size:2rem;line-height:1">🌙</div>';
+          h += '<div><div style="font-size:.9rem;font-weight:800;color:#495057;margin-bottom:4px">Modalità Silenzio Attiva</div><div style="font-size:.75rem;color:#6c757d;line-height:1.4">Decadimento benessere temporaneamente sospeso.</div></div>';
           h += '</div>';
         }
         return h;
       }
 
       function renderFlashSaleWidget() {
+        if (isWeekendPromo()) return ''; // during promo, no flash sale widget
         var epoch = Math.floor(Date.now() / (5 * 3600 * 1000));
         var myWPts = getBenesserePts(session);
         var myLvl = getWellnessLevel(myWPts);
@@ -5034,6 +5158,69 @@
 
         h += renderWellnessWidget(me);
 
+        /* ── Pausa Sezione Card (in renderBenessereTab) ── */
+        var pState2 = S.pauseState;
+        h += '<div style="font-size:.75rem;font-weight:800;color:#6b7080;text-transform:uppercase;margin-bottom:12px;letter-spacing:.05em">MODALITA PAUSA</div>';
+        h += '<div style="background:#ffffff;border-radius:16px;padding:20px;margin-bottom:24px;border:1px solid #e0eaf8;">';
+
+        if (pState2 && pState2.active) {
+          var dL = Math.max(0, Math.ceil((pState2.end - Date.now()) / 86400000));
+          h += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">';
+          h += '<div style="width:48px;height:48px;background:#eef3fb;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">⏸️</div>';
+          h += '<div><div style="font-size:.95rem;font-weight:800;color:#1a1f36;margin-bottom:4px">Pausa Attiva</div>';
+          h += '<div style="font-size:.78rem;color:#6b7080">' + dL + ' giorn' + (dL === 1 ? 'o' : 'i') + ' rimanent' + (dL === 1 ? 'e' : 'i') + '</div></div>';
+          h += '</div>';
+          h += '<div style="background:#f4f6fb;border-radius:10px;padding:10px 14px;font-size:.8rem;color:#6b7080;">Penalità e decadimento benessere sospesi fino alla scadenza. Il gioco e lo shop sono sempre accessibili.</div>';
+        } else if (pState2 && pState2.pending) {
+          h += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">';
+          h += '<div style="width:48px;height:48px;background:#fffcf0;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">⏳</div>';
+          if (pState2.pending.by === me) {
+            h += '<div><div style="font-size:.95rem;font-weight:800;color:#1a1f36;margin-bottom:4px">Richiesta inviata</div>';
+            h += '<div style="font-size:.78rem;color:#6b7080">In attesa dell\'approvazione di ' + esc(pname(partner())) + '.</div></div>';
+          } else {
+            h += '<div><div style="font-size:.95rem;font-weight:800;color:#a87d00;margin-bottom:4px">Pausa Richiesta da ' + esc(pname(partner())) + '</div>';
+            h += '<div style="font-size:.78rem;color:#6b7080">Durata richiesta: ' + pState2.pending.days + ' giorni.</div></div>';
+          }
+          h += '</div>';
+          if (pState2.pending.by !== me) {
+            h += '<div style="display:flex;gap:8px;margin-top:4px">';
+            h += '<button style="flex:1;background:#1a2a5e;color:white;border:none;padding:11px;border-radius:10px;font-weight:700;font-size:.88rem;font-family:inherit;cursor:pointer" data-action="approve-pause">Approva</button>';
+            h += '<button style="flex:1;background:#f4f6fb;color:#6b7080;border:1px solid #e2e8f0;padding:11px;border-radius:10px;font-weight:700;font-size:.88rem;font-family:inherit;cursor:pointer" data-action="reject-pause">Rifiuta</button>';
+            h += '</div>';
+          }
+        } else {
+          var canP = true;
+          var btnL = 'Richiedi Pausa';
+          var cdd = 0;
+          if (pState2 && pState2.lastEnd && (Date.now() - pState2.lastEnd) < (7 * 86400000)) {
+            canP = false;
+            cdd = Math.ceil((7 * 86400000 - (Date.now() - pState2.lastEnd)) / 86400000);
+            btnL = 'Disponibile tra ' + cdd + ' giorn' + (cdd === 1 ? 'o' : 'i');
+          }
+          h += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">';
+          h += '<div style="width:48px;height:48px;background:#f4f6fb;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">⏸️</div>';
+          h += '<div><div style="font-size:.95rem;font-weight:800;color:#1a1f36;margin-bottom:4px">Patti di coppia</div>';
+          h += '<div style="font-size:.78rem;color:#6b7080">Sospende penalità e decadimento per 3 o 7 giorni. Richiede approvazione di entrambi.</div></div>';
+          h += '</div>';
+          h += '<button style="width:100%;background:' + (canP ? '#1a2a5e' : '#e2e8f0') + ';color:' + (canP ? 'white' : '#b0b4c0') + ';border:none;padding:13px;border-radius:10px;font-size:.92rem;font-weight:700;font-family:inherit;cursor:' + (canP ? 'pointer' : 'not-allowed') + ';" ' + (canP ? 'data-action="open-pause-modal"' : '') + '>' + btnL + '</button>';
+        }
+
+        if (pState2 && pState2.history && pState2.history.length > 0) {
+          h += '<div style="margin-top:16px;border-top:1px solid #f0f4f8;padding-top:14px">';
+          h += '<div style="font-size:.7rem;font-weight:800;color:#b0b4c0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Storico</div>';
+          var hist2 = pState2.history.slice(-3).reverse();
+          hist2.forEach(function(hI) {
+            var pad = function(n) { return n < 10 ? '0'+n : n; };
+            var d1 = new Date(hI.start), d2 = new Date(hI.end);
+            h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f4f8;">';
+            h += '<div style="font-size:.8rem;color:#6b7080">' + pad(d1.getDate())+'/'+pad(d1.getMonth()+1) + ' &mdash; ' + pad(d2.getDate())+'/'+pad(d2.getMonth()+1)+'/'+d2.getFullYear() + '</div>';
+            h += '<div style="font-size:.8rem;font-weight:700;color:#1a1f36;background:#f4f6fb;padding:3px 8px;border-radius:6px">' + hI.days + ' gg</div>';
+            h += '</div>';
+          });
+          h += '</div>';
+        }
+        h += '</div>';
+
         /* ── Fire Onboarding Entry Point ── */
         var u = S.users[me] || {};
         h += '<div style="font-size:.75rem;font-weight:800;color:#6b7080;text-transform:uppercase;margin-bottom:12px;letter-spacing:.05em">PROFILO INTIMO AI</div>';
@@ -5088,13 +5275,17 @@
         h += '<div style="flex:1;background:rgba(255,255,255,0.09);border-radius:16px;padding:16px;text-align:center">';
         h += '<div style="font-size:1.4rem;font-weight:800;color:#f5eaff;margin-bottom:6px">' + wPts + '</div>';
         h += '<div style="font-size:.7rem;color:#d4a8e8;line-height:1.3;font-weight:500">Pt<br>benessere</div>';
+        var uFondo = S.users[me] ? (S.users[me].fondoLivello || 0) : 0;
+        if (uFondo > 0) {
+          h += '<div style="margin-top:10px;font-size:.65rem;color:#dfc0ed;background:rgba(255,255,255,0.15);padding:4px 8px;border-radius:8px">Include Fondo: ' + uFondo + ' pt</div>';
+        }
         h += '</div>';
         h += '<div style="flex:1;background:rgba(255,255,255,0.09);border-radius:16px;padding:16px;text-align:center">';
         h += '<div style="font-size:1.4rem;font-weight:800;color:#4ade80;margin-bottom:6px">+</div>';
         h += '<div style="font-size:.7rem;color:#d4a8e8;line-height:1.3;font-weight:500">Umore<br>coppia</div>';
         h += '</div>';
         h += '<div style="flex:1;background:rgba(255,255,255,0.09);border-radius:16px;padding:16px;text-align:center">';
-        h += '<div style="font-size:1.4rem;font-weight:800;color:#fcd34d;margin-bottom:6px">Lv ' + lvlId + '</div>';
+        h += '<div style="font-size:1.4rem;font-weight:800;color:#fcd34d;margin-bottom:6px;display:flex;justify-content:center;align-items:center;gap:6px">Lv ' + lvlId + (S.pauseState && S.pauseState.active ? '<span style="font-size:.9rem">⏸️</span>' : '') + '</div>';
         h += '<div style="font-size:.7rem;color:#d4a8e8;line-height:1.3;font-weight:500">Livello<br>attuale</div>';
         h += '</div>';
         h += '</div>';
@@ -5106,13 +5297,14 @@
         h += '<div style="font-size:.8rem;color:#d4a8e8;font-weight:600">' + progVal + '/' + progMax + '</div>';
         h += '</div></div>';
 
-        h += '<div style="text-align:right"><button style="background:none;border:none;color:#d4a8e8;font-size:.85rem;font-weight:600;font-family:\'Inter\',sans-serif;cursor:pointer" data-action="set-tab" data-arg="benessere">Analisi completa →</button></div>';
+        h += '<div style="text-align:right;margin-bottom:16px"><button style="background:none;border:none;color:#d4a8e8;font-size:.85rem;font-weight:600;font-family:\'Inter\',sans-serif;cursor:pointer" data-action="set-tab" data-arg="benessere">Analisi completa →</button></div>';
 
         h += '</div>';
         return h;
       }
 
       function getFlashSaleInfo(itemId) {
+        if (isWeekendPromo()) return null; // promo handles discounts separately
         var epoch = Math.floor(Date.now() / (5 * 3600 * 1000));
         var myWPts = getBenesserePts(session);
         var myLvl = getWellnessLevel(myWPts);
@@ -5187,10 +5379,74 @@
         return { myS: r.ptb, ptS: 0, isSplit: false, total: r.ptb };
       }
 
+      // ── WEEKEND PROMO: 3 apr 2026 18:00 → 6 apr 2026 23:59 ──
+      function isWeekendPromo() {
+        var now = Date.now();
+        var start = new Date('2026-04-03T18:00:00+02:00').getTime();
+        var end   = new Date('2026-04-06T23:59:59+02:00').getTime();
+        return now >= start && now <= end;
+      }
+
+      function renderWeekendPromoBanner() {
+        var end = new Date('2026-04-06T23:59:59+02:00');
+        var now = new Date();
+        var diffMs = end - now;
+        var diffH = Math.floor(diffMs / 3600000);
+        var diffD = Math.floor(diffH / 24);
+        var remH = diffH % 24;
+        var timeStr = diffD > 0 ? diffD + 'g ' + remH + 'h rimaste' : diffH + 'h rimaste';
+
+        var h = '<div id="weekend-promo-banner" style="margin-bottom:20px;border-radius:20px;overflow:hidden;position:relative;background:linear-gradient(135deg,#1a0a3e 0%,#3b1368 50%,#6c1fa0 100%);box-shadow:0 12px 32px rgba(108,31,160,0.4)">';
+        // animated shimmer
+        h += '<div style="position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.06) 50%,transparent 60%);animation:promo-shimmer 3s ease-in-out infinite;pointer-events:none"></div>';
+        // sparkle top-right
+        h += '<div style="position:absolute;top:12px;right:16px;font-size:1.6rem;animation:promo-bounce 2s ease-in-out infinite">✨</div>';
+
+        h += '<div style="padding:20px 20px 14px">';
+        // badge
+        h += '<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:20px;padding:4px 12px;margin-bottom:12px">';
+        h += '<div style="width:6px;height:6px;border-radius:50%;background:#ff6bff;box-shadow:0 0 6px #ff6bff"></div>';
+        h += '<span style="font-size:.65rem;font-weight:800;color:#f0d8ff;letter-spacing:.08em;text-transform:uppercase">Offerta Weekend</span>';
+        h += '</div>';
+        // title
+        h += '<div style="font-size:1.35rem;font-weight:900;color:#ffffff;line-height:1.2;margin-bottom:6px;letter-spacing:-0.3px">🎉 Tutto lo shop è tuo</div>';
+        h += '<div style="font-size:.85rem;font-weight:600;color:#dbb8ff;line-height:1.5;margin-bottom:16px">Questo weekend tutti i prodotti sono <strong style="color:#ff9fff">gratuiti e sbloccati</strong>. Nessun minimo di punti benessere richiesto!</div>';
+
+        // pills row
+        h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">';
+        h += '<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:8px 12px;text-align:center;min-width:80px">';
+        h += '<div style="font-size:1.15rem;font-weight:900;color:#ff9fff">100%</div>';
+        h += '<div style="font-size:.65rem;color:#dbb8ff;font-weight:600;margin-top:2px">SCONTO</div>';
+        h += '</div>';
+        h += '<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:8px 12px;text-align:center;min-width:80px">';
+        h += '<div style="font-size:1.15rem;font-weight:900;color:#7fffb2">🔓</div>';
+        h += '<div style="font-size:.65rem;color:#dbb8ff;font-weight:600;margin-top:2px">TUTTI SBLOCCATI</div>';
+        h += '</div>';
+        h += '<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:8px 12px;text-align:center;flex:1;min-width:90px">';
+        h += '<div style="font-size:.9rem;font-weight:900;color:#ffd97f">' + timeStr + '</div>';
+        h += '<div style="font-size:.65rem;color:#dbb8ff;font-weight:600;margin-top:2px">SCADE LUN 23:59</div>';
+        h += '</div>';
+        h += '</div>';
+
+        h += '<button style="width:100%;background:#ffffff;color:#3b1368;border:none;padding:12px;border-radius:12px;font-size:.9rem;font-weight:900;cursor:pointer;font-family:inherit;letter-spacing:-0.2px" data-action="set-tab" data-arg="shop">Vai allo Shop →</button>';
+        h += '</div>';
+        h += '</div>';
+
+        // inject shimmer keyframes once
+        if (!document.getElementById('promo-keyframes')) {
+          var s = document.createElement('style');
+          s.id = 'promo-keyframes';
+          s.textContent = '@keyframes promo-shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}@keyframes promo-bounce{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-4px) rotate(15deg)}}';
+          document.head.appendChild(s);
+        }
+        return h;
+      }
+
       function renderShopItem(r, pts) {
-        var dscPct = typeof getFlashSaleInfo === "function" ? getFlashSaleInfo(r.id) : null;
-        var finalCost = dscPct ? Math.floor(r.cost * (1 - dscPct)) : r.cost;
-        var canAfford = pts >= finalCost;
+        var promo = isWeekendPromo();
+        var dscPct = (!promo && typeof getFlashSaleInfo === 'function') ? getFlashSaleInfo(r.id) : null;
+        var finalCost = promo ? 0 : (dscPct ? Math.floor(r.cost * (1 - dscPct)) : r.cost);
+        var canAfford = promo ? true : pts >= finalCost;
 
         var wPtsStr = '';
         if (r.ptb) {
@@ -5205,16 +5461,20 @@
         var myWPts = getBenesserePts(session);
         var myLvl = getWellnessLevel(myWPts);
         var reqLvlId = parseInt(r.reqLvl || 0);
-        var isLocked = myLvl.id < reqLvlId;
+        var isLocked = promo ? false : myLvl.id < reqLvlId;
         var cdInfo = getCooldown(r);
         var reqLvlName = reqLvlId > 0 ? getWellnessLevel((reqLvlId === 1 ? 100 : reqLvlId === 2 ? 150 : reqLvlId === 3 ? 200 : reqLvlId === 4 ? 300 : 350)).name : '';
 
-        var borderCol = dscPct ? '#f0c8be' : '#e2e8f0';
-        var iconBg = dscPct ? '#fff0ec' : '#eef3fb';
-        var opacity = (isLocked || cdInfo) ? 'opacity:0.5;filter:grayscale(60%);' : '';
+        var borderCol = promo ? '#dbb8ff' : (dscPct ? '#f0c8be' : '#e2e8f0');
+        var iconBg = promo ? '#f4e8ff' : (dscPct ? '#fff0ec' : '#eef3fb');
+        var opacity = (!promo && (isLocked || cdInfo)) ? 'opacity:0.5;filter:grayscale(60%);' : '';
 
         var h = '<div style="background:#ffffff;border:1px solid ' + borderCol + ';border-radius:16px;padding:16px;margin-bottom:12px;display:flex;gap:14px;align-items:center;position:relative;' + opacity + '">';
-        if (dscPct && !isLocked) {
+
+        // Promo badge (100% off)
+        if (promo) {
+          h += '<div style="position:absolute;top:12px;right:12px;background:linear-gradient(135deg,#6c1fa0,#c04020);color:#ffffff;font-size:.7rem;font-weight:800;padding:3px 8px;border-radius:8px">-100% 🎉</div>';
+        } else if (dscPct && !isLocked) {
           h += '<div style="position:absolute;top:12px;right:12px;background:#c04020;color:#ffffff;font-size:.7rem;font-weight:800;padding:3px 8px;border-radius:8px">-' + (dscPct * 100) + '%</div>';
         }
 
@@ -5226,7 +5486,8 @@
 
         h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;">';
         h += '<div style="font-size:1.05rem;font-weight:800;color:#1a1f36;margin-bottom:4px;padding-right:10px">' + esc(r.name) + '</div>';
-        if (isLocked) {
+        // show locked badge only when not in promo
+        if (!promo && isLocked) {
           h += '<div style="background:#f0f2f8;color:#a0a8be;font-size:.65rem;font-weight:700;padding:3px 8px;border-radius:6px;display:flex;align-items:center;gap:4px;flex-shrink:0">🔒 Lv ' + esc(reqLvlName) + '</div>';
         }
         h += '</div>';
@@ -5237,9 +5498,14 @@
         h += '<div style="display:flex;flex-direction:column">';
         // Cost
         h += '<div style="display:flex;align-items:center;gap:6px">';
-        h += '<div style="font-size:1.05rem;font-weight:800;color:#1a1f36"><span style="color:#7eb3f5">♦&#xFE0E;</span> ' + finalCost + ' pt</div>';
-        if (dscPct) {
-          h += '<div style="font-size:.7rem;color:#b0b4c0;text-decoration:line-through">' + r.cost + '</div>';
+        if (promo) {
+          h += '<div style="font-size:1.05rem;font-weight:800;color:#6c1fa0"><span style="color:#b47be0">♦&#xFE0E;</span> GRATIS</div>';
+          h += '<div style="font-size:.7rem;color:#b0b4c0;text-decoration:line-through">' + r.cost + ' pt</div>';
+        } else {
+          h += '<div style="font-size:1.05rem;font-weight:800;color:#1a1f36"><span style="color:#7eb3f5">♦&#xFE0E;</span> ' + finalCost + ' pt</div>';
+          if (dscPct) {
+            h += '<div style="font-size:.7rem;color:#b0b4c0;text-decoration:line-through">' + r.cost + '</div>';
+          }
         }
         h += '</div>';
         // Wellness pts earned
@@ -5247,12 +5513,14 @@
         h += '</div>';
 
         // Button
-        if (isLocked) {
+        if (!promo && isLocked) {
           h += '<button style="background:#f0f2f8;color:#a0a8be;border:none;padding:8px 16px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer" data-action="open-locked-modal" data-arg="' + reqLvlName + '">🔒 Bloccato</button>';
-        } else if (cdInfo) {
+        } else if (!promo && cdInfo) {
           h += '<button style="background:#f0f2f8;color:#a0a8be;border:none;padding:8px 16px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer" data-action="open-cd-modal" data-arg="' + r.id + '">⏳ In Ricarica</button>';
         } else if (canAfford) {
-          h += '<button style="background:#1a2a5e;color:#ffffff;border:none;padding:8px 16px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer" data-action="open-claim" data-arg="' + esc(r.id) + '" ' + (dscPct ? 'data-arg2="' + finalCost + '"' : '') + '>Acquista</button>';
+          var btnBg = promo ? 'linear-gradient(135deg,#3b1368,#6c1fa0)' : '#1a2a5e';
+          var btnLabel = promo ? '🎉 Riscatta gratis' : 'Acquista';
+          h += '<button style="background:' + btnBg + ';color:#ffffff;border:none;padding:8px 16px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer" data-action="open-claim" data-arg="' + esc(r.id) + '" data-arg2="0">' + btnLabel + '</button>';
         } else {
           h += '<button style="background:#f0f2f8;color:#a0a8be;border:none;padding:8px 16px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:not-allowed" disabled>Fondi errati</button>';
         }
@@ -5352,6 +5620,43 @@
         return h;
       }
 
+      window.approvePause = function() {
+        if (!S.pauseState || !S.pauseState.pending) return;
+        var st = S.pauseState;
+        var requesterName = pname(st.pending.by);
+        st.active = true;
+        st.start = Date.now();
+        st.end = Date.now() + (st.pending.days * 86400000);
+        st.pending = null;
+        save(S);
+        var ptTopic = S.users[partner()] && S.users[partner()].ntfyTopic;
+        if (ptTopic) ntfySend(ptTopic, '⏸️ Pausa Approvata', pname(session) + ' ha approvato la tua richiesta di pausa. La pausa è ora attiva!', ['white_check_mark']);
+        showToast('Pausa approvata ✅', 3000);
+        render();
+      };
+      
+      window.rejectPause = function() {
+        if (!S.pauseState || !S.pauseState.pending) return;
+        var requesterUser = S.pauseState.pending.by;
+        S.pauseState.pending = null;
+        save(S);
+        var ptTopic = S.users[partner()] && S.users[partner()].ntfyTopic;
+        if (ptTopic) ntfySend(ptTopic, '❌ Pausa Rifiutata', pname(session) + ' ha rifiutato la tua richiesta di pausa.', ['x']);
+        showToast('Richiesta rifiutata.', 3000);
+        render();
+      };
+
+      window.requestPause = function(days) {
+        if (!S.pauseState) return;
+        S.pauseState.pending = { by: session, days: days, at: Date.now() };
+        save(S);
+        var ptTopic = S.users[partner()] && S.users[partner()].ntfyTopic;
+        if (ptTopic) ntfySend(ptTopic, '⏸️ Richiesta Pausa', pname(session) + ' ha richiesto una pausa di ' + days + ' giorni. Apri l\'app per approvare o rifiutare.', ['pause_button']);
+        overlay = null;
+        render();
+        showToast('Richiesta inviata al partner 📨', 3000);
+      };
+
       window.updateClaimTotal = function () {
         var sub = document.getElementById('sheetSub');
         if (!sub) return;
@@ -5437,6 +5742,28 @@
         if (overlay.type === 'order_detail') return renderOrderDetailOverlay();
         if (overlay.type === 'locked') return renderLockedModal();
         if (overlay.type === 'cooldown') return renderCooldownModal();
+        if (overlay.type === 'request_pause') {
+          var hp = '<div class="overlay" style="background:rgba(15,20,45,0.55);padding-top:30vh" data-action="close-overlay">';
+          hp += '<div class="sheet" style="background:#ffffff;padding:24px 20px 36px;"><div class="sheet-handle" style="background:#d0d4e0;width:40px;height:4px;border-radius:2px;margin:0 auto 20px"></div>';
+          hp += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">';
+          hp += '<div style="width:52px;height:52px;background:#eef3fb;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0">⏸️</div>';
+          hp += '<div><div style="font-size:1.1rem;font-weight:800;color:#1a1f36;margin-bottom:4px">Modalità Pausa</div>';
+          hp += '<div style="font-size:.8rem;color:#8a8f9e;line-height:1.4">Sospende penalità e decadimento. Il partner deve approvare.</div></div>';
+          hp += '</div>';
+          hp += '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">';
+          hp += '<button style="width:100%;background:#f4f6fb;border:1px solid #e2e8f0;border-radius:12px;padding:16px;text-align:left;cursor:pointer;font-family:inherit" data-action="pause-3">';
+          hp += '<div style="font-size:.95rem;font-weight:800;color:#1a1f36;margin-bottom:3px">Pausa Breve &mdash; 3 giorni</div>';
+          hp += '<div style="font-size:.75rem;color:#8a8f9e">Ideale per un weekend o una breve assenza.</div>';
+          hp += '</button>';
+          hp += '<button style="width:100%;background:#f4f6fb;border:1px solid #e2e8f0;border-radius:12px;padding:16px;text-align:left;cursor:pointer;font-family:inherit" data-action="pause-7">';
+          hp += '<div style="font-size:.95rem;font-weight:800;color:#1a1f36;margin-bottom:3px">Pausa Standard &mdash; 7 giorni</div>';
+          hp += '<div style="font-size:.75rem;color:#8a8f9e">Per una settimana intera di pausa condivisa.</div>';
+          hp += '</button>';
+          hp += '</div>';
+          hp += '<button style="width:100%;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:13px;font-size:.9rem;font-weight:700;color:#8a8f9e;cursor:pointer;font-family:inherit" data-action="cancel-overlay">Annulla</button>';
+          hp += '</div></div>';
+          return hp;
+        }
         if (overlay.type === 'activity') {
           if (flashQ) return '<div class="overlay center"><div class="sheet rounded" style="overflow:hidden;padding:0">' + renderFlashQuestion() + '</div></div>';
           if (miniGame) return '<div class="overlay center"><div class="sheet rounded" style="overflow:hidden;padding:0">' + renderMiniGame() + '</div></div>';
@@ -5941,7 +6268,8 @@
             questions: objToArr(data.questions),
             rewards: objToArr(data.rewards),
             requests: objToArr(data.requests),
-            coupleQuizConfig: data.coupleQuizConfig || clone(BLANK).coupleQuizConfig
+            coupleQuizConfig: data.coupleQuizConfig || clone(BLANK).coupleQuizConfig,
+            pauseState: data.pauseState || clone(BLANK).pauseState
           };
           if (!S.users.giulia.cqState) S.users.giulia.cqState = null;
           if (!S.users.stefano.cqState) S.users.stefano.cqState = null;
