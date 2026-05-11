@@ -8,6 +8,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Secret Challenge</title>
+  <link rel="icon" type="image/svg+xml" href="logo_app_ios.svg">
+  <link rel="apple-touch-icon" href="logo_app_ios.svg">
   <!-- Firebase SDK (compat - no bundler needed) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -123,9 +125,11 @@
     }
 
     .auth-gem {
-      font-size: 2rem;
       display: block;
-      margin-bottom: 8px
+      margin: 0 auto 12px;
+      width: 90px;
+      height: 90px;
+      object-fit: contain
     }
 
     .user-grid {
@@ -3066,7 +3070,7 @@
         var u = selU ? S.users[selU] : null;
         var isFirst = u && !u.pwdSet;
         var h = '<div class="auth-wrap"><div class="auth-card">';
-        h += '<div class="auth-logo"><span class="auth-gem">🔷</span><h1>Secret Challenge</h1><p>Le tue sfide quotidiane segrete</p></div>';
+        h += '<div class="auth-logo"><img class="auth-gem" src="logo_app_ios.svg" alt="Logo"><p>Le tue sfide quotidiane segrete</p></div>';
         h += '<div class="field"><span class="lbl">Chi sei?</span><div class="user-grid">';
         h += '<button class="ubtn' + (selU === 'giulia' ? ' on' : '') + '" data-action="pick-user" data-arg="giulia">🌸 Giulia</button>';
         h += '<button class="ubtn' + (selU === 'stefano' ? ' on' : '') + '" data-action="pick-user" data-arg="stefano">⚡ Stefano</button>';
@@ -3212,7 +3216,7 @@
         var myAccs = S.accessories.filter(function(a) { 
             var accName = a.name ? a.name.toLowerCase().trim() : '';
             return (a.availableTo === 'both' || a.availableTo === session) && accName !== 'la tua mano' && accName !== 'la sua mano'; 
-        });
+        }).sort(function(a, b) { return (a.cost || 0) - (b.cost || 0); });
         var owned = S.users[session].ownedAccessories || [];
         if (!myAccs.length) {
           page += '<div class="empty"><span class="empty-ico">🧩</span><p>Nessun accessorio disponibile.</p></div>';
@@ -4278,7 +4282,7 @@ function renderShopItem(r, pts) {
         h += '<div id="premiumOptions" style="display:none;"></div>';
 
         h += '<div style="background:#f0f4fb;padding:16px;border-radius:12px;margin-top:24px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center;border:1px dashed #b0bcd8">';
-        h += '<span style="font-size:.95rem;font-weight:700;color:#1a2a5e">Totale ordine</span>';
+        h += '<span style="font-size:.95rem;font-weight:700;color:#1a2a5e">' + (isAcc ? 'Costo accessorio' : 'Punti guadagnati') + '</span>';
         h += '<span id="claimTotal" style="font-size:1.3rem;font-weight:800;color:#1a2a5e">' + (isAcc ? '<span style="color:#378add">🔷</span> ' : '<span style="color:#6BF356;font-weight:800">+</span>') + r.cost + ' pt</span>';
         h += '</div>';
         h += '<div style="display:flex;gap:12px">';
@@ -4329,30 +4333,28 @@ function renderShopItem(r, pts) {
         
         h += '<div style="display:flex;gap:12px;margin-bottom:24px">';
         h += '<div style="flex:1;background:#1a2a5e;border-radius:16px;padding:24px 16px;text-align:center;box-shadow:0 8px 16px rgba(26,42,94,0.15)">';
-        h += '<div style="font-size:1.3rem;font-weight:800;color:#ffffff;margin-bottom:6px"><span style="color:#7eb3f5;font-size:.8em">🔷</span> ' + costVal + '</div>';
-        h += '<div style="font-size:.65rem;color:#c8d4ea;font-weight:700;text-transform:uppercase;letter-spacing:.05em">PUNTI SPESI</div>';
+        h += '<div style="font-size:1.3rem;font-weight:800;color:#ffffff;margin-bottom:6px"><span style="color:#6BF356;font-weight:800">+</span> ' + costVal + '</div>';
+        h += '<div style="font-size:.65rem;color:#c8d4ea;font-weight:700;text-transform:uppercase;letter-spacing:.05em">PUNTI OTTENUTI</div>';
         h += '</div>';
         h += '<div style="flex:1;background:#f0f4fb;border-radius:16px;padding:24px 16px;text-align:center">';
         h += '<div style="font-size:1.15rem;font-weight:800;color:#1a1f36;margin-bottom:6px">' + dlLabel + '</div>';
         h += '<div style="font-size:.65rem;color:#8a8f9e;font-weight:700;text-transform:uppercase;letter-spacing:.05em">CONSEGNA ENTRO</div>';
         h += '</div></div>';
         
-        var pEarned = rr.ptb;
-        var pOrigR = S.rewards.filter(function(x){return x.name===rr.name;})[0] || rr;
-        if (typeof pEarned === 'undefined') {
-          pEarned = pOrigR.ptb || 0;
-        }
-        if (pEarned > 0) {
-          pOrigR.ptb = pEarned; 
-          var split = getPointsSplit(pOrigR);
-          h += '<div style="margin-bottom:24px;background:#eefdf3;border:1px dashed #75d49a;border-radius:12px;padding:12px;text-align:center">';
-          h += '<div style="font-size:.7rem;color:#1a9e50;font-weight:800;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">PUNTI GUADAGNATI</div>';
-          if (split && split.isSplit) {
-            h += '<div style="font-size:1.1rem;color:#1a9e50;font-weight:900">♥&#xFE0E; +' + split.myS + ' te / +' + split.ptS + ' partner</div>';
-          } else {
-            h += '<div style="font-size:1.2rem;color:#1a9e50;font-weight:900">♥&#xFE0E; +' + pEarned + ' pt benessere</div>';
-          }
-          h += '</div>';
+        var pOrigR = S.rewards.filter(function(x){return x.name===rr.name;})[0];
+        if (pOrigR && pOrigR.requiredAccessories && pOrigR.requiredAccessories.length > 0) {
+            var rAccsNames = [];
+            pOrigR.requiredAccessories.forEach(function(rAid) {
+                var accObj = S.accessories.find(function(a){return a.id === rAid;});
+                if (accObj) rAccsNames.push(accObj.name);
+                else rAccsNames.push(rAid);
+            });
+            if (rAccsNames.length > 0) {
+                h += '<div style="margin-bottom:24px;background:#f0f5fa;border:1px dashed #d0e1f9;border-radius:12px;padding:12px;text-align:center">';
+                h += '<div style="font-size:.7rem;color:#1a2a5e;font-weight:800;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">ACCESSORI UTILIZZATI</div>';
+                h += '<div style="font-size:.95rem;color:#1a1f36;font-weight:700">🧩 ' + esc(rAccsNames.join(', ')) + '</div>';
+                h += '</div>';
+            }
         }
 
         h += '<div style="margin-bottom:24px">';
@@ -4495,7 +4497,7 @@ function renderShopItem(r, pts) {
       function renderAdmin() {
         if (!adminAuthed) {
           var h = '<div class="auth-wrap"><div class="auth-card">';
-          h += '<div class="auth-logo"><span class="auth-gem">⚙️</span><h1>Settings</h1><p>Pannello di amministrazione</p></div>';
+          h += '<div class="auth-logo"><img class="auth-gem" src="logo_app_ios.svg" alt="Logo"><h1>Settings</h1><p>Pannello di amministrazione</p></div>';
           h += '<div class="field"><label class="lbl">Username</label><input type="text" id="au"/></div>';
           h += '<div class="field"><label class="lbl">Password</label><input type="password" id="ap"/></div>';
           h += '<div id="admerr" class="err"></div>';
