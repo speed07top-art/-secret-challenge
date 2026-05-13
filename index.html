@@ -3178,7 +3178,7 @@
     if (shopView === 'categories') {
       // ── CATEGORIES GRID ──
       var myCats = (S.shopCategories || []).filter(function(c) {
-        return c.visibleTo === 'both' || c.visibleTo === session;
+        return (c.visibleTo === 'both' || c.visibleTo === session) && c.name.toLowerCase().trim() !== 'challenge';
       }).sort(function(a, b) { return (a.order || 0) - (b.order || 0); });
 
       if (!myCats.length) {
@@ -3292,11 +3292,101 @@
     }
   }
         else if (tab === 'challenge') {
-          page += '<div style="padding:40px 20px;text-align:center;">';
-          page += '<div style="font-size:3rem;margin-bottom:16px">🚧</div>';
-          page += '<h2 style="font-size:1.5rem;color:#1a2a5e;margin-bottom:12px;font-weight:800">Work in Progress</h2>';
-          page += '<p style="color:#8a8f9e;font-size:1rem;line-height:1.5">La sezione Challenge è attualmente in manutenzione. Tornerà presto con nuove sfide!</p>';
-          page += '</div>';
+          // ── CHALLENGE TAB: mostra la categoria "Challenge" ──
+          var manoCat = (S.shopCategories || []).find(function(c) {
+            return c.name.toLowerCase().trim() === 'challenge';
+          });
+
+          var hTop = '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 20px;">';
+          hTop += '<div style="font-size:1.8rem;font-weight:800;color:#1a1f36;font-family:\'Inter\',sans-serif;letter-spacing:-0.5px">' + (manoCat ? esc(manoCat.image || '') + ' ' + esc(manoCat.name) : '⚡ Challenge') + '</div>';
+          hTop += '<div class="pts-badge" style="background:#0B4A2D;color:white;font-size:.9rem;font-weight:800;padding:6px 14px;border-radius:20px;display:flex;align-items:center;gap:6px"><span style="color:#6BF356;font-size:1.1em">♦&#xFE0E;</span> ' + pts + ' pt</div>';
+          hTop += '</div>';
+          page += hTop;
+
+          if (!manoCat) {
+            page += '<div class="empty"><span class="empty-ico">⚡</span><p>Nessuna categoria configurata.</p></div>';
+
+          } else if (manoCat.isAccessories) {
+            // ── Lista accessori ──
+            var manoAccs = S.accessories.filter(function(a) {
+              var aName = a.name ? a.name.toLowerCase().trim() : '';
+              return (a.availableTo === 'both' || a.availableTo === session) && aName !== 'la tua mano' && aName !== 'la sua mano';
+            }).sort(function(a, b) { return (a.cost || 0) - (b.cost || 0); });
+            var ownedAcc = S.users[session].ownedAccessories || [];
+
+            if (!manoAccs.length) {
+              page += '<div class="empty"><span class="empty-ico">🧩</span><p>Nessun accessorio disponibile.</p></div>';
+            } else {
+              manoAccs.forEach(function(a) {
+                var isOwned = ownedAcc.indexOf(a.id) >= 0;
+                var canAfford = pts >= a.cost;
+                page += '<div style="background:#ffffff;border:1.5px solid ' + (isOwned ? '#6BF356' : '#e2e8f0') + ';border-radius:16px;padding:16px;margin-bottom:12px;display:flex;gap:14px;align-items:center;position:relative">';
+                if (isOwned) page += '<div style="position:absolute;top:12px;right:12px;background:#6BF356;color:#0B4A2D;font-size:.65rem;font-weight:800;padding:3px 8px;border-radius:8px">✓ Posseduto</div>';
+                page += '<div style="width:54px;height:54px;background:' + (isOwned ? 'rgba(107,243,86,0.15)' : '#f0f5f1') + ';border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0">' + esc(a.image || '🧩') + '</div>';
+                page += '<div style="flex:1">';
+                page += '<div style="font-size:1.05rem;font-weight:800;color:#1a1f36;margin-bottom:4px">' + esc(a.name) + '</div>';
+                if (a.desc) page += '<div style="font-size:.75rem;color:#8a8f9e;line-height:1.4;margin-bottom:10px">' + esc(a.desc) + '</div>';
+                page += '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">';
+                page += '<div style="font-size:1.05rem;font-weight:800;color:#1a1f36"><span style="color:#6BF356">♦&#xFE0E;</span> ' + a.cost + ' pt</div>';
+                if (isOwned) {
+                  page += '<div style="background:#e6faed;color:#0B4A2D;border:none;padding:8px 16px;border-radius:10px;font-size:.8rem;font-weight:700">✅ Già tuo</div>';
+                } else if (canAfford) {
+                  page += '<button style="background:#0B4A2D;color:#6BF356;border:none;padding:8px 16px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer" data-action="open-claim" data-arg="' + esc(a.id) + '">Acquista</button>';
+                } else {
+                  page += '<button style="background:#f0f2f8;color:#a0a8be;border:none;padding:8px 16px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:not-allowed" disabled>Fondi insufficienti</button>';
+                }
+                page += '</div></div></div>';
+              });
+            }
+
+          } else {
+            // ── Lista premi (categoria standard) ──
+            var manoProducts = S.rewards.filter(function(r) {
+              return r.cat === manoCat.id && (r.partner === session || r.partner === 'both');
+            }).sort(function(a, b) { return (a.cost || 0) - (b.cost || 0); });
+            var ownedProd = S.users[session].ownedAccessories || [];
+
+            if (!manoProducts.length) {
+              page += '<div class="empty"><span class="empty-ico">🛍️</span><p>Nessun prodotto disponibile.</p></div>';
+            } else {
+              manoProducts.forEach(function(r) {
+                var reqAccs = r.requiredAccessories || [];
+                var missingAccs = [];
+                var tempOwned = [].concat(ownedProd);
+                reqAccs.forEach(function(aId) {
+                  var accData = S.accessories.find(function(x) { return x.id === aId; });
+                  var accName = accData ? accData.name.toLowerCase().trim() : '';
+                  if (accName === 'la tua mano' || accName === 'la sua mano') return;
+                  var idx = tempOwned.indexOf(aId);
+                  if (idx < 0) missingAccs.push(aId);
+                  else tempOwned.splice(idx, 1);
+                });
+                var isLocked = missingAccs.length > 0;
+                var canAfford = !isLocked;
+                var opacity = isLocked ? 'opacity:0.6;' : '';
+                page += '<div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;padding:16px;margin-bottom:12px;display:flex;gap:14px;align-items:center;position:relative;' + opacity + '">';
+                page += '<div style="width:54px;height:54px;background:#f0f5f1;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0">' + (r.emoji || '🛍️') + '</div>';
+                page += '<div style="flex:1">';
+                page += '<div style="font-size:1.05rem;font-weight:800;color:#1a1f36;margin-bottom:4px">' + esc(r.name) + '</div>';
+                if (r.desc) page += '<div style="font-size:.75rem;color:#8a8f9e;line-height:1.4;margin-bottom:10px">' + esc(r.desc) + '</div>';
+                if (isLocked) {
+                  var missingNames = missingAccs.map(function(aId) { var acc = S.accessories.find(function(x) { return x.id === aId; }); return acc ? acc.name : aId; });
+                  page += '<div style="background:#fef3cd;border-radius:8px;padding:6px 10px;font-size:.72rem;color:#856404;margin-bottom:8px;display:flex;align-items:center;gap:4px">🔒 Richiede: <strong>' + missingNames.join(', ') + '</strong></div>';
+                }
+                page += '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">';
+                page += '<div style="font-size:1.05rem;font-weight:800;color:#1a1f36"><span style="color:#6BF356;font-weight:800">+</span>' + r.cost + ' pt</div>';
+                if (isLocked) {
+                  page += '<button style="background:#f0f2f8;color:#a0a8be;border:none;padding:8px 16px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:not-allowed" disabled>🔒 Bloccato</button>';
+                } else if (canAfford) {
+                  page += '<button style="background:#0B4A2D;color:#6BF356;border:none;padding:8px 16px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer" data-action="open-claim" data-arg="' + esc(r.id) + '">Acquista</button>';
+                } else {
+                  page += '<button style="background:#f0f2f8;color:#a0a8be;border:none;padding:8px 16px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:not-allowed" disabled>Fondi insufficienti</button>';
+                }
+                page += '</div></div></div>';
+              });
+              page += '<div style="text-align:center;font-size:.8rem;color:#b0b4c0;margin-top:24px;margin-bottom:20px">Hai visto tutti i prodotti disponibili</div>';
+            }
+          }
         }
         else if (tab === 'execute') {
           window.executeSubTab = window.executeSubTab || 'ricevuti';
